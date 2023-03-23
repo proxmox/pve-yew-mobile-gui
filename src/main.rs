@@ -2,7 +2,7 @@ mod top_nav_bar;
 pub use top_nav_bar::TopNavBar;
 
 mod page_dashboard;
-pub use page_dashboard::Dashboard;
+pub use page_dashboard::PageDashboard;
 
 mod page_not_found;
 pub use page_not_found::PageNotFound;
@@ -33,10 +33,10 @@ enum Route {
     NotFound,
 }
 
-fn switch(routes: Route, _ctx: &Context<PveMobileApp) -> Html {
+fn switch(routes: Route) -> Html {
     let stack = match routes {
         Route::Dashboard => {
-            vec![Dashboard::new().into()]
+            vec![PageDashboard::new().into()]
         }
         Route::NotFound => {
             vec![html! { <PageNotFound/> }]
@@ -66,12 +66,9 @@ impl Component for PveMobileApp {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let render = move |routes: Route| {
-            switch(routes, ctx)
-        };
         ThemeLoader::new(html! {
             <HashRouter>
-                <Switch<Route> {render} />
+                <Switch<Route> render={switch} />
             </HashRouter>
         })
         .into()

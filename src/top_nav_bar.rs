@@ -85,7 +85,7 @@ impl Component for PmgTopNavBar {
             .padding(1)
             .with_child(html!{ <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> })
             .with_child(html!{
-                <span class="pwt-ps-1 pwt-font-headline-small">{"Mail"}</span>
+                <span class="pwt-ps-1 pwt-font-headline-small">{"Proxmox Virtual Environment"}</span>
             })
             .with_flex_spacer()
             .with_child(button_group)

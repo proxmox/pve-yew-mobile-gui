@@ -1,0 +1,3 @@
+[submodule "pwt-assets"]
+	path = pwt-assets
+	url = gitolite3@proxdev.maurer-it.com:staff/dietmar/proxmox-yew-widget-toolkit-assets
