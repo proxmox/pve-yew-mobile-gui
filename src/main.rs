@@ -4,6 +4,9 @@ pub use top_nav_bar::TopNavBar;
 mod page_dashboard;
 pub use page_dashboard::PageDashboard;
 
+mod page_login;
+pub use page_login::PageLogin;
+
 mod page_not_found;
 pub use page_not_found::PageNotFound;
 
@@ -12,6 +15,7 @@ use percent_encoding::percent_decode_str;
 use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew_router::{HashRouter, Routable, Switch};
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::widget::ThemeLoader;
 use pwt::touch::PageStack;
@@ -58,23 +62,31 @@ impl Component for PveMobileApp {
         let login_info = LoginInfo::from_cookie(ProxmoxProduct::PVE);
         if let Some(login_info) = &login_info {
             http_set_auth(login_info.clone());
-        } else {
-            // fixme: show login  page
         }
-
         Self { login_info }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        ThemeLoader::new(html! {
-            <HashRouter>
-                <Switch<Route> render={switch} />
-            </HashRouter>
-        })
-        .into()
+
+        let content = match &self.login_info {
+            Some(info) => {
+                html! {
+                    <HashRouter>
+                        <Switch<Route> render={switch} />
+                    </HashRouter>
+                }
+            }
+            None => {
+                PageLogin::new()
+                    .on_login(ctx.link().callback(Msg::Login))
+                    .into()
+            }
+        };
+
+        ThemeLoader::new(content).into()
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Login(info) => {
                 self.login_info = Some(info);
