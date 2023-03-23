@@ -1,0 +1,9 @@
+[[hooks]]
+stage="pre_build"
+command="sass"
+command_arguments= ["pwt-assets/scss/material-yew-style-light.scss", "dist/.stage/material-yew-style-light.css"]
+
+[[hooks]]
+stage="pre_build"
+command="sass"
+command_arguments= ["pwt-assets/scss/material-yew-style-dark.scss", "dist/.stage/material-yew-style-dark.css"]

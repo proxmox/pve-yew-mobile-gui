@@ -1,0 +1,29 @@
+[package]
+name = "pve-yew-modile-gui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+lazy_static = "1.4"
+yew = { version = "0.20",  features = ["csr"] }
+yew-router = { version = "0.17" }
+web-sys = { version = "0.3", features = [ "DomRect", "Element", "UrlSearchParams"] }
+wasm-bindgen = { version = "0.2" }
+js-sys = "0.3"
+log = "0.4.6"
+wasm-logger = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+wasm-bindgen-futures = "0.4"
+url = "2.1"
+percent-encoding = "2.1"
+
+proxmox-schema = "1"
+proxmox-time = "1"
+proxmox-uuid = "1"
+
+pwt = { version = "0.2", features = [ "proxmox-schema" ] }
+pwt-macros = "0.1"
+
+proxmox-yew-comp = "0.1"
