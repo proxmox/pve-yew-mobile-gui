@@ -8,7 +8,7 @@ pub fn PageNotFound() -> Html {
     let content = error_message("page not found", "pwt-p-2");
 
     Column::new()
-        .class("pwt-viewport")
+        .class("pwt-fit")
         .with_child(TopNavBar::new())
         .with_child(content)
         .into()

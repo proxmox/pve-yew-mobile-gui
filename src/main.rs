@@ -13,12 +13,12 @@ pub use page_not_found::PageNotFound;
 use percent_encoding::percent_decode_str;
 
 use yew::html::IntoEventCallback;
-use yew::prelude::*;
-use yew_router::{HashRouter, Routable, Switch};
 use yew_router::scope_ext::RouterScopeExt;
+use yew_router::{HashRouter, Routable, Switch};
 
-use pwt::widget::ThemeLoader;
-use pwt::touch::PageStack;
+use pwt::prelude::*;
+use pwt::touch::{NavigationBar, NavigationBarItem, PageStack};
+use pwt::widget::{Column, ThemeLoader};
 
 use proxmox_yew_comp::{http_login, http_set_auth};
 use proxmox_yew_comp::{LoginInfo, ProxmoxProduct};
@@ -67,7 +67,6 @@ impl Component for PveMobileApp {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-
         let content = match &self.login_info {
             Some(info) => {
                 html! {
@@ -76,14 +75,33 @@ impl Component for PveMobileApp {
                     </HashRouter>
                 }
             }
-            None => {
-                PageLogin::new()
-                    .on_login(ctx.link().callback(Msg::Login))
-                    .into()
-            }
+            None => PageLogin::new()
+                .on_login(ctx.link().callback(Msg::Login))
+                .into(),
         };
 
-        ThemeLoader::new(content).into()
+        let items = vec![
+            NavigationBarItem::new()
+                .icon_class("fa fa-trash-o")
+                .label("Dashboard"),
+            NavigationBarItem::new()
+                .icon_class("fa fa-trash-o")
+                .label("TEST2"),
+            NavigationBarItem::new()
+                .icon_class("fa fa-user-o")
+                .active_icon_class("fa fa-user")
+                .label("User"),
+        ];
+
+        let navigation = NavigationBar::new(items);
+
+        ThemeLoader::new(
+            Column::new()
+                .class("pwt-viewport")
+                .with_child(content)
+                .with_child(navigation),
+        )
+        .into()
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {

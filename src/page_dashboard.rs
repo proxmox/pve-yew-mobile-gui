@@ -45,9 +45,9 @@ impl Component for PvePageDashboard {
 
         let content = html!{"This is a test"};
 
-               let fab = Container::new()
-            .class("pwt-position-fixed")
-            .class("pwt-right-2 pwt-bottom-4")
+        let fab = Container::new()
+            .class("pwt-position-absolute")
+            .class("pwt-right-2 pwt-bottom-2")
             .with_child(
                 Fab::new("fa fa-calendar")
                     .class("pwt-scheme-primary")
@@ -55,7 +55,7 @@ impl Component for PvePageDashboard {
             );
 
         Column::new()
-            .class("pwt-viewport")
+            .class("pwt-fit")
             .with_child(TopNavBar::new())
             .with_child(content)
             .with_child(fab)
