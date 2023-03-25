@@ -67,19 +67,6 @@ impl Component for PveMobileApp {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let content = match &self.login_info {
-            Some(info) => {
-                html! {
-                    <HashRouter>
-                        <Switch<Route> render={switch} />
-                    </HashRouter>
-                }
-            }
-            None => PageLogin::new()
-                .on_login(ctx.link().callback(Msg::Login))
-                .into(),
-        };
-
         let items = vec![
             NavigationBarItem::new()
                 .icon_class("fa fa-trash-o")
@@ -95,13 +82,22 @@ impl Component for PveMobileApp {
 
         let navigation = NavigationBar::new(items);
 
-        ThemeLoader::new(
-            Column::new()
+        let content: Html = match &self.login_info {
+            Some(info) => Column::new()
                 .class("pwt-viewport")
-                .with_child(content)
-                .with_child(navigation),
-        )
-        .into()
+                .with_child(html! {
+                    <HashRouter>
+                        <Switch<Route> render={switch} />
+                    </HashRouter>
+                })
+                .with_child(navigation)
+                .into(),
+            None => PageLogin::new()
+                .on_login(ctx.link().callback(Msg::Login))
+                .into(),
+        };
+
+        ThemeLoader::new(content).into()
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
