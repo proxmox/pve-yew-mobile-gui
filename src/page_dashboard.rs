@@ -43,7 +43,9 @@ impl Component for PvePageDashboard {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let content = html!{"This is a test"};
+        let content = Column::new()
+            .padding(2)
+            .with_child("This is the dashboard");
 
         let fab = Container::new()
             .class("pwt-position-absolute")
