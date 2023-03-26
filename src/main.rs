@@ -4,6 +4,9 @@ pub use top_nav_bar::TopNavBar;
 mod page_dashboard;
 pub use page_dashboard::PageDashboard;
 
+mod page_resources;
+pub use page_resources::PageResources;
+
 mod page_login;
 pub use page_login::PageLogin;
 
@@ -15,6 +18,7 @@ use percent_encoding::percent_decode_str;
 use yew::html::IntoEventCallback;
 use yew_router::scope_ext::RouterScopeExt;
 use yew_router::{HashRouter, Routable, Switch};
+use yew::virtual_dom::Key;
 
 use pwt::prelude::*;
 use pwt::touch::{NavigationBar, NavigationBarItem, PageStack};
@@ -22,6 +26,12 @@ use pwt::widget::{Column, ThemeLoader};
 
 use proxmox_yew_comp::{http_login, http_set_auth};
 use proxmox_yew_comp::{LoginInfo, ProxmoxProduct};
+
+pub fn goto_location(path: &str) {
+    let document = web_sys::window().unwrap().document().unwrap();
+    let location = document.location().unwrap();
+    let _ = location.replace(&format!("/#{path}"));
+}
 
 pub enum Msg {
     Login(LoginInfo),
@@ -32,21 +42,64 @@ pub enum Msg {
 enum Route {
     #[at("/")]
     Dashboard,
+    #[at("/resources")]
+    Resources,
     #[not_found]
     #[at("/404")]
     NotFound,
 }
 
 fn switch(routes: Route) -> Html {
-    let stack = match routes {
+    let (active_nav, stack) = match routes {
         Route::Dashboard => {
-            vec![PageDashboard::new().into()]
+            (
+                "dashboard",
+                vec![PageDashboard::new().into()],
+            )
+        }
+        Route::Resources => {
+            (
+                "resources",
+                vec![PageResources::new().into()],
+            )
         }
         Route::NotFound => {
-            vec![html! { <PageNotFound/> }]
+            (
+                "",
+                vec![html! { <PageNotFound/> }],
+            )
         }
     };
-    PageStack::new(stack).into()
+
+    let items = vec![
+        NavigationBarItem::new()
+            .key(Key::from("dashboard"))
+            .icon_class("fa fa-trash-o")
+            .on_activate(Callback::from(|_| {
+                goto_location("/");
+            }))
+            .label("Dashboard"),
+        NavigationBarItem::new()
+            .key(Key::from("resources"))
+            .icon_class("fa fa-trash-o")
+            .on_activate(Callback::from(|_| {
+                goto_location("/resources");
+            }))
+            .label("Resources"),
+        NavigationBarItem::new()
+            .icon_class("fa fa-user-o")
+            .active_icon_class("fa fa-user")
+            .label("User"),
+    ];
+
+    let navigation = NavigationBar::new(items)
+        .active_item(Key::from(active_nav));
+
+    Column::new()
+        .class("pwt-viewport")
+        .with_child(PageStack::new(stack))
+        .with_child(navigation)
+        .into()
 }
 
 struct PveMobileApp {
@@ -67,31 +120,15 @@ impl Component for PveMobileApp {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let items = vec![
-            NavigationBarItem::new()
-                .icon_class("fa fa-trash-o")
-                .label("Dashboard"),
-            NavigationBarItem::new()
-                .icon_class("fa fa-trash-o")
-                .label("TEST2"),
-            NavigationBarItem::new()
-                .icon_class("fa fa-user-o")
-                .active_icon_class("fa fa-user")
-                .label("User"),
-        ];
-
-        let navigation = NavigationBar::new(items);
 
         let content: Html = match &self.login_info {
-            Some(info) => Column::new()
-                .class("pwt-viewport")
-                .with_child(html! {
+            Some(info) => {
+                html! {
                     <HashRouter>
                         <Switch<Route> render={switch} />
                     </HashRouter>
-                })
-                .with_child(navigation)
-                .into(),
+                }
+            }
             None => PageLogin::new()
                 .on_login(ctx.link().callback(Msg::Login))
                 .into(),
@@ -104,9 +141,7 @@ impl Component for PveMobileApp {
         match msg {
             Msg::Login(info) => {
                 self.login_info = Some(info);
-                let document = web_sys::window().unwrap().document().unwrap();
-                let location = document.location().unwrap();
-                let _ = location.replace("/");
+                goto_location("/");
             }
         }
         true

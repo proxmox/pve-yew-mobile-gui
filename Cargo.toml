@@ -27,3 +27,7 @@ pwt = { version = "0.2", features = [ "proxmox-schema" ] }
 pwt-macros = "0.1"
 
 proxmox-yew-comp = "0.1"
+
+#proxmox-client = "0.1"
+#[patch.crates-io]
+#proxmox-client = { path = "../pve-client/proxmox-client" }
