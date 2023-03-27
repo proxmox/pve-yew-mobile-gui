@@ -7,6 +7,9 @@ pub use page_dashboard::PageDashboard;
 mod page_resources;
 pub use page_resources::PageResources;
 
+mod vm_status;
+pub use vm_status::PageVmStatus;
+
 mod page_login;
 pub use page_login::PageLogin;
 
@@ -44,6 +47,8 @@ enum Route {
     Dashboard,
     #[at("/resources")]
     Resources,
+    #[at("/resources/qemu/:vmid")]
+    Qemu { vmid: u64 },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -61,6 +66,15 @@ fn switch(routes: Route) -> Html {
             (
                 "resources",
                 vec![PageResources::new().into()],
+            )
+        }
+        Route::Qemu { vmid } => {
+            (
+                "resources",
+                vec![
+                    PageResources::new().into(),
+                    PageVmStatus::new(vmid).into(),
+                ],
             )
         }
         Route::NotFound => {
