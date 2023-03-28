@@ -9,7 +9,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::{Fab};
-use pwt::widget::{Button, Column, Container, MiniScroll, Panel, Row};
+use pwt::widget::{Button, Card, Column, Container, MiniScroll, Panel, Row};
 use pwt::widget::form::{Field, Form, FormContext};
 
 use crate::{Route, TopNavBar};
@@ -49,6 +49,53 @@ impl PvePageDashboard {
 
         MiniScroll::new(content).into()
     }
+
+    fn create_analytics_card(&self, ctx: &Context<Self>) -> Html {
+        Card::new()
+            .padding(0)
+            .with_child(html!{
+                <div class="pwt-p-2 pwt-border-bottom">
+                    <div class="pwt-font-size-title-large">{"Analytics"}</div>
+                    <div class="pwt-font-size-title-small">{"Usage acress all online nodes."}</div>
+                </div>
+            })
+            .with_child(html!{
+                <div class="pwt-p-2 pwt-border-bottom">{"CPU"}</div>
+            })
+            .with_child(html!{
+                <div class="pwt-p-2">{"Memory"}</div>
+            })
+           .into()
+    }
+
+    fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
+        Card::new()
+            .padding(0)
+            .with_child(html!{
+                <div class="pwt-p-2 pwt-border-bottom">
+                    <div class="pwt-font-size-title-large">{"Nodes"}</div>
+                </div>
+            })
+            .with_child(html!{
+                <div class="pwt-p-2">{"Nodes..."}</div>
+            })
+            .into()
+        }
+
+        fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
+            Card::new()
+                .padding(0)
+                .with_child(html!{
+                    <div class="pwt-p-2 pwt-border-bottom">
+                        <div class="pwt-font-size-title-large">{"Guests"}</div>
+                    </div>
+                })
+                .with_child(html!{
+                    <div class="pwt-p-2">{"Guests..."}</div>
+                })
+                .into()
+            }
+
 }
 
 impl Component for PvePageDashboard {
@@ -65,9 +112,13 @@ impl Component for PvePageDashboard {
 
         let content = Column::new()
             .padding(2)
+            .gap(2)
             .with_child(self.create_tab_bar(ctx))
-            .with_child("This is the dashboard");
+            .with_child(self.create_analytics_card(ctx))
+            .with_child(self.create_nodes_card(ctx))
+            .with_child(self.create_guests_card(ctx));
 
+        /*
         let fab = Container::new()
             .class("pwt-position-absolute")
             .class("pwt-right-2 pwt-bottom-2")
@@ -76,12 +127,12 @@ impl Component for PvePageDashboard {
                     .class("pwt-scheme-primary")
                     //.on_click(ctx.link().callback(|_| Msg::ShowDialog))
             );
+        */
 
         Column::new()
             .class("pwt-fit")
             .with_child(TopNavBar::new())
             .with_child(content)
-            .with_child(fab)
             .into()
     }
 }

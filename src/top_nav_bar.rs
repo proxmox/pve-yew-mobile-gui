@@ -6,11 +6,12 @@ use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use pwt::state::{Theme, ThemeObserver};
-use pwt::widget::{ActionIcon, ThemeModeSelector, Row};
+use pwt::widget::{ActionIcon, Column, ThemeModeSelector, Row};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct TopNavBar {
-    pub text: Option<AttrValue>,
+    pub title: Option<AttrValue>,
+    pub subtitle: Option<AttrValue>,
 
     pub back: Option<AttrValue>,
 
@@ -22,8 +23,13 @@ impl TopNavBar {
         yew::props!(Self {})
     }
 
-    pub fn text(mut self, text: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.text = text.into_prop_value();
+    pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.title = title.into_prop_value();
+        self
+    }
+
+    pub fn subtitle(mut self, subtitle: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.subtitle = subtitle.into_prop_value();
         self
     }
 
@@ -99,17 +105,34 @@ impl Component for PmgTopNavBar {
                 .into()
         } else {
             let src = if self.dark_mode {
-                "/proxmox_logo_white.png"
+                "/proxmox_logo_icon_white.png"
             } else {
-                "/proxmox_logo.png"
+                "/proxmox_logo_icon_black.png"
             };
             html!{ <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> }
         };
 
-        let text = match &props.text {
+        let title = match &props.title {
             Some(text) => text.deref(),
-            None => "Proxmox Virtual Environment",
+            None => "Proxmox",
         };
+
+        let mut text_block = Column::new()
+            .with_child(html!{
+                <span class="pwt-ps-1 pwt-font-title-large">{title}</span>
+            });
+
+        let subtitle = if props.title.is_none() {
+            Some("Virtual Environment")
+        } else {
+            props.subtitle.as_deref()
+        };
+
+        if let Some(subtitle) = subtitle {
+            text_block.add_child(html!{
+                <span class="pwt-ps-1 pwt-font-title-small">{subtitle}</span>
+            });
+        }
 
         Row::new()
             .attribute("role", "banner")
@@ -117,12 +140,9 @@ impl Component for PmgTopNavBar {
             .class("pwt-navbar")
             .class("pwt-justify-content-space-between pwt-align-items-center")
             .class("pwt-border-bottom")
-            //.class("pwt-shadow1")
             .padding(1)
             .with_child(back_or_logo)
-            .with_child(html!{
-                <span class="pwt-ps-1 pwt-font-headline-small">{text}</span>
-            })
+            .with_child(text_block)
             .with_flex_spacer()
             .with_child(button_group)
             .into()

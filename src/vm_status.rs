@@ -63,7 +63,7 @@ impl Component for PvePageVmStatus {
             .class("pwt-fit")
             .with_child(
                 TopNavBar::new()
-                    .text(format!("VM {}", props.vmid))
+                    .title(format!("VM {}", props.vmid))
                     .back("/resources")
             )
             .with_child(content)

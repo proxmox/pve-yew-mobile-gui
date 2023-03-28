@@ -202,7 +202,7 @@ impl Component for PvePageResources {
 
         Column::new()
             .class("pwt-fit")
-            .with_child(TopNavBar::new().text("Resources").back("/"))
+            .with_child(TopNavBar::new().title("Resources").back("/"))
             .with_child(content)
             .with_child(fab)
             .into()
