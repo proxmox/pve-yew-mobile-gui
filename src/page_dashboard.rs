@@ -13,7 +13,7 @@ use pwt::touch::Fab;
 use pwt::widget::form::{Field, Form, FormContext};
 use pwt::widget::{Button, Card, Column, Container, MiniScroll, Panel, Progress, Row};
 
-use proxmox_client::api_types::ClusterNodeIndexResponse;
+use proxmox_client::api_types::{ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus};
 use proxmox_yew_comp::http_get;
 
 use crate::{Route, TopNavBar};
@@ -75,8 +75,8 @@ impl PvePageDashboard {
                     }
                 }
 
-                let mem = (mem as f64) / (1024.0 * 1024.0 *1024.0);
-                let maxmem = (maxmem as f64) / (1024.0 * 1024.0 *1024.0);
+                let mem = (mem as f64) / (1024.0 * 1024.0 * 1024.0);
+                let maxmem = (maxmem as f64) / (1024.0 * 1024.0 * 1024.0);
 
                 let cpu_percentage = if maxcpu == 0 {
                     0.0
@@ -142,23 +142,49 @@ impl PvePageDashboard {
            .into()
     }
 
+    fn create_node_list_item(&self, item: &ClusterNodeIndexResponse) -> Row {
+        let icon = html! {<i class={
+            classes!(
+                "pwt-font-size-title-large",
+                "fa",
+                "fa-server",
+                (item.status == ClusterNodeIndexResponseStatus::Online).then(|| "pwt-color-primary"),
+            )
+        }/>};
+
+        Row::new()
+            .gap(2)
+            .padding(2)
+            .border_top(true)
+            .class("pwt-align-items-center")
+            .with_child(icon)
+            .with_child(
+                Column::new()
+                    .class("pwt-flex-fill")
+                    .gap(1)
+                    .with_child(html! {
+                        <div class="pwt-font-size-title-medium">{&item.node}</div>
+                    })
+                    //.with_child(html! {
+                    //    <div class="pwt-font-size-title-small">{item.node.as_deref().unwrap()}</div>
+                    //}),
+            )
+            .with_child(html! {
+                <div class="pwt-font-size-title-small">{item.status}</div>
+            })
+    }
+
     fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
         let list = match &self.nodes {
             Ok(list) => {
-                html! {
-                    <div class="pwt-p-2">{"Nodes..."}</div>
-                }
+                list.iter().map(|item| self.create_node_list_item(item)).collect()
             }
             Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
         };
 
         Card::new()
             .padding(0)
-            .with_child(html! {
-                <div class="pwt-p-2 pwt-border-bottom">
-                    <div class="pwt-font-size-title-large">{"Nodes"}</div>
-                </div>
-            })
+            .with_child(html!{<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
             .with_child(list)
             .into()
     }
