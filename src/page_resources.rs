@@ -156,7 +156,9 @@ impl PvePageResources {
             ClusterResourcesType::Storage => Some(self.create_storage_list_item(ctx, item)),
             _ => None,
         });
-        Column::new().children(children).into()
+        Column::new()
+            .class("pwt-fit")
+            .children(children).into()
     }
 }
 
@@ -200,7 +202,7 @@ impl Component for PvePageResources {
 
         Column::new()
             .class("pwt-fit")
-            .with_child(TopNavBar::new())
+            .with_child(TopNavBar::new().text("Resources").back("/"))
             .with_child(content)
             .with_child(fab)
             .into()

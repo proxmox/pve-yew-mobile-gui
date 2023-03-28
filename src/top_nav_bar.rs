@@ -1,20 +1,35 @@
 use std::rc::Rc;
+use std::ops::Deref;
 
 use pwt::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use pwt::state::{Theme, ThemeObserver};
-use pwt::widget::{ThemeModeSelector, Row};
+use pwt::widget::{ActionIcon, ThemeModeSelector, Row};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct TopNavBar {
-    pub on_logout: Option<Callback<MouseEvent>>
+    pub text: Option<AttrValue>,
+
+    pub back: Option<AttrValue>,
+
+    pub on_logout: Option<Callback<MouseEvent>>,
 }
 
 impl TopNavBar {
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    pub fn text(mut self, text: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.text = text.into_prop_value();
+        self
+    }
+
+    pub fn back(mut self, link: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.back = link.into_prop_value();
+        self
     }
 
     pub fn on_logout(mut self, cb: impl IntoEventCallback<MouseEvent>) -> Self {
@@ -56,7 +71,9 @@ impl Component for PmgTopNavBar {
         }
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+
         let button_group = Row::new()
             .gap(1)
             //.with_child(HelpButton::new().class("neutral"))
@@ -69,10 +86,29 @@ impl Component for PmgTopNavBar {
             )*/
             ;
 
-        let src = if self.dark_mode {
-            "/proxmox_logo_white.png"
+        let back_or_logo = if let Some(back) = &props.back {
+            let back = back.to_owned();
+            ActionIcon::new("fa fa-arrow-left")
+                .class("pwt-font-size-headline-small")
+                .class("pwt-color-primary")
+                .on_activate({
+                    move |_| {
+                        crate::goto_location(&back);
+                    }
+                })
+                .into()
         } else {
-            "/proxmox_logo.png"
+            let src = if self.dark_mode {
+                "/proxmox_logo_white.png"
+            } else {
+                "/proxmox_logo.png"
+            };
+            html!{ <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> }
+        };
+
+        let text = match &props.text {
+            Some(text) => text.deref(),
+            None => "Proxmox Virtual Environment",
         };
 
         Row::new()
@@ -81,11 +117,11 @@ impl Component for PmgTopNavBar {
             .class("pwt-navbar")
             .class("pwt-justify-content-space-between pwt-align-items-center")
             .class("pwt-border-bottom")
-            .class("pwt-shadow1")
+            //.class("pwt-shadow1")
             .padding(1)
-            .with_child(html!{ <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> })
+            .with_child(back_or_logo)
             .with_child(html!{
-                <span class="pwt-ps-1 pwt-font-headline-small">{"Proxmox Virtual Environment"}</span>
+                <span class="pwt-ps-1 pwt-font-headline-small">{text}</span>
             })
             .with_flex_spacer()
             .with_child(button_group)

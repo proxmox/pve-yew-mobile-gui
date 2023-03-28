@@ -61,7 +61,11 @@ impl Component for PvePageVmStatus {
 
         Column::new()
             .class("pwt-fit")
-            .with_child(TopNavBar::new())
+            .with_child(
+                TopNavBar::new()
+                    .text(format!("VM {}", props.vmid))
+                    .back("/resources")
+            )
             .with_child(content)
             .with_child(fab)
             .into()
