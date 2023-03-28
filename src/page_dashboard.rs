@@ -9,7 +9,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::{Fab};
-use pwt::widget::{Button, Column, Container, Dialog, Row};
+use pwt::widget::{Button, Column, Container, MiniScroll, Panel, Row};
 use pwt::widget::form::{Field, Form, FormContext};
 
 use crate::{Route, TopNavBar};
@@ -30,12 +30,32 @@ pub struct PvePageDashboard {
 pub enum Msg {
 }
 
+impl PvePageDashboard {
+    fn create_tab_bar(&self, ctx: &Context<Self>) -> Html {
+        let mut content = Row::new()
+        .padding_y(1)
+        .gap(2)
+        .with_child(
+            Button::new("Subscription")
+        )
+        .with_child(
+            Button::new("Virtual Machines")
+                .icon_class("fa fa-desktop")
+        )
+        .with_child(
+            Button::new("Containers")
+                .icon_class("fa fa-cube")
+        );
+
+        MiniScroll::new(content).into()
+    }
+}
+
 impl Component for PvePageDashboard {
     type Message = Msg;
     type Properties = PageDashboard;
 
     fn create(_ctx: &Context<Self>) -> Self {
-
         Self {}
     }
 
@@ -45,6 +65,7 @@ impl Component for PvePageDashboard {
 
         let content = Column::new()
             .padding(2)
+            .with_child(self.create_tab_bar(ctx))
             .with_child("This is the dashboard");
 
         let fab = Container::new()
