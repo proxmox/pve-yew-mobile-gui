@@ -6,8 +6,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::Fab;
-use pwt::widget::form::{Field, Form, FormContext};
-use pwt::widget::{Button, Card, Column, Container, Dialog, Row};
+use pwt::widget::{Progress, Card, Column, Container, Row};
 
 use proxmox_client::api_types::{ClusterResourceKind, ClusterResources, ClusterResourcesType};
 use proxmox_yew_comp::http_get;
@@ -134,6 +133,9 @@ impl PvePageResources {
                 <div class="pwt-font-size-title-medium">{format!("Total: {}", total)}</div>
             });
 
+        let progress = Progress::new()
+            .value((item.disk.unwrap_or(0) as f32)/(item.maxdisk.unwrap_or(1) as f32));
+
         Card::new()
             .class("pwt-d-flex pwt-flex-column pwt-gap-1")
             .class("pwt-shape-none pwt-card-flat pwt-interactive")
@@ -143,6 +145,7 @@ impl PvePageResources {
             .border_bottom(true)
             .with_child(row1)
             .with_child(row2)
+            .with_child(progress)
             .into()
     }
 
