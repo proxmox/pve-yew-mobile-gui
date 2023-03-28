@@ -53,12 +53,18 @@ impl PvePageDashboard {
     fn create_analytics_card(&self, ctx: &Context<Self>) -> Html {
         Card::new()
             .padding(0)
-            .with_child(html!{
-                <div class="pwt-p-2 pwt-border-bottom">
-                    <div class="pwt-font-size-title-large">{"Analytics"}</div>
-                    <div class="pwt-font-size-title-small">{"Usage acress all online nodes."}</div>
-                </div>
-            })
+            .with_child(
+                Column::new()
+                    .padding(2)
+                    .gap(1)
+                    .border_bottom(true)
+                    .with_child(html!{
+                        <div class="pwt-font-size-title-large">{"Analytics"}</div>
+                    })
+                    .with_child(html!{
+                        <div class="pwt-font-size-title-small">{"Usage acress all online nodes."}</div>
+                    })
+            )
             .with_child(html!{
                 <div class="pwt-p-2 pwt-border-bottom">{"CPU"}</div>
             })
