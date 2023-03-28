@@ -7,6 +7,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use pwt::state::{Theme, ThemeObserver};
 use pwt::widget::{ActionIcon, Column, ThemeModeSelector, Row};
+use pwt::widget::menu::{Menu, MenuItem, MenuButton};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct TopNavBar {
@@ -80,10 +81,17 @@ impl Component for PmgTopNavBar {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let menu = Menu::new()
+            .with_item(MenuItem::new("Submenu1 Item1"))
+            .with_item(MenuItem::new("Submenu1 Item2"));
+
         let button_group = Row::new()
             .gap(1)
             //.with_child(HelpButton::new().class("neutral"))
             .with_child(ThemeModeSelector::new().class("neutral"))
+            .with_child(
+                MenuButton::new("").class("circle").icon_class("fa fa-bars").menu(menu)
+            )
             /*
             .with_child(
                 Button::new("Logout")
@@ -119,7 +127,7 @@ impl Component for PmgTopNavBar {
 
         let mut text_block = Column::new()
             .with_child(html!{
-                <span class="pwt-ps-1 pwt-font-title-large">{title}</span>
+                <span class="pwt-font-title-large">{title}</span>
             });
 
         let subtitle = if props.title.is_none() {
@@ -130,11 +138,12 @@ impl Component for PmgTopNavBar {
 
         if let Some(subtitle) = subtitle {
             text_block.add_child(html!{
-                <span class="pwt-ps-1 pwt-font-title-small">{subtitle}</span>
+                <span class="pwt-font-title-small">{subtitle}</span>
             });
         }
 
         Row::new()
+            .gap(1)
             .attribute("role", "banner")
             .attribute("aria-label", "Proxmox VE")
             .class("pwt-navbar")
