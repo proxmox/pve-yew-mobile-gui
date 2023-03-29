@@ -15,6 +15,8 @@ use pwt::widget::form::{Field, Form, FormContext};
 use pwt::widget::{AlertDialog, Button, Card, Column, Container, MiniScroll, Panel, Progress, Row};
 
 use proxmox_client::api_types::{ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus};
+use proxmox_client::api_types::{ClusterResources, ClusterResourcesType};
+
 use proxmox_yew_comp::http_get;
 
 use crate::{Route, TopNavBar};
@@ -32,10 +34,11 @@ impl PageDashboard {
 
 pub struct PvePageDashboard {
     nodes: Result<Vec<ClusterNodeIndexResponse>, String>,
+    resources: Result<Vec<ClusterResources>, String>,
 }
-
 pub enum Msg {
     NodeLoadResult(Result<Vec<ClusterNodeIndexResponse>, Error>),
+    ResourcesLoadResult(Result<Vec<ClusterResources>, Error>),
     ConfirmSubscription,
 }
 
@@ -45,6 +48,11 @@ impl PvePageDashboard {
         wasm_bindgen_futures::spawn_local(async move {
             let result = http_get("/nodes", None).await;
             link.send_message(Msg::NodeLoadResult(result));
+        });
+        let link = ctx.link().clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            let result = http_get("/cluster/resources", None).await;
+            link.send_message(Msg::ResourcesLoadResult(result));
         });
     }
 
@@ -168,10 +176,9 @@ impl PvePageDashboard {
                     .gap(1)
                     .with_child(html! {
                         <div class="pwt-font-size-title-medium">{&item.node}</div>
-                    })
-                    //.with_child(html! {
-                    //    <div class="pwt-font-size-title-small">{item.node.as_deref().unwrap()}</div>
-                    //}),
+                    }), //.with_child(html! {
+                        //    <div class="pwt-font-size-title-small">{item.node.as_deref().unwrap()}</div>
+                        //}),
             )
             .with_child(html! {
                 <div class="pwt-font-size-title-small">{item.status}</div>
@@ -180,30 +187,120 @@ impl PvePageDashboard {
 
     fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
         let list = match &self.nodes {
+            Ok(list) => list
+                .iter()
+                .map(|item| self.create_node_list_item(item))
+                .collect(),
+            Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
+        };
+
+        Card::new()
+            .padding(0)
+            .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
+            .with_child(list)
+            .into()
+    }
+
+    fn create_guest_info_row(icon_class: &str, text: &str, value: usize, large: bool) -> Row {
+        let icon_size = if large {
+            "pwt-font-size-title-large"
+        } else {
+            "pwt-ps-2 pwt-font-size-title-medium"
+        };
+        let font_size = if large {
+            "pwt-font-size-title-medium"
+        } else {
+            "pwt-font-size-title-small"
+        };
+
+        Row::new()
+            .padding(2)
+            .gap(2)
+            .border_top(true)
+            .class("pwt-align-items-center")
+            .with_child(html! {
+                <i class={classes!(icon_size,  "fa-fw", icon_class.to_string())}/>
+            })
+            .with_child(html! {
+                <div class={classes!("pwt-flex-fill", font_size)}>{text}</div>
+            })
+            .with_child(html! {
+                <div class={font_size}>{value.to_string()}</div>
+            })
+    }
+
+    fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
+        let content = match &self.resources {
             Ok(list) => {
-                list.iter().map(|item| self.create_node_list_item(item)).collect()
+                let mut vm_count = 0;
+                let mut vm_online_count = 0;
+                let mut ct_count = 0;
+                let mut ct_online_count = 0;
+
+                for item in list {
+
+                    if item.ty == ClusterResourcesType::Qemu {
+                        vm_count += 1;
+                        if item.status.as_deref() == Some("running") {
+                            vm_online_count += 1;
+                        }
+                    }
+                    if item.ty == ClusterResourcesType::Lxc {
+                        ct_count += 1;
+                        if item.status.as_deref() == Some("running") {
+                            ct_online_count += 1;
+                        }
+                    }
+                }
+
+                Column::new()
+                    .with_child(Self::create_guest_info_row(
+                        "fa fa-desktop",
+                        "Virtual Machines",
+                        vm_count,
+                        true,
+                    ))
+                    .with_child(Self::create_guest_info_row(
+                        "fa fa-play pwt-color-primary",
+                        "Online",
+                        vm_online_count,
+                        false,
+                    ))
+                    .with_child(Self::create_guest_info_row(
+                        "fa fa-stop",
+                        "Offline",
+                        vm_count - vm_online_count,
+                        false,
+                    ))
+                    .with_child(Self::create_guest_info_row(
+                        "fa fa-cube",
+                        "LXC Container",
+                        ct_count,
+                        true,
+                    ))
+                    .with_child(Self::create_guest_info_row(
+                        "fa fa-play pwt-color-primary",
+                        "Online",
+                        ct_online_count,
+                        false,
+                    ))
+                    .with_child(Self::create_guest_info_row(
+                        "fa fa-stop",
+                        "Offline",
+                        ct_count - ct_online_count,
+                        false,
+                    ))
+                    .into()
             }
             Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
         };
 
         Card::new()
             .padding(0)
-            .with_child(html!{<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
-            .with_child(list)
-            .into()
-    }
-
-    fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
-        Card::new()
-            .padding(0)
             .with_child(html! {
-                <div class="pwt-p-2 pwt-border-bottom">
-                    <div class="pwt-font-size-title-large">{"Guests"}</div>
-                </div>
+                <div class="pwt-p-2 pwt-font-size-title-large">{"Guests"}</div>
             })
-            .with_child(html! {
-                <div class="pwt-p-2">{"Guests..."}</div>
-            })
+            .with_child(content)
             .into()
     }
 
@@ -219,9 +316,7 @@ impl PvePageDashboard {
         AlertDialog::new(msg)
             .title("Subscription")
             .on_close(ctx.link().callback(|_| Msg::ConfirmSubscription))
-
     }
-
 }
 
 impl Component for PvePageDashboard {
@@ -231,6 +326,7 @@ impl Component for PvePageDashboard {
     fn create(ctx: &Context<Self>) -> Self {
         let me = Self {
             nodes: Err(format!("no data loaded")),
+            resources: Err(format!("no data loaded")),
         };
         me.load(ctx);
         me
@@ -238,11 +334,14 @@ impl Component for PvePageDashboard {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            Msg::ResourcesLoadResult(result) => {
+                self.resources = result.map_err(|err| err.to_string());
+            }
             Msg::NodeLoadResult(result) => {
                 self.nodes = result.map_err(|err| err.to_string());
 
-                if let Ok(nodes) = &self.nodes  {
-                    let supported = nodes.iter().fold(true, |mut acc, item|  {
+                if let Ok(nodes) = &self.nodes {
+                    let supported = nodes.iter().fold(true, |mut acc, item| {
                         if item.level.as_deref().unwrap_or("").is_empty() {
                             acc = false;
                         }
@@ -252,7 +351,6 @@ impl Component for PvePageDashboard {
                         SUBSCRIPTION_CONFIRMED.store(supported, Ordering::Relaxed);
                     }
                 }
-
             }
             Msg::ConfirmSubscription => {
                 SUBSCRIPTION_CONFIRMED.store(true, Ordering::Relaxed);
@@ -283,9 +381,8 @@ impl Component for PvePageDashboard {
             );
         */
 
-        let alert = (!SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed)).then(|| {
-            self.create_subscription_alert(ctx)
-        });
+        let alert = (!SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed))
+            .then(|| self.create_subscription_alert(ctx));
 
         Column::new()
             .class("pwt-fit")
