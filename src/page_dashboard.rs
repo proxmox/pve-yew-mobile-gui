@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Error;
 use js_sys::Date;
@@ -11,12 +12,14 @@ use yew_router::scope_ext::RouterScopeExt;
 use pwt::prelude::*;
 use pwt::touch::Fab;
 use pwt::widget::form::{Field, Form, FormContext};
-use pwt::widget::{Button, Card, Column, Container, MiniScroll, Panel, Progress, Row};
+use pwt::widget::{AlertDialog, Button, Card, Column, Container, MiniScroll, Panel, Progress, Row};
 
 use proxmox_client::api_types::{ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus};
 use proxmox_yew_comp::http_get;
 
 use crate::{Route, TopNavBar};
+
+static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageDashboard {}
@@ -33,6 +36,7 @@ pub struct PvePageDashboard {
 
 pub enum Msg {
     NodeLoadResult(Result<Vec<ClusterNodeIndexResponse>, Error>),
+    ConfirmSubscription,
 }
 
 impl PvePageDashboard {
@@ -202,6 +206,22 @@ impl PvePageDashboard {
             })
             .into()
     }
+
+    fn create_subscription_alert(&self, ctx: &Context<Self>) -> AlertDialog {
+        let msg = "
+            One or more nodes do not have a valid subscription.\n\n
+            The Proxmox team works very hard to make sure you are running the best
+            software and getting stable updates and security enhancements,
+            as well as quick enterprise support.\n\n
+            Please consider to buy a subscription.
+        ";
+
+        AlertDialog::new(msg)
+            .title("Subscription")
+            .on_close(ctx.link().callback(|_| Msg::ConfirmSubscription))
+
+    }
+
 }
 
 impl Component for PvePageDashboard {
@@ -220,6 +240,22 @@ impl Component for PvePageDashboard {
         match msg {
             Msg::NodeLoadResult(result) => {
                 self.nodes = result.map_err(|err| err.to_string());
+
+                if let Ok(nodes) = &self.nodes  {
+                    let supported = nodes.iter().fold(true, |mut acc, item|  {
+                        if item.level.as_deref().unwrap_or("").is_empty() {
+                            acc = false;
+                        }
+                        acc
+                    });
+                    if !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed) {
+                        SUBSCRIPTION_CONFIRMED.store(supported, Ordering::Relaxed);
+                    }
+                }
+
+            }
+            Msg::ConfirmSubscription => {
+                SUBSCRIPTION_CONFIRMED.store(true, Ordering::Relaxed);
             }
         }
         true
@@ -247,10 +283,15 @@ impl Component for PvePageDashboard {
             );
         */
 
+        let alert = (!SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed)).then(|| {
+            self.create_subscription_alert(ctx)
+        });
+
         Column::new()
             .class("pwt-fit")
             .with_child(TopNavBar::new())
             .with_child(content)
+            .with_optional_child(alert)
             .into()
     }
 }
