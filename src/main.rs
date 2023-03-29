@@ -88,14 +88,14 @@ fn switch(routes: Route) -> Html {
     let items = vec![
         NavigationBarItem::new()
             .key(Key::from("dashboard"))
-            .icon_class("fa fa-trash-o")
+            .icon_class("fa fa-tachometer")
             .on_activate(Callback::from(|_| {
                 goto_location("/");
             }))
             .label("Dashboard"),
         NavigationBarItem::new()
             .key(Key::from("resources"))
-            .icon_class("fa fa-trash-o")
+            .icon_class("fa fa-book")
             .on_activate(Callback::from(|_| {
                 goto_location("/resources");
             }))
