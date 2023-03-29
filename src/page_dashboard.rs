@@ -363,6 +363,7 @@ impl Component for PvePageDashboard {
         let props = ctx.props();
 
         let content = Column::new()
+            .class("pwt-flex-fill")
             .padding(2)
             .gap(2)
             .with_child(self.create_tab_bar(ctx))
