@@ -16,12 +16,26 @@ pub struct TopNavBar {
 
     pub back: Option<AttrValue>,
 
+    #[prop_or_default]
+    pub class: Classes,
+
     pub on_logout: Option<Callback<MouseEvent>>,
 }
 
 impl TopNavBar {
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Builder style method to add a html class
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
     }
 
     pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
@@ -148,7 +162,7 @@ impl Component for PmgTopNavBar {
             .attribute("aria-label", "Proxmox VE")
             .class("pwt-navbar")
             .class("pwt-justify-content-space-between pwt-align-items-center")
-            .class("pwt-border-bottom")
+            //.class("pwt-border-bottom")
             .padding(1)
             .with_child(back_or_logo)
             .with_child(text_block)
