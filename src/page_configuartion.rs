@@ -4,8 +4,9 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::widget::Column;
+use pwt::widget::nav_menu::{MenuItem, NavigationMenu};
 
-use crate::TopNavBar;
+use crate::{TopNavBar, ListTile};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageConfiguration {}
@@ -19,7 +20,19 @@ pub struct PvePageConfiguration {
 }
 
 impl PvePageConfiguration {
- }
+
+    fn create_menu(&self, ctx: &Context<Self>) -> Html {
+        Column::new()
+            .with_child(
+                ListTile::new()
+                    .leading(html!{<i class="fa fa-trash"/>})
+                    .title("TEST")
+                    .subtitle("This is a stupid test")
+            )
+            .into()
+    }
+
+}
 
 impl Component for PvePageConfiguration {
     type Message = ();
@@ -35,7 +48,7 @@ impl Component for PvePageConfiguration {
         Column::new()
             .class("pwt-fit")
             .with_child(TopNavBar::new().title("Configuration"))
-            .with_child("Configuration")
+            .with_child(self.create_menu(ctx))
             .into()
     }
 }
