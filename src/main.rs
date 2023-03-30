@@ -13,6 +13,9 @@ pub use vm_status::PageVmStatus;
 mod page_login;
 pub use page_login::PageLogin;
 
+mod page_logs;
+pub use page_logs::PageLogs;
+
 mod page_not_found;
 pub use page_not_found::PageNotFound;
 
@@ -49,6 +52,8 @@ enum Route {
     Resources,
     #[at("/resources/qemu/:vmid")]
     Qemu { vmid: u64 },
+    #[at("/logs")]
+    Logs,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -77,6 +82,12 @@ fn switch(routes: Route) -> Html {
                 ],
             )
         }
+        Route::Logs => {
+            (
+                "logs",
+                vec![PageLogs::new().into()],
+            )
+        }
         Route::NotFound => {
             (
                 "",
@@ -101,9 +112,15 @@ fn switch(routes: Route) -> Html {
             }))
             .label("Resources"),
         NavigationBarItem::new()
-            .icon_class("fa fa-user-o")
-            .active_icon_class("fa fa-user")
-            .label("User"),
+            .key(Key::from("logs"))
+            .icon_class("fa fa-list")
+            .on_activate(Callback::from(|_| {
+                goto_location("/logs");
+            }))
+            .label("Logs"),
+        NavigationBarItem::new()
+            .icon_class("fa fa-cogs")
+            .label("Configuration"),
     ];
 
     let navigation = NavigationBar::new(items)
