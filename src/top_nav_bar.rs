@@ -102,7 +102,7 @@ impl Component for PmgTopNavBar {
 
         let back_or_logo = if let Some(back) = &props.back {
             let back = back.to_owned();
-            ActionIcon::new("fa fa-arrow-left")
+            ActionIcon::new("fa fa-angle-left")
                 .class("pwt-font-size-headline-small")
                 .class("pwt-color-primary")
                 .on_activate({
