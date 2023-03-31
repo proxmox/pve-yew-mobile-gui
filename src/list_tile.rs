@@ -59,14 +59,12 @@ impl Component for PwtListTile {
             .class("pwt-flex-fill")
             .with_child(text);
 
+        let interactive = true;
+
         let mut tile = Container::new()
             .with_std_props(&props.std_props)
-            .class("pwt-d-flex") // fixme: remove
-            .class("pwt-gap-2") // fixme: remove
-            .class("pwt-align-items-center") // fixme: remove
             .class("pwt-list-tile")
-            .padding_x(2)
-            .padding_y(1);
+            .class(interactive.then(|| "pwt-interactive"));
 
         if let Some(leading) = &props.leading {
             tile.add_child(
