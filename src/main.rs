@@ -25,10 +25,6 @@ pub use page_configuartion::PageConfiguration;
 mod page_not_found;
 pub use page_not_found::PageNotFound;
 
-use percent_encoding::percent_decode_str;
-
-use yew::html::IntoEventCallback;
-use yew_router::scope_ext::RouterScopeExt;
 use yew_router::{HashRouter, Routable, Switch};
 use yew::virtual_dom::Key;
 
@@ -159,7 +155,7 @@ impl Component for PveMobileApp {
     type Message = Msg;
     type Properties = ();
 
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         // set auth info from cookie
         let login_info = LoginInfo::from_cookie(ProxmoxProduct::PVE);
         if let Some(login_info) = &login_info {
@@ -171,7 +167,7 @@ impl Component for PveMobileApp {
     fn view(&self, ctx: &Context<Self>) -> Html {
 
         let content: Html = match &self.login_info {
-            Some(info) => {
+            Some(_info) => {
                 html! {
                     <HashRouter>
                         <Switch<Route> render={switch} />
@@ -186,7 +182,7 @@ impl Component for PveMobileApp {
         ThemeLoader::new(content).into()
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Login(info) => {
                 self.login_info = Some(info);

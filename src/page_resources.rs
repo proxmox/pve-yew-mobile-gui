@@ -8,10 +8,10 @@ use pwt::prelude::*;
 use pwt::touch::Fab;
 use pwt::widget::{Progress, Card, Column, Container, Row};
 
-use proxmox_client::api_types::{ClusterResourceKind, ClusterResources, ClusterResourcesType};
+use proxmox_client::api_types::{ClusterResources, ClusterResourcesType};
 use proxmox_yew_comp::http_get;
 
-use crate::{Route, TopNavBar};
+use crate::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageResources {}
@@ -76,7 +76,7 @@ impl PvePageResources {
             })
     }
 
-    fn create_qemu_list_item(&self, ctx: &Context<Self>, item: &ClusterResources) -> Html {
+    fn create_qemu_list_item(&self, _ctx: &Context<Self>, item: &ClusterResources) -> Html {
         let icon = "fa fa-fw fa-desktop";
         let vmid = item.vmid.unwrap();
         self.create_vm_list_item(icon, item)
@@ -86,12 +86,12 @@ impl PvePageResources {
             .into()
     }
 
-    fn create_lxc_list_item(&self, ctx: &Context<Self>, item: &ClusterResources) -> Html {
+    fn create_lxc_list_item(&self, _ctx: &Context<Self>, item: &ClusterResources) -> Html {
         let icon = "fa fa-fw fa-cube";
         self.create_vm_list_item(icon, item).into()
     }
 
-    fn create_storage_list_item(&self, ctx: &Context<Self>, item: &ClusterResources) -> Html {
+    fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResources) -> Html {
         let row1 = Row::new()
             .gap(2)
             .class("pwt-align-items-flex-end")
@@ -174,7 +174,7 @@ impl Component for PvePageResources {
         me
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::LoadResult(result) => {
                 self.data = result.map_err(|err| err.to_string());
@@ -184,8 +184,6 @@ impl Component for PvePageResources {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
         let content = match &self.data {
             Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
             Ok(data) => self.create_resource_list(ctx, &data),

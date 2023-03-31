@@ -3,8 +3,8 @@ use std::rc::Rc;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::form::{Checkbox, Field, Form, FormContext};
-use pwt::widget::{error_message, Column, Row};
+use pwt::widget::form::{Checkbox, Form, FormContext};
+use pwt::widget::Column;
 
 use crate::TopNavBar;
 
@@ -13,8 +13,7 @@ fn get_form_context() -> FormContext {
 
     unsafe {
         if FORM_CTX.is_none() {
-            let mut form_ctx = FormContext::new();
-            FORM_CTX = Some(form_ctx);
+            FORM_CTX = Some(FormContext::new());
         }
         FORM_CTX.as_ref().unwrap().clone()
     }
@@ -37,11 +36,11 @@ pub enum Msg {
 }
 
 impl PvePageLogs {
-    fn view_task_log(&self, ctx: &Context<Self>) -> Html {
+    fn view_task_log(&self, _ctx: &Context<Self>) -> Html {
         html!("TASK LOG")
     }
 
-    fn view_cluster_log(&self, ctx: &Context<Self>) -> Html {
+    fn view_cluster_log(&self, _ctx: &Context<Self>) -> Html {
         html!("Cluster LOG")
     }
 }
@@ -56,7 +55,7 @@ impl Component for PvePageLogs {
         Self { form_ctx }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Reload => true,
         }

@@ -1,19 +1,14 @@
 use std::rc::Rc;
 
-use js_sys::Date;
-use wasm_bindgen::JsValue;
-
 use yew::html::IntoEventCallback;
 use yew::prelude::*;
-use yew_router::scope_ext::RouterScopeExt;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::{Fab};
-use pwt::widget::{Button, Column, Container, Dialog, Mask, Row};
+use pwt::widget::{Column, Mask};
 use pwt::widget::form::{Field, Form, FormContext, SubmitButton};
 
-use crate::{Route, TopNavBar};
+use crate::TopNavBar;
 
 use proxmox_yew_comp::{RealmSelector, LoginInfo};
 
@@ -154,8 +149,6 @@ impl Component for PvePageLogin {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
         let content = Column::new()
             .class("pwt-fit")
             .class("pwt-align-items-center pwt-justify-content-center")

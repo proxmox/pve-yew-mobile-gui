@@ -1,10 +1,8 @@
-use std::rc::Rc;
-
-use yew::virtual_dom::{VComp, VList, VNode};
+use yew::virtual_dom::VList;
 use yew::html::IntoPropValue;
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Container, Row};
+use pwt::widget::{Column, Container};
 
 use pwt_macros::{widget, builder};
 
@@ -42,7 +40,7 @@ impl Component for PwtListTile {
     type Message = ();
     type Properties = ListTile;
 
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         Self {}
     }
 

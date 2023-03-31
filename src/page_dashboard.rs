@@ -2,24 +2,19 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Error;
-use js_sys::Date;
-use wasm_bindgen::JsValue;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::touch::Fab;
-use pwt::widget::form::{Field, Form, FormContext};
-use pwt::widget::{AlertDialog, Button, Card, Column, Container, MiniScroll, Panel, Progress, Row};
+use pwt::widget::{AlertDialog, Button, Card, Column, MiniScroll, Progress, Row};
 
 use proxmox_client::api_types::{ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus};
 use proxmox_client::api_types::{ClusterResources, ClusterResourcesType};
 
 use proxmox_yew_comp::http_get;
 
-use crate::{Route, TopNavBar};
+use crate::TopNavBar;
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
@@ -56,7 +51,7 @@ impl PvePageDashboard {
         });
     }
 
-    fn create_tab_bar(&self, ctx: &Context<Self>) -> Html {
+    fn create_tab_bar(&self, _ctx: &Context<Self>) -> Html {
         let content = Row::new()
             .padding_y(1)
             .gap(2)
@@ -67,7 +62,7 @@ impl PvePageDashboard {
         MiniScroll::new(content).into()
     }
 
-    fn create_analytics_card(&self, ctx: &Context<Self>) -> Html {
+    fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
         let content = match &self.nodes {
             Ok(list) => {
                 let mut cpu = 0.0;
@@ -185,7 +180,7 @@ impl PvePageDashboard {
             })
     }
 
-    fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
+    fn create_nodes_card(&self, _ctx: &Context<Self>) -> Html {
         let list = match &self.nodes {
             Ok(list) => list
                 .iter()
@@ -229,7 +224,7 @@ impl PvePageDashboard {
             })
     }
 
-    fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
+    fn create_guests_card(&self, _ctx: &Context<Self>) -> Html {
         let content = match &self.resources {
             Ok(list) => {
                 let mut vm_count = 0;
@@ -332,7 +327,7 @@ impl Component for PvePageDashboard {
         me
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ResourcesLoadResult(result) => {
                 self.resources = result.map_err(|err| err.to_string());
@@ -360,8 +355,6 @@ impl Component for PvePageDashboard {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
         let content = Column::new()
             .class("pwt-flex-fill")
             .padding(2)
