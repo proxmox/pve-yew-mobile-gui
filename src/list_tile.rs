@@ -1,5 +1,5 @@
 use yew::virtual_dom::VList;
-use yew::html::IntoPropValue;
+use yew::html::{IntoPropValue, IntoEventCallback};
 
 use pwt::prelude::*;
 use pwt::widget::{Column, Container};
@@ -24,6 +24,14 @@ pub struct ListTile {
     /// Trailing content
     #[builder(IntoPropValue, into_prop_value)]
     trailing: Option<Html>,
+
+     /// Disable flag
+    #[prop_or_default]
+    #[builder]
+    pub disabled: bool,
+
+    /// Activate callback (click, enter, space)
+    pub on_tab: Option<Callback<()>>,
 }
 
 impl ListTile {
@@ -31,6 +39,11 @@ impl ListTile {
         yew::props!(Self {})
     }
 
+    /// Builder style method to set the activate callback.
+    pub fn on_tab(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_tab = cb.into_event_callback();
+        self
+    }
 }
 
 #[doc(hidden)]
@@ -59,10 +72,11 @@ impl Component for PwtListTile {
             .class("pwt-flex-fill")
             .with_child(text);
 
-        let interactive = true;
+        let interactive = props.on_tab.is_some();
 
         let mut tile = Container::new()
             .with_std_props(&props.std_props)
+            .attribute("disabled", props.disabled.then(|| ""))
             .class("pwt-list-tile")
             .class(interactive.then(|| "pwt-interactive"));
 

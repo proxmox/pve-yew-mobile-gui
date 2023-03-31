@@ -89,6 +89,9 @@ impl PvePageConfiguration {
                             .class("pwt-border-bottom")
                             .leading(html!{<i class={classes!("pwt-font-size-title-large", item.0)}/>})
                             .title(item.1)
+                            .on_tab(|_| {
+                                // fixme:
+                            })
                             .into()
                     })
             )

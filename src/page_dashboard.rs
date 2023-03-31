@@ -14,7 +14,7 @@ use proxmox_client::api_types::{ClusterResources, ClusterResourcesType};
 
 use proxmox_yew_comp::http_get;
 
-use crate::TopNavBar;
+use crate::{ListTile, TopNavBar};
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
@@ -149,7 +149,7 @@ impl PvePageDashboard {
            .into()
     }
 
-    fn create_node_list_item(&self, item: &ClusterNodeIndexResponse) -> Row {
+    fn create_node_list_item(&self, item: &ClusterNodeIndexResponse) -> ListTile {
         let icon = html! {<i class={
             classes!(
                 "pwt-font-size-title-large",
@@ -159,25 +159,14 @@ impl PvePageDashboard {
             )
         }/>};
 
-        Row::new()
-            .gap(2)
-            .padding(2)
-            .border_top(true)
-            .class("pwt-align-items-center")
-            .with_child(icon)
-            .with_child(
-                Column::new()
-                    .class("pwt-flex-fill")
-                    .gap(1)
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-medium">{&item.node}</div>
-                    }), //.with_child(html! {
-                        //    <div class="pwt-font-size-title-small">{item.node.as_deref().unwrap()}</div>
-                        //}),
-            )
-            .with_child(html! {
+        ListTile::new()
+            .class("pwt-scheme-surface")
+            .leading(icon)
+            .title(item.node.clone())
+            .trailing(html! {
                 <div class="pwt-font-size-title-small">{item.status}</div>
             })
+            .on_tab(|_| { /* fixme */ })
     }
 
     fn create_nodes_card(&self, _ctx: &Context<Self>) -> Html {
@@ -190,13 +179,14 @@ impl PvePageDashboard {
         };
 
         Card::new()
+            .class("pwt-overflow-hidden")
             .padding(0)
             .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
             .with_child(list)
             .into()
     }
 
-    fn create_guest_info_row(icon_class: &str, text: &str, value: usize, large: bool) -> Row {
+    fn create_guest_info_row(icon_class: &str, text: &str, value: usize, large: bool) -> ListTile {
         let icon_size = if large {
             "pwt-font-size-title-large"
         } else {
@@ -208,20 +198,17 @@ impl PvePageDashboard {
             "pwt-font-size-title-small"
         };
 
-        Row::new()
-            .padding(2)
-            .gap(2)
+        ListTile::new()
+            .class("pwt-scheme-surface")
             .border_top(true)
-            .class("pwt-align-items-center")
-            .with_child(html! {
+            .leading(html! {
                 <i class={classes!(icon_size,  "fa-fw", icon_class.to_string())}/>
             })
-            .with_child(html! {
-                <div class={classes!("pwt-flex-fill", font_size)}>{text}</div>
-            })
-            .with_child(html! {
+            .title(text.to_string())
+            .trailing(html! {
                 <div class={font_size}>{value.to_string()}</div>
             })
+            .on_tab(|_| { /* fixme */ })
     }
 
     fn create_guests_card(&self, _ctx: &Context<Self>) -> Html {
@@ -291,6 +278,7 @@ impl PvePageDashboard {
         };
 
         Card::new()
+            .class("pwt-overflow-hidden")
             .padding(0)
             .with_child(html! {
                 <div class="pwt-p-2 pwt-font-size-title-large">{"Guests"}</div>
