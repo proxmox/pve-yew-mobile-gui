@@ -127,9 +127,9 @@ impl Component for PmgTopNavBar {
                 .into()
         } else {
             let src = if self.dark_mode {
-                "/proxmox_logo_icon_white.png"
-            } else {
                 "/proxmox_logo_icon_black.png"
+            } else {
+                "/proxmox_logo_icon_white.png"
             };
             html!{ <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> }
         };
@@ -161,6 +161,7 @@ impl Component for PmgTopNavBar {
             .attribute("role", "banner")
             .attribute("aria-label", "Proxmox VE")
             .class("pwt-navbar")
+            .class("pwt-bg-color-primary pwt-color-on-primary")
             .class("pwt-justify-content-space-between pwt-align-items-center")
             //.class("pwt-border-bottom")
             .padding(1)
