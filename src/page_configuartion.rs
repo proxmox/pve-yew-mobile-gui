@@ -18,15 +18,79 @@ impl PageConfiguration {
 pub struct PvePageConfiguration {
 }
 
+static CONFIGS: &[(&'static str, &'static str, fn() -> Html)] = &[
+    (
+        "fa fa-fw fa-server",
+        "Cluster",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-gear",
+        "Options",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-database",
+        "Storage",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-floppy-o",
+        "Backup",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-retweet",
+        "Replication",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-unlock",
+        "Permissions",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-heartbeat",
+        "High Availability",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-certificate",
+        "ACME",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-shield",
+        "Firewall",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-bar-chart",
+        "Metric Server",
+        || { html!{} },
+    ),
+    (
+        "fa fa-fw fa-comments-o",
+        "Support",
+        || { html!{} },
+    ),
+
+];
+
 impl PvePageConfiguration {
 
     fn create_menu(&self, _ctx: &Context<Self>) -> Html {
         Column::new()
-            .with_child(
-                ListTile::new()
-                    .leading(html!{<i class="fa fa-trash"/>})
-                    .title("TEST")
-                    .subtitle("This is a stupid test")
+            .children(
+                CONFIGS
+                    .iter()
+                    .map(|item| {
+                        ListTile::new()
+                            .class("pwt-border-bottom")
+                            .leading(html!{<i class={classes!("pwt-font-size-title-large", item.0)}/>})
+                            .title(item.1)
+                            .into()
+                    })
             )
             .into()
     }
