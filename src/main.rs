@@ -29,8 +29,8 @@ use yew_router::{HashRouter, Routable, Switch};
 use yew::virtual_dom::Key;
 
 use pwt::prelude::*;
-use pwt::touch::{NavigationBar, NavigationBarItem, PageStack};
-use pwt::widget::{Column, ThemeLoader};
+use pwt::touch::{NavigationBar, PageStack};
+use pwt::widget::{Column, TabBarItem, ThemeLoader};
 
 use proxmox_yew_comp::{http_login, http_set_auth};
 use proxmox_yew_comp::{LoginInfo, ProxmoxProduct};
@@ -107,29 +107,29 @@ fn switch(routes: Route) -> Html {
     };
 
     let items = vec![
-        NavigationBarItem::new()
-            .key(Key::from("dashboard"))
+        TabBarItem::new()
+            .key("dashboard")
             .icon_class("fa fa-tachometer")
             .on_activate(Callback::from(|_| {
                 goto_location("/");
             }))
             .label("Dashboard"),
-        NavigationBarItem::new()
-            .key(Key::from("resources"))
+        TabBarItem::new()
+            .key("resources")
             .icon_class("fa fa-book")
             .on_activate(Callback::from(|_| {
                 goto_location("/resources");
             }))
             .label("Resources"),
-        NavigationBarItem::new()
-            .key(Key::from("logs"))
+        TabBarItem::new()
+            .key("logs")
             .icon_class("fa fa-list")
             .on_activate(Callback::from(|_| {
                 goto_location("/logs");
             }))
             .label("Logs"),
-        NavigationBarItem::new()
-            .key(Key::from("configuration"))
+        TabBarItem::new()
+            .key("configuration")
             .icon_class("fa fa-cogs")
             .on_activate(Callback::from(|_| {
                 goto_location("/configuration");
