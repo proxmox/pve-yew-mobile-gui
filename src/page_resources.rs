@@ -137,7 +137,7 @@ impl PvePageResources {
             .value((item.disk.unwrap_or(0) as f32)/(item.maxdisk.unwrap_or(1) as f32));
 
         Card::new()
-            .class("pwt-d-flex pwt-flex-column pwt-gap-1")
+            .class("pwt-d-flex pwt-flex-direction-column pwt-gap-1")
             .class("pwt-shape-none pwt-card-flat pwt-interactive")
             .class("pwt-scheme-neutral")
             .padding_x(2)

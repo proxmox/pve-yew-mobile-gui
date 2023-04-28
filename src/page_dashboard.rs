@@ -179,7 +179,7 @@ impl PvePageDashboard {
         };
 
         Card::new()
-            .class("pwt-overflow-hidden")
+            .class("pwt-flex-none pwt-overflow-hidden")
             .padding(0)
             .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
             .with_child(list)
@@ -278,7 +278,7 @@ impl PvePageDashboard {
         };
 
         Card::new()
-            .class("pwt-overflow-hidden")
+            .class("pwt-flex-none pwt-overflow-hidden")
             .padding(0)
             .with_child(html! {
                 <div class="pwt-p-2 pwt-font-size-title-large">{"Guests"}</div>
@@ -345,6 +345,7 @@ impl Component for PvePageDashboard {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let content = Column::new()
             .class("pwt-flex-fill")
+            .class("pwt-overflow-auto")
             .padding(2)
             .gap(2)
             .with_child(self.create_tab_bar(ctx))

@@ -81,6 +81,7 @@ impl PvePageConfiguration {
 
     fn create_menu(&self, _ctx: &Context<Self>) -> Html {
         Column::new()
+            .class("pwt-flex-fill pwt-overflow-auto")
             .children(
                 CONFIGS
                     .iter()
