@@ -63,14 +63,14 @@ pub enum Msg {
     ThemeChanged((Theme, /* dark_mode */ bool)),
 }
 
-pub struct PmgTopNavBar {
+pub struct PveTopNavBar {
     _theme_observer: ThemeObserver,
     dark_mode: bool,
 }
 
 
 
-impl Component for PmgTopNavBar {
+impl Component for PveTopNavBar {
     type Message = Msg;
     type Properties = TopNavBar;
 
@@ -175,7 +175,7 @@ impl Component for PmgTopNavBar {
 
 impl Into<VNode> for TopNavBar {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PmgTopNavBar>(Rc::new(self), None);
+        let comp = VComp::new::<PveTopNavBar>(Rc::new(self), None);
         VNode::from(comp)
     }
 }
