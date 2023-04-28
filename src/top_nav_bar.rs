@@ -118,7 +118,7 @@ impl Component for PveTopNavBar {
             let back = back.to_owned();
             ActionIcon::new("fa fa-angle-left")
                 .class("pwt-font-size-headline-small")
-                .class("pwt-color-on-primary")
+                .class("pwt-scheme-neutral")
                 .on_activate({
                     move |_| {
                         crate::goto_location(&back);
