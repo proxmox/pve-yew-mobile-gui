@@ -118,7 +118,7 @@ impl Component for PmgTopNavBar {
             let back = back.to_owned();
             ActionIcon::new("fa fa-angle-left")
                 .class("pwt-font-size-headline-small")
-                .class("pwt-color-primary")
+                .class("pwt-color-on-primary")
                 .on_activate({
                     move |_| {
                         crate::goto_location(&back);
