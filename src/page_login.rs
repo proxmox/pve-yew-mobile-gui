@@ -47,8 +47,11 @@ impl PvePageLogin {
     fn login_form(&self, ctx: &Context<Self>) -> Html {
 
         let panel = Column::new()
+            .class("pwt-flex-fill")
             .attribute("style", "min-width:300px;")
             .gap(2)
+            .padding(2)
+            .with_flex_spacer()
             .with_child(
                 Field::new()
                     .name("username")
@@ -75,9 +78,11 @@ impl PvePageLogin {
                     .class("pwt-scheme-primary")
                     .text("Login")
                     .on_submit(ctx.link().callback(move |_| Msg::Submit))
-            );
+            )
+            .with_flex_spacer();
 
         Form::new()
+            .class("pwt-flex-fill test")
             .form_context(self.form_ctx.clone())
             .with_child(panel)
             .into()
@@ -154,15 +159,17 @@ impl Component for PvePageLogin {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let content = Column::new()
-            .class("pwt-fit")
+            .class("pwt-flex-fill")
             .class("pwt-align-items-center pwt-justify-content-center")
             .with_child(self.login_form(ctx));
 
         Column::new()
+            .class("pwt-flex-fill")
             .class("pwt-viewport")
             .with_child(TopNavBar::new())
             .with_child(
                 Mask::new(content)
+                    .class("pwt-flex-fill")
                     .visible(self.loading)
             )
             .into()
