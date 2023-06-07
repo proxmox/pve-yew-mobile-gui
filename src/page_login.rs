@@ -10,11 +10,12 @@ use pwt::widget::form::{Field, Form, FormContext, SubmitButton};
 
 use crate::TopNavBar;
 
-use proxmox_yew_comp::{RealmSelector, LoginInfo};
+use proxmox_yew_comp::RealmSelector;
+use proxmox_login::{Authentication, TicketResult};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageLogin {
-    pub on_login: Option<Callback<LoginInfo>>,
+    pub on_login: Option<Callback<Authentication>>,
 }
 
 impl PageLogin {
@@ -22,7 +23,7 @@ impl PageLogin {
         yew::props!(Self {})
     }
 
-    pub fn on_login(mut self, cb: impl IntoEventCallback<LoginInfo>) -> Self {
+    pub fn on_login(mut self, cb: impl IntoEventCallback<Authentication>) -> Self {
         self.on_login = cb.into_event_callback();
         self
     }
@@ -121,11 +122,14 @@ impl Component for PvePageLogin {
                 //log::info!("Submit {} {}", username, realm);
                 wasm_bindgen_futures::spawn_local(async move {
                     match crate::http_login(username, password, realm).await {
-                        Ok(info) => {
+                        Ok(TicketResult::Full(info)) => {
                             if let Some(on_login) = &props.on_login {
                                 on_login.emit(info);
                             }
                             link.send_message(Msg::Login);
+                        }
+                        Ok(TicketResult::TfaRequired(_challenge)) => {
+                            todo!();
                         }
                         Err(err) => {
                             log::error!("ERROR: {:?}", err);
@@ -158,9 +162,8 @@ impl Component for PvePageLogin {
             .class("pwt-viewport")
             .with_child(TopNavBar::new())
             .with_child(
-                Mask::new()
+                Mask::new(content)
                     .visible(self.loading)
-                    .with_child(content)
             )
             .into()
     }

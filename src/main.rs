@@ -33,7 +33,9 @@ use pwt::touch::{NavigationBar, PageStack};
 use pwt::widget::{Column, TabBarItem, ThemeLoader};
 
 use proxmox_yew_comp::{http_login, http_set_auth};
-use proxmox_yew_comp::{LoginInfo, ProxmoxProduct};
+use proxmox_yew_comp::ProxmoxProduct;
+use proxmox_yew_comp::authentication_from_cookie;
+use proxmox_login::Authentication;
 
 pub fn goto_location(path: &str) {
     let document = web_sys::window().unwrap().document().unwrap();
@@ -42,7 +44,7 @@ pub fn goto_location(path: &str) {
 }
 
 pub enum Msg {
-    Login(LoginInfo),
+    Login(Authentication),
     //Logout,
 }
 
@@ -138,7 +140,7 @@ fn switch(routes: Route) -> Html {
     ];
 
     let navigation = NavigationBar::new(items)
-        .active_item(Key::from(active_nav));
+        .default_active(Key::from(active_nav));
 
     Column::new()
         .class("pwt-viewport")
@@ -148,7 +150,7 @@ fn switch(routes: Route) -> Html {
 }
 
 struct PveMobileApp {
-    login_info: Option<LoginInfo>,
+    login_info: Option<Authentication>,
 }
 
 impl Component for PveMobileApp {
@@ -157,7 +159,7 @@ impl Component for PveMobileApp {
 
     fn create(_ctx: &Context<Self>) -> Self {
         // set auth info from cookie
-        let login_info = LoginInfo::from_cookie(ProxmoxProduct::PVE);
+        let login_info = authentication_from_cookie(ProxmoxProduct::PVE);
         if let Some(login_info) = &login_info {
             http_set_auth(login_info.clone());
         }
