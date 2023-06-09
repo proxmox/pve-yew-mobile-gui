@@ -32,7 +32,7 @@ use pwt::prelude::*;
 use pwt::touch::{NavigationBar, PageStack};
 use pwt::widget::{Column, TabBarItem, ThemeLoader};
 
-use proxmox_yew_comp::{http_login, http_set_auth};
+use proxmox_yew_comp::http_set_auth;
 use proxmox_yew_comp::ProxmoxProduct;
 use proxmox_yew_comp::authentication_from_cookie;
 use proxmox_login::Authentication;

@@ -33,3 +33,5 @@ proxmox-client = "0.1"
 
 [patch.crates-io]
 proxmox-client = { path = "../pve-client/proxmox-client" }
+#proxmox-yew-comp = { path = "../proxmox-yew-comp" }
+#pwt = { path = "../proxmox-yew-widget-toolkit" }
