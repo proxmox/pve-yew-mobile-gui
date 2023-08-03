@@ -8,7 +8,7 @@ use pwt::prelude::*;
 use pwt::touch::Fab;
 use pwt::widget::{Progress, Card, Column, Container, Row};
 
-use proxmox_client::api_types::{ClusterResources, ClusterResourcesType};
+use pve_api_types::{ClusterResource, ClusterResourceType};
 use proxmox_yew_comp::http_get;
 
 use crate::TopNavBar;
@@ -23,11 +23,11 @@ impl PageResources {
 }
 
 pub struct PvePageResources {
-    data: Result<Vec<ClusterResources>, String>,
+    data: Result<Vec<ClusterResource>, String>,
 }
 
 pub enum Msg {
-    LoadResult(Result<Vec<ClusterResources>, Error>),
+    LoadResult(Result<Vec<ClusterResource>, Error>),
 }
 
 impl PvePageResources {
@@ -39,7 +39,7 @@ impl PvePageResources {
         });
     }
 
-    fn create_vm_list_item(&self, icon: &str, item: &ClusterResources) -> Card {
+    fn create_vm_list_item(&self, icon: &str, item: &ClusterResource) -> Card {
         let icon = html! {<i class={
             classes!(
                 "pwt-font-size-title-large",
@@ -76,7 +76,7 @@ impl PvePageResources {
             })
     }
 
-    fn create_qemu_list_item(&self, _ctx: &Context<Self>, item: &ClusterResources) -> Html {
+    fn create_qemu_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
         let icon = "fa fa-fw fa-desktop";
         let vmid = item.vmid.unwrap();
         self.create_vm_list_item(icon, item)
@@ -86,12 +86,12 @@ impl PvePageResources {
             .into()
     }
 
-    fn create_lxc_list_item(&self, _ctx: &Context<Self>, item: &ClusterResources) -> Html {
+    fn create_lxc_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
         let icon = "fa fa-fw fa-cube";
         self.create_vm_list_item(icon, item).into()
     }
 
-    fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResources) -> Html {
+    fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
         let row1 = Row::new()
             .gap(2)
             .class("pwt-align-items-flex-end")
@@ -149,11 +149,11 @@ impl PvePageResources {
             .into()
     }
 
-    fn create_resource_list(&self, ctx: &Context<Self>, data: &[ClusterResources]) -> Html {
+    fn create_resource_list(&self, ctx: &Context<Self>, data: &[ClusterResource]) -> Html {
         let children = data.iter().filter_map(|item| match item.ty {
-            ClusterResourcesType::Qemu => Some(self.create_qemu_list_item(ctx, item)),
-            ClusterResourcesType::Lxc => Some(self.create_lxc_list_item(ctx, item)),
-            ClusterResourcesType::Storage => Some(self.create_storage_list_item(ctx, item)),
+            ClusterResourceType::Qemu => Some(self.create_qemu_list_item(ctx, item)),
+            ClusterResourceType::Lxc => Some(self.create_lxc_list_item(ctx, item)),
+            ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
             _ => None,
         });
         Column::new()

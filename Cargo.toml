@@ -31,6 +31,8 @@ proxmox-yew-comp = "0.1"
 proxmox-login = "0.1"
 proxmox-client = "0.1"
 
+pve-api-types = { path = "proxmox-api-types/pve-api-types"  }
+
 [patch.crates-io]
 #proxmox-client = { path = "../proxmox/proxmox-client" }
 #proxmox-yew-comp = { path = "../proxmox-yew-comp" }

@@ -9,8 +9,10 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::widget::{AlertDialog, Button, Card, Column, MiniScroll, Progress, Row};
 
-use proxmox_client::api_types::{ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus};
-use proxmox_client::api_types::{ClusterResources, ClusterResourcesType};
+use pve_api_types::{
+    ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource,
+    ClusterResourceType,
+};
 
 use proxmox_yew_comp::http_get;
 
@@ -29,11 +31,11 @@ impl PageDashboard {
 
 pub struct PvePageDashboard {
     nodes: Result<Vec<ClusterNodeIndexResponse>, String>,
-    resources: Result<Vec<ClusterResources>, String>,
+    resources: Result<Vec<ClusterResource>, String>,
 }
 pub enum Msg {
     NodeLoadResult(Result<Vec<ClusterNodeIndexResponse>, Error>),
-    ResourcesLoadResult(Result<Vec<ClusterResources>, Error>),
+    ResourcesLoadResult(Result<Vec<ClusterResource>, Error>),
     ConfirmSubscription,
 }
 
@@ -220,14 +222,13 @@ impl PvePageDashboard {
                 let mut ct_online_count = 0;
 
                 for item in list {
-
-                    if item.ty == ClusterResourcesType::Qemu {
+                    if item.ty == ClusterResourceType::Qemu {
                         vm_count += 1;
                         if item.status.as_deref() == Some("running") {
                             vm_online_count += 1;
                         }
                     }
-                    if item.ty == ClusterResourcesType::Lxc {
+                    if item.ty == ClusterResourceType::Lxc {
                         ct_count += 1;
                         if item.status.as_deref() == Some("running") {
                             ct_online_count += 1;
