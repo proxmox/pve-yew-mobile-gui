@@ -6,10 +6,10 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::Fab;
-use pwt::widget::{Progress, Card, Column, Container, Row};
+use pwt::widget::{Card, Column, Container, Progress, Row};
 
-use pve_api_types::{ClusterResource, ClusterResourceType};
 use proxmox_yew_comp::http_get;
+use pve_api_types::{ClusterResource, ClusterResourceType};
 
 use crate::TopNavBar;
 
@@ -119,22 +119,28 @@ impl PvePageResources {
             )
         }/>};
 
-        let used = format!("{:.2} Gib", (item.disk.unwrap_or(0) as f64) / (1024.0 * 1024.0 *1024.0));
-        let total = format!("{:.2} Gib", (item.maxdisk.unwrap_or(0) as f64) / (1024.0 * 1024.0 *1024.0));
+        let used = format!(
+            "{:.2} Gib",
+            (item.disk.unwrap_or(0) as f64) / (1024.0 * 1024.0 * 1024.0)
+        );
+        let total = format!(
+            "{:.2} Gib",
+            (item.maxdisk.unwrap_or(0) as f64) / (1024.0 * 1024.0 * 1024.0)
+        );
 
         let row2 = Row::new()
             .gap(2)
             .class("pwt-align-items-flex-end")
             .with_child(icon)
-            .with_child(html!{
+            .with_child(html! {
                 <div class="pwt-font-size-title-medium pwt-flex-fill">{used}</div>
             })
-            .with_child(html!{
+            .with_child(html! {
                 <div class="pwt-font-size-title-medium">{format!("Total: {}", total)}</div>
             });
 
         let progress = Progress::new()
-            .value((item.disk.unwrap_or(0) as f32)/(item.maxdisk.unwrap_or(1) as f32));
+            .value((item.disk.unwrap_or(0) as f32) / (item.maxdisk.unwrap_or(1) as f32));
 
         Card::new()
             .class("pwt-d-flex pwt-flex-direction-column pwt-gap-1")
@@ -156,9 +162,7 @@ impl PvePageResources {
             ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
             _ => None,
         });
-        Column::new()
-            .class("pwt-fit")
-            .children(children).into()
+        Column::new().class("pwt-fit").children(children).into()
     }
 }
 
@@ -185,7 +189,7 @@ impl Component for PvePageResources {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let content = match &self.data {
-            Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
+            Err(err) => pwt::widget::error_message(err).padding(2).into(),
             Ok(data) => self.create_resource_list(ctx, &data),
         };
 
@@ -193,9 +197,7 @@ impl Component for PvePageResources {
             .class("pwt-position-absolute")
             .class("pwt-right-2 pwt-bottom-2")
             .with_child(
-                Fab::new("fa fa-calendar")
-                    .class("pwt-scheme-primary")
-                    //.on_click(ctx.link().callback(|_| Msg::ShowDialog))
+                Fab::new("fa fa-calendar").class("pwt-scheme-primary"), //.on_click(ctx.link().callback(|_| Msg::ShowDialog))
             );
 
         Column::new()

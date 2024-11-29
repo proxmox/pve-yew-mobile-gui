@@ -25,17 +25,16 @@ pub use page_configuartion::PageConfiguration;
 mod page_not_found;
 pub use page_not_found::PageNotFound;
 
-use yew_router::{HashRouter, Routable, Switch};
 use yew::virtual_dom::Key;
+use yew_router::{HashRouter, Routable, Switch};
 
 use pwt::prelude::*;
 use pwt::touch::{NavigationBar, PageStack};
 use pwt::widget::{Column, TabBarItem, ThemeLoader};
 
-use proxmox_yew_comp::http_set_auth;
-use proxmox_yew_comp::ProxmoxProduct;
-use proxmox_yew_comp::authentication_from_cookie;
 use proxmox_login::Authentication;
+use proxmox_yew_comp::authentication_from_cookie;
+use proxmox_yew_comp::http_set_auth;
 
 pub fn goto_location(path: &str) {
     let document = web_sys::window().unwrap().document().unwrap();
@@ -67,45 +66,15 @@ enum Route {
 
 fn switch(routes: Route) -> Html {
     let (active_nav, stack) = match routes {
-        Route::Dashboard => {
-            (
-                "dashboard",
-                vec![PageDashboard::new().into()],
-            )
-        }
-        Route::Resources => {
-            (
-                "resources",
-                vec![PageResources::new().into()],
-            )
-        }
-        Route::Qemu { vmid } => {
-            (
-                "resources",
-                vec![
-                    PageResources::new().into(),
-                    PageVmStatus::new(vmid).into(),
-                ],
-            )
-        }
-        Route::Logs => {
-            (
-                "logs",
-                vec![PageLogs::new().into()],
-            )
-        }
-        Route::Configuration => {
-            (
-                "configuration",
-                vec![PageConfiguration::new().into()],
-            )
-        }
-        Route::NotFound => {
-            (
-                "",
-                vec![html! { <PageNotFound/> }],
-            )
-        }
+        Route::Dashboard => ("dashboard", vec![PageDashboard::new().into()]),
+        Route::Resources => ("resources", vec![PageResources::new().into()]),
+        Route::Qemu { vmid } => (
+            "resources",
+            vec![PageResources::new().into(), PageVmStatus::new(vmid).into()],
+        ),
+        Route::Logs => ("logs", vec![PageLogs::new().into()]),
+        Route::Configuration => ("configuration", vec![PageConfiguration::new().into()]),
+        Route::NotFound => ("", vec![html! { <PageNotFound/> }]),
     };
 
     let items = vec![
@@ -136,11 +105,10 @@ fn switch(routes: Route) -> Html {
             .on_activate(Callback::from(|_| {
                 goto_location("/configuration");
             }))
-           .label("Configuration"),
+            .label("Configuration"),
     ];
 
-    let navigation = NavigationBar::new(items)
-        .default_active(Key::from(active_nav));
+    let navigation = NavigationBar::new(items).default_active(Key::from(active_nav));
 
     Column::new()
         .class("pwt-viewport")
@@ -159,7 +127,7 @@ impl Component for PveMobileApp {
 
     fn create(_ctx: &Context<Self>) -> Self {
         // set auth info from cookie
-        let login_info = authentication_from_cookie(ProxmoxProduct::PVE);
+        let login_info = authentication_from_cookie(&proxmox_yew_comp::ExistingProduct::PVE);
         if let Some(login_info) = &login_info {
             http_set_auth(login_info.clone());
         }
@@ -167,7 +135,6 @@ impl Component for PveMobileApp {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-
         let content: Html = match &self.login_info {
             Some(_info) => {
                 html! {
@@ -196,7 +163,7 @@ impl Component for PveMobileApp {
 }
 
 fn main() {
-    proxmox_yew_comp::http_setup(proxmox_yew_comp::ProxmoxProduct::PVE);
+    proxmox_yew_comp::http_setup(&proxmox_yew_comp::ExistingProduct::PBS);
 
     pwt::props::set_http_get_method(
         |url| async move { proxmox_yew_comp::http_get(&url, None).await },

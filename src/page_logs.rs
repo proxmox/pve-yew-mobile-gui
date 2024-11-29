@@ -3,7 +3,7 @@ use std::rc::Rc;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::form::{Checkbox, Form, FormContext};
+use pwt::widget::form::{Form, FormContext, RadioButton};
 use pwt::widget::Column;
 
 use crate::TopNavBar;
@@ -76,13 +76,13 @@ impl Component for PvePageLogs {
                 Column::new()
                     .class("pwt-align-items-center")
                     .with_child("Task Log")
-                    .with_child(Checkbox::radio().default(true).name("what").value("task")),
+                    .with_child(RadioButton::new("task").default(true).name("what")),
             )
             .with_child(
                 Column::new()
                     .class("pwt-align-items-center")
                     .with_child("Cluster Log")
-                    .with_child(Checkbox::radio().name("what").value("cluster")),
+                    .with_child(RadioButton::new("cluster").name("what")),
             );
 
         Column::new()

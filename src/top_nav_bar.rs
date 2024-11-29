@@ -1,24 +1,28 @@
-use std::rc::Rc;
 use std::ops::Deref;
+use std::rc::Rc;
 
 use pwt::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::virtual_dom::{VComp, VNode};
 
 use pwt::state::{Theme, ThemeObserver};
-use pwt::widget::{ActionIcon, Column, ThemeModeSelector, Row};
-use pwt::widget::menu::{Menu, MenuItem, MenuButton};
+use pwt::widget::menu::{Menu, MenuButton, MenuItem};
+use pwt::widget::{ActionIcon, Column, Row, ThemeModeSelector};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct TopNavBar {
+    #[prop_or_default]
     pub title: Option<AttrValue>,
+    #[prop_or_default]
     pub subtitle: Option<AttrValue>,
 
+    #[prop_or_default]
     pub back: Option<AttrValue>,
 
     #[prop_or_default]
     pub class: Classes,
 
+    #[prop_or_default]
     pub on_logout: Option<Callback<MouseEvent>>,
 }
 
@@ -68,8 +72,6 @@ pub struct PveTopNavBar {
     dark_mode: bool,
 }
 
-
-
 impl Component for PveTopNavBar {
     type Message = Msg;
     type Properties = TopNavBar;
@@ -79,7 +81,7 @@ impl Component for PveTopNavBar {
         let dark_mode = _theme_observer.dark_mode();
         Self {
             _theme_observer,
-            dark_mode ,
+            dark_mode,
         }
     }
 
@@ -131,7 +133,7 @@ impl Component for PveTopNavBar {
             } else {
                 "/proxmox_logo_icon_white.png"
             };
-            html!{ <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> }
+            html! { <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> }
         };
 
         let title = match &props.title {
@@ -139,10 +141,9 @@ impl Component for PveTopNavBar {
             None => "Proxmox",
         };
 
-        let mut text_block = Column::new()
-            .with_child(html!{
-                <span class="pwt-font-title-large">{title}</span>
-            });
+        let mut text_block = Column::new().with_child(html! {
+            <span class="pwt-font-title-large">{title}</span>
+        });
 
         let subtitle = if props.title.is_none() {
             Some("Virtual Environment")
@@ -151,7 +152,7 @@ impl Component for PveTopNavBar {
         };
 
         if let Some(subtitle) = subtitle {
-            text_block.add_child(html!{
+            text_block.add_child(html! {
                 <span class="pwt-font-title-small">{subtitle}</span>
             });
         }

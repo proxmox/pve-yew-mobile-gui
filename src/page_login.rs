@@ -15,6 +15,7 @@ use proxmox_login::Authentication;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageLogin {
+    #[prop_or_default]
     pub on_login: Option<Callback<Authentication>>,
 }
 
@@ -32,16 +33,14 @@ impl PageLogin {
 pub struct PvePageLogin {}
 
 impl PvePageLogin {
-
     fn login_dialog(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
         Dialog::new("Login")
-            .style("min-width:300px;")
+            .style("min-width", "300px")
             .with_child(LoginPanel::new().on_login(props.on_login.clone()))
             .into()
     }
-
 }
 
 impl Component for PvePageLogin {

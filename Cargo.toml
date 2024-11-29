@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 lazy_static = "1.4"
-yew = { version = "0.20",  features = ["csr"] }
-yew-router = { version = "0.17" }
+yew = { version = "0.21",  features = ["csr"] }
+yew-router = { version = "0.18" }
 web-sys = { version = "0.3", features = [ "DomRect", "Element", "UrlSearchParams"] }
 wasm-bindgen = { version = "0.2" }
 js-sys = "0.3"
@@ -19,21 +19,21 @@ wasm-bindgen-futures = "0.4"
 url = "2.1"
 percent-encoding = "2.1"
 
-proxmox-schema = "2"
-proxmox-time = "1"
+proxmox-schema = "3"
+proxmox-time = "2"
 proxmox-uuid = "1"
 
-pwt = "0.2"
+pwt = "0.3"
 pwt-macros = "0.1"
 
-proxmox-yew-comp = "0.1"
+proxmox-yew-comp = "0.2"
 
 proxmox-login = "0.1"
-proxmox-client = "0.2"
+proxmox-client = "0.5"
 
 pve-api-types = { path = "proxmox-api-types/pve-api-types"  }
 
 [patch.crates-io]
 #proxmox-client = { path = "../proxmox/proxmox-client" }
 proxmox-yew-comp = { path = "../proxmox-yew-comp" }
-#pwt = { path = "../proxmox-yew-widget-toolkit" }
+pwt = { path = "../proxmox-yew-widget-toolkit" }

@@ -1,9 +1,5 @@
+# Run with proxy to real server
 
+Note: you need an TLS key (api.key) and certificate (api.pem).
 
-Setup proxy to real server
-==========================
-
- > socat TCP-LISTEN:8000,fork,reuseaddr,bind=localhost OPENSSL:elsa:8006,verify=0
-
-
- trunk serve --proxy-backend=http://localhost:8000/api2/
+trunk serve --proxy-backend=https://${SERVER}:8006/api2/ --proxy-insecure --tls-key-path api.key --tls-cert-path api.pem

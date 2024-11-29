@@ -1,35 +1,40 @@
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::VList;
-use yew::html::{IntoPropValue, IntoEventCallback};
 
 use pwt::prelude::*;
 use pwt::widget::{Column, Container};
 
-use pwt_macros::{widget, builder};
+use pwt_macros::{builder, widget};
 
 #[widget(comp=PwtListTile, @element)]
 #[builder]
 #[derive(Clone, PartialEq, Properties)]
 pub struct ListTile {
     /// The primary content of the list tile.
+    #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     title: Option<AttrValue>,
     /// Additional content diplayed below the tile.
+    #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     subtitle: Option<AttrValue>,
 
     /// Leading content
+    #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     leading: Option<Html>,
 
     /// Trailing content
+    #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     trailing: Option<Html>,
 
-     /// Disable flag
+    /// Disable flag
     #[prop_or_default]
     #[builder]
     pub disabled: bool,
 
+    #[prop_or_default]
     /// Activate callback (click, enter, space)
     pub on_tab: Option<Callback<()>>,
 }
@@ -62,15 +67,13 @@ impl Component for PwtListTile {
 
         let mut text = VList::new();
         if let Some(title) = &props.title {
-            text.push(html!{ <p class="pwt-font-body-large">{title}</p>});
+            text.push(html! { <p class="pwt-font-body-large">{title}</p>});
         }
         if let Some(subtitle) = &props.subtitle {
-            text.push(html!{ <p class="pwt-font-body-medium">{subtitle}</p>});
+            text.push(html! { <p class="pwt-font-body-medium">{subtitle}</p>});
         }
 
-        let middle = Column::new()
-            .class("pwt-flex-fill")
-            .with_child(text);
+        let middle = Column::new().class("pwt-flex-fill").with_child(text);
 
         let interactive = props.on_tab.is_some();
 
@@ -84,7 +87,7 @@ impl Component for PwtListTile {
             tile.add_child(
                 Container::new()
                     .class("pwt-list-tile-leading")
-                    .with_child(leading.clone())
+                    .with_child(leading.clone()),
             );
         }
 
@@ -94,7 +97,7 @@ impl Component for PwtListTile {
             tile.add_child(
                 Container::new()
                     .class("pwt-list-tile-trailing")
-                    .with_child(trailing.clone())
+                    .with_child(trailing.clone()),
             );
         }
 

@@ -10,8 +10,7 @@ use pwt::prelude::*;
 use pwt::widget::{AlertDialog, Button, Card, Column, MiniScroll, Progress, Row};
 
 use pve_api_types::{
-    ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource,
-    ClusterResourceType,
+    ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
 };
 
 use proxmox_yew_comp::http_get;
@@ -65,7 +64,7 @@ impl PvePageDashboard {
     }
 
     fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
-        let content = match &self.nodes {
+        let content: Html = match &self.nodes {
             Ok(list) => {
                 let mut cpu = 0.0;
                 let mut maxcpu = 0;
@@ -131,7 +130,7 @@ impl PvePageDashboard {
                     )
                     .into()
             }
-            Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
+            Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
         Card::new()
             .padding(0)
@@ -166,18 +165,18 @@ impl PvePageDashboard {
             .leading(icon)
             .title(item.node.clone())
             .trailing(html! {
-                <div class="pwt-font-size-title-small">{item.status}</div>
+                <div class="pwt-font-size-title-small">{item.status.to_string()}</div>
             })
             .on_tab(|_| { /* fixme */ })
     }
 
     fn create_nodes_card(&self, _ctx: &Context<Self>) -> Html {
-        let list = match &self.nodes {
+        let list: Html = match &self.nodes {
             Ok(list) => list
                 .iter()
                 .map(|item| self.create_node_list_item(item))
                 .collect(),
-            Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
+            Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
 
         Card::new()
@@ -214,7 +213,7 @@ impl PvePageDashboard {
     }
 
     fn create_guests_card(&self, _ctx: &Context<Self>) -> Html {
-        let content = match &self.resources {
+        let content: Html = match &self.resources {
             Ok(list) => {
                 let mut vm_count = 0;
                 let mut vm_online_count = 0;
@@ -275,7 +274,7 @@ impl PvePageDashboard {
                     ))
                     .into()
             }
-            Err(err) => pwt::widget::error_message(err, "pwt-p-2"),
+            Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
 
         Card::new()
