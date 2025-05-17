@@ -101,6 +101,8 @@ impl PvePageDashboard {
                 Column::new()
                     .with_child(
                         Row::new()
+                            .class("pwt-list-tile")
+                            .class("pwt-scheme-surface")
                             .padding(2)
                             .border_bottom(true)
                             .with_child(
@@ -116,17 +118,19 @@ impl PvePageDashboard {
                     )
                     .with_child(
                         Row::new()
-                        .padding(2)
-                        .with_child(
-                            Column::new()
-                                .class("pwt-flex-fill")
-                                .gap(1)
-                                .with_child(html!{<div class="pwt-font-size-title-medium">{"Memory"}</div>})
-                                .with_child(html!{<div class="pwt-font-size-title-small">{format!("{:.2} Gib of {:.2} Gib", mem, maxmem)}</div>})
-                        )
-                        .with_child(
-                            Progress::new().attribute("style", "width: 100px;").value(mem_percentage)
-                        )
+                            .class("pwt-list-tile")
+                            .class("pwt-scheme-surface")
+                            .padding(2)
+                            .with_child(
+                                Column::new()
+                                    .class("pwt-flex-fill")
+                                    .gap(1)
+                                    .with_child(html!{<div class="pwt-font-size-title-medium">{"Memory"}</div>})
+                                    .with_child(html!{<div class="pwt-font-size-title-small">{format!("{:.2} Gib of {:.2} Gib", mem, maxmem)}</div>})
+                            )
+                            .with_child(
+                                Progress::new().attribute("style", "width: 100px;").value(mem_percentage)
+                            )
                     )
                     .into()
             }
@@ -134,6 +138,7 @@ impl PvePageDashboard {
         };
         Card::new()
             .padding(0)
+            .class("pwt-flex-none pwt-overflow-hidden")
             .with_child(
                 Column::new()
                     .padding(2)
