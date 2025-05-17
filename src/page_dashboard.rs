@@ -361,7 +361,8 @@ impl Component for PvePageDashboard {
         /*
         let fab = Container::new()
             .class("pwt-position-absolute")
-            .class("pwt-right-2 pwt-bottom-2")
+            .style("right", "var(--pwt-spacer-2)")
+            .style("bottom", "var(--pwt-spacer-2)")
             .with_child(
                 Fab::new("fa fa-calendar")
                     .class("pwt-scheme-primary")

@@ -4,7 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::{Fab};
+use pwt::touch::Fab;
 use pwt::widget::{Column, Container};
 
 use crate::TopNavBar;
@@ -16,27 +16,21 @@ pub struct PageVmStatus {
 
 impl PageVmStatus {
     pub fn new(vmid: u64) -> Self {
-        Self {
-            vmid,
-        }
+        Self { vmid }
     }
 }
 
-pub struct PvePageVmStatus {
-}
+pub struct PvePageVmStatus {}
 
-pub enum Msg {
-}
+pub enum Msg {}
 
 impl Component for PvePageVmStatus {
     type Message = Msg;
     type Properties = PageVmStatus;
 
     fn create(_ctx: &Context<Self>) -> Self {
-
         Self {}
     }
-
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
@@ -47,11 +41,10 @@ impl Component for PvePageVmStatus {
 
         let fab = Container::new()
             .class("pwt-position-absolute")
-            .class("pwt-right-2 pwt-bottom-2")
+            .style("right", "var(--pwt-spacer-2)")
+            .style("bottom", "var(--pwt-spacer-2)")
             .with_child(
-                Fab::new("fa fa-calendar")
-                    .class("pwt-scheme-primary")
-                    //.on_click(ctx.link().callback(|_| Msg::ShowDialog))
+                Fab::new("fa fa-calendar").class("pwt-scheme-primary"), //.on_click(ctx.link().callback(|_| Msg::ShowDialog))
             );
 
         Column::new()
@@ -59,7 +52,7 @@ impl Component for PvePageVmStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("VM {}", props.vmid))
-                    .back("/resources")
+                    .back("/resources"),
             )
             .with_child(content)
             .with_child(fab)
