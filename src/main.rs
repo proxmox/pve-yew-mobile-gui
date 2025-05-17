@@ -29,6 +29,7 @@ use yew::virtual_dom::Key;
 use yew_router::{HashRouter, Routable, Switch};
 
 use pwt::prelude::*;
+use pwt::state::LanguageInfo;
 use pwt::touch::{NavigationBar, PageStack};
 use pwt::widget::{Column, TabBarItem, ThemeLoader};
 
@@ -163,13 +164,18 @@ impl Component for PveMobileApp {
 }
 
 fn main() {
+    wasm_logger::init(wasm_logger::Config::default());
+
     proxmox_yew_comp::http_setup(&proxmox_yew_comp::ExistingProduct::PBS);
 
     pwt::props::set_http_get_method(
         |url| async move { proxmox_yew_comp::http_get(&url, None).await },
     );
 
-    wasm_logger::init(wasm_logger::Config::default());
-
+    pwt::state::set_available_languages(vec![LanguageInfo::new(
+        "en",
+        "English",
+        gettext_noop("English"),
+    )]);
     yew::Renderer::<PveMobileApp>::new().render();
 }

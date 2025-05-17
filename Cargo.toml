@@ -19,16 +19,16 @@ wasm-bindgen-futures = "0.4"
 url = "2.1"
 percent-encoding = "2.1"
 
-proxmox-schema = "3"
+proxmox-schema = "4"
 proxmox-time = "2"
 proxmox-uuid = "1"
 
-pwt = "0.3"
-pwt-macros = "0.1"
+pwt = "0.5"
+pwt-macros = "0.3"
 
-proxmox-yew-comp = "0.2"
+proxmox-yew-comp = "0.4"
 
-proxmox-login = "0.1"
+proxmox-login = "0.2"
 proxmox-client = "0.5"
 
 pve-api-types = { path = "proxmox-api-types/pve-api-types"  }
