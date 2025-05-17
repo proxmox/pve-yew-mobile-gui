@@ -1,0 +1,59 @@
+Source: pve-yew-mobile-gui
+Section: admin
+Priority: optional
+Build-Depends: cargo:native,
+               debhelper-compat (= 13),
+               dh-cargo (>= 25),
+               esbuild,
+               fonts-font-awesome,
+               librust-anyhow-1+default-dev,
+               librust-futures-0.3+default-dev,
+               librust-gloo-net-0.4+default-dev,
+               librust-gloo-timers-0.3+default-dev,
+               librust-gloo-utils-0.2+default-dev,
+               librust-http-0.2+default-dev (>= 0.2.9-~~),
+               librust-js-sys-0.3+default-dev (>= 0.3.69-~~),
+               librust-log-0.4+default-dev (>= 0.4.6-~~),
+               librust-pbs-api-types-0.2+default-dev,
+               librust-percent-encoding-2+default-dev (>= 2.1-~~),
+               librust-proxmox-client-0.5+default-dev,
+               librust-proxmox-human-byte-0.1+default-dev (>= 0.1.3-~~),
+               librust-proxmox-login-0.2+default-dev,
+               librust-proxmox-rrd-api-types-1+default-dev,
+               librust-proxmox-schema-4+default-dev,
+               librust-proxmox-yew-comp-0.4+apt-dev (>= 0.4.5-~~),
+               librust-proxmox-yew-comp-0.4+default-dev (>= 0.4.5-~~),
+               librust-proxmox-yew-comp-0.4+dns-dev (>= 0.4.5-~~),
+               librust-proxmox-yew-comp-0.4+network-dev (>= 0.4.5-~~),
+               librust-proxmox-yew-comp-0.4+rrd-dev (>= 0.4.5-~~),
+               librust-pwt-0.5+default-dev (>= 0.5.0-~~),
+               librust-pwt-macros-0.3+default-dev,
+               librust-serde-1+default-dev,
+               librust-serde-1+derive-dev,
+               librust-serde-json-1+default-dev,
+               librust-wasm-bindgen-0.2+default-dev (>= 0.2.92-~~),
+               librust-wasm-bindgen-futures-0.4+default-dev,
+               librust-wasm-logger-0.2+default-dev,
+               librust-web-sys-0.3+default-dev,
+               librust-web-sys-0.3+location-dev,
+               librust-yew-0.21+csr-dev,
+               librust-yew-0.21+default-dev,
+               librust-yew-router-0.18+default-dev,
+               proxmox-wasm-builder,
+               rust-grass,
+               rust-llvm,
+Maintainer: Proxmox Support Team <support@proxmox.com>
+Standards-Version: 4.6.1
+Vcs-Git: git://git.proxmox.com/git/pve-yew-mobile-gui.git
+Vcs-Browser: https://git.proxmox.com/?p=pve-yew-mobile-gui.git;a=summary
+Homepage: https://www.proxmox.com
+Rules-Requires-Root: no
+
+Package: pve-yew-mobile-gui
+Architecture: any
+Multi-Arch: allowed
+Depends: fonts-font-awesome, ${misc:Depends}, ${shlibs:Depends},
+Recommends: proxmox-ve,
+Description: Mobile Web UI to for the Proxmox Virtual Environment
+ This package provides the mobile web UI of the Proxmox Virtual Environment.
+
