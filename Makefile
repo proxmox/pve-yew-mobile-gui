@@ -55,12 +55,13 @@ install: $(COMPILED_OUTPUT) index.html dist/material-yew-style.css
 
 	install -dm0755 $(DESTDIR)$(UIDIR)/images
 	#install -m0644 images/favicon.svg $(DESTDIR)$(UIDIR)/images
-	#install -m0644 images/icon-cpu.svg $(DESTDIR)$(UIDIR)/images
-	#install -m0644 images/icon-memory.svg $(DESTDIR)$(UIDIR)/images
-	#install -m0644 images/proxmox_logo.svg $(DESTDIR)$(UIDIR)/images
-	#install -m0644 images/proxmox_logo_white.svg $(DESTDIR)$(UIDIR)/images
+	install -m0644 images/icon-cpu.svg $(DESTDIR)$(UIDIR)/images
+	install -m0644 images/icon-memory.svg $(DESTDIR)$(UIDIR)/images
+	install -m0644 images/proxmox_logo_icon_black.png $(DESTDIR)$(UIDIR)/images
+	install -m0644 images/proxmox_logo_icon_white.png $(DESTDIR)$(UIDIR)/images
 
 	install -dm0755 $(DESTDIR)$(UIDIR)/fonts
+	install -m0644 pwt-assets/assets/font-awesome.css $(DESTDIR)$(UIDIR)/fonts
 	install -m0644 pwt-assets/assets/fonts/RobotoFlexVariableFont.ttf $(DESTDIR)$(UIDIR)/fonts
 
 	install -m0644 dist/pve-yew-mobile-gui_bundle.js $(DESTDIR)$(UIDIR)/js

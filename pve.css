@@ -1,1 +1,29 @@
-/* currently empty file */
+.fa-cpu::before {
+    content: " ";
+    background-image: url(./images/icon-cpu.svg);
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 16px;
+    vertical-align: bottom;
+    display: inline-block;
+}
+
+.fa-memory::before {
+    content: " ";
+    background-image: url(./images/icon-memory.svg);
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 16px;
+    vertical-align: bottom;
+    display: inline-block;
+}
+
+:root.pwt-dark-mode {
+
+    .fa-memory,
+    .fa-cpu {
+        filter: invert(90%);
+    }
+}

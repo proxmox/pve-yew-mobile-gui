@@ -7,7 +7,8 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{AlertDialog, Button, Card, Column, MiniScroll, Progress, Row};
+use pwt::props::PwtSpace;
+use pwt::widget::{AlertDialog, Button, Card, Column, Container, Fa, MiniScroll, Progress, Row};
 
 use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
@@ -109,12 +110,27 @@ impl PvePageDashboard {
                                 Column::new()
                                     .class("pwt-flex-fill")
                                     .gap(1)
-                                    .with_child(html!{<div class="pwt-font-size-title-medium">{"CPU"}</div>})
-                                    .with_child(html!{<div class="pwt-font-size-title-small">{format!("Cores {} Nodes {}", maxcpu, node_count)}</div>})
+                                    .with_child(
+                                        Container::new()
+                                            .class("pwt-font-size-title-medium")
+                                            .with_child(
+                                                Fa::new("cpu").padding_end(PwtSpace::Em(0.5)),
+                                            )
+                                            .with_child("CPU"),
+                                    )
+                                    .with_child(
+                                        Container::new()
+                                            .class("pwt-font-size-title-small")
+                                            .with_child(format!(
+                                                "Cores {maxcpu} Nodes {node_count}"
+                                            )),
+                                    ),
                             )
                             .with_child(
-                                Progress::new().attribute("style", "width: 100px;").value(cpu_percentage)
-                            )
+                                Progress::new()
+                                    .attribute("style", "width: 100px;")
+                                    .value(cpu_percentage),
+                            ),
                     )
                     .with_child(
                         Row::new()
@@ -125,12 +141,28 @@ impl PvePageDashboard {
                                 Column::new()
                                     .class("pwt-flex-fill")
                                     .gap(1)
-                                    .with_child(html!{<div class="pwt-font-size-title-medium">{"Memory"}</div>})
-                                    .with_child(html!{<div class="pwt-font-size-title-small">{format!("{:.2} Gib of {:.2} Gib", mem, maxmem)}</div>})
+                                    .with_child(
+                                        Container::new()
+                                            .class("pwt-font-size-title-medium")
+                                            .with_child(
+                                                Fa::new("memory").padding_end(PwtSpace::Em(0.5)),
+                                            )
+                                            .with_child("Memory"),
+                                    )
+                                    .with_child(
+                                        Container::new()
+                                            .class("pwt-font-size-title-small")
+                                            .with_child(format!(
+                                                "{:.2} Gib of {:.2} Gib",
+                                                mem, maxmem
+                                            )),
+                                    ),
                             )
                             .with_child(
-                                Progress::new().attribute("style", "width: 100px;").value(mem_percentage)
-                            )
+                                Progress::new()
+                                    .attribute("style", "width: 100px;")
+                                    .value(mem_percentage),
+                            ),
                     )
                     .into()
             }
