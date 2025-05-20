@@ -156,13 +156,25 @@ impl PvePageResources {
     }
 
     fn create_resource_list(&self, ctx: &Context<Self>, data: &[ClusterResource]) -> Html {
-        let children = data.iter().filter_map(|item| match item.ty {
-            ClusterResourceType::Qemu => Some(self.create_qemu_list_item(ctx, item)),
-            ClusterResourceType::Lxc => Some(self.create_lxc_list_item(ctx, item)),
-            ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
-            _ => None,
-        });
-        Column::new().class("pwt-fit").children(children).into()
+        let children: Vec<Html> = data
+            .iter()
+            .filter_map(|item| match item.ty {
+                ClusterResourceType::Qemu => Some(self.create_qemu_list_item(ctx, item)),
+                ClusterResourceType::Lxc => Some(self.create_lxc_list_item(ctx, item)),
+                ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
+                _ => None,
+            })
+            .collect();
+
+        if children.is_empty() {
+            Card::new()
+                .class("pwt-shape-none pwt-card-flat")
+                .class("pwt-scheme-neutral")
+                .with_child("List is empty.")
+                .into()
+        } else {
+            Column::new().class("pwt-fit").children(children).into()
+        }
     }
 }
 
