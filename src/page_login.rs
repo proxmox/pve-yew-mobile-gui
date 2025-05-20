@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Dialog};
+use pwt::widget::Column;
 
 use crate::TopNavBar;
 
@@ -32,17 +32,6 @@ impl PageLogin {
 
 pub struct PvePageLogin {}
 
-impl PvePageLogin {
-    fn login_dialog(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
-        Dialog::new("Login")
-            .style("min-width", "300px")
-            .with_child(LoginPanel::new().on_login(props.on_login.clone()))
-            .into()
-    }
-}
-
 impl Component for PvePageLogin {
     type Message = ();
     type Properties = PageLogin;
@@ -52,11 +41,17 @@ impl Component for PvePageLogin {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+
         Column::new()
             .class("pwt-flex-fill")
             .class("pwt-viewport")
             .with_child(TopNavBar::new())
-            .with_child(self.login_dialog(ctx))
+            .with_child(
+                LoginPanel::new()
+                    .mobile(true)
+                    .on_login(props.on_login.clone()),
+            )
             .into()
     }
 }
