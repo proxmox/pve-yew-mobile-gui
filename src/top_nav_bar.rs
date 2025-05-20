@@ -2,7 +2,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use pwt::prelude::*;
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::state::{Theme, ThemeObserver};
@@ -21,9 +21,6 @@ pub struct TopNavBar {
 
     #[prop_or_default]
     pub class: Classes,
-
-    #[prop_or_default]
-    pub on_logout: Option<Callback<MouseEvent>>,
 }
 
 impl TopNavBar {
@@ -56,15 +53,11 @@ impl TopNavBar {
         self.back = link.into_prop_value();
         self
     }
-
-    pub fn on_logout(mut self, cb: impl IntoEventCallback<MouseEvent>) -> Self {
-        self.on_logout = cb.into_event_callback();
-        self
-    }
 }
 
 pub enum Msg {
     ThemeChanged((Theme, /* dark_mode */ bool)),
+    Logout,
 }
 
 pub struct PveTopNavBar {
@@ -91,15 +84,21 @@ impl Component for PveTopNavBar {
                 self.dark_mode = dark_mode;
                 true
             }
+            Msg::Logout => {
+                proxmox_yew_comp::http_clear_auth();
+                true
+            }
         }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let menu = Menu::new()
-            .with_item(MenuItem::new("Submenu1 Item1"))
-            .with_item(MenuItem::new("Submenu1 Item2"));
+        let menu = Menu::new().with_item(
+            MenuItem::new("Logout")
+                .icon_class("fa fa-sign-out")
+                .on_select(ctx.link().callback(|_| Msg::Logout)),
+        );
 
         let button_group = Row::new()
             .gap(1)

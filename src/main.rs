@@ -34,8 +34,10 @@ use pwt::touch::{NavigationBar, PageStack};
 use pwt::widget::{Column, TabBarItem, ThemeLoader};
 
 use proxmox_login::Authentication;
-use proxmox_yew_comp::authentication_from_cookie;
-use proxmox_yew_comp::http_set_auth;
+
+use proxmox_yew_comp::{
+    authentication_from_cookie, http_set_auth, register_auth_observer, AuthObserver,
+};
 
 pub fn goto_location(path: &str) {
     let document = web_sys::window().unwrap().document().unwrap();
@@ -45,7 +47,7 @@ pub fn goto_location(path: &str) {
 
 pub enum Msg {
     Login(Authentication),
-    //Logout,
+    Logout,
 }
 
 #[derive(Clone, Routable, PartialEq)]
@@ -119,6 +121,7 @@ fn switch(routes: Route) -> Html {
 }
 
 struct PveMobileApp {
+    _auth_observer: AuthObserver,
     login_info: Option<Authentication>,
 }
 
@@ -126,13 +129,19 @@ impl Component for PveMobileApp {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
         // set auth info from cookie
         let login_info = authentication_from_cookie(&proxmox_yew_comp::ExistingProduct::PVE);
         if let Some(login_info) = &login_info {
             http_set_auth(login_info.clone());
         }
-        Self { login_info }
+
+        let _auth_observer = register_auth_observer(ctx.link().callback(|_| Msg::Logout));
+
+        Self {
+            login_info,
+            _auth_observer,
+        }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -158,6 +167,10 @@ impl Component for PveMobileApp {
                 self.login_info = Some(info);
                 goto_location("/");
             }
+            Msg::Logout => {
+                self.login_info = None;
+                goto_location("/");
+            }
         }
         true
     }
@@ -166,7 +179,7 @@ impl Component for PveMobileApp {
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
 
-    proxmox_yew_comp::http_setup(&proxmox_yew_comp::ExistingProduct::PBS);
+    proxmox_yew_comp::http_setup(&proxmox_yew_comp::ExistingProduct::PVE);
 
     pwt::props::set_http_get_method(
         |url| async move { proxmox_yew_comp::http_get(&url, None).await },
