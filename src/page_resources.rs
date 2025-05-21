@@ -204,6 +204,8 @@ impl PvePageResources {
     }
 
     fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
+        let name = item.storage.clone().unwrap();
+
         let row1 = Row::new()
             .gap(2)
             .class("pwt-align-items-flex-end")
@@ -212,13 +214,13 @@ impl PvePageResources {
                     .class("pwt-flex-fill")
                     .gap(1)
                     .with_child(html! {
-                        <div class="pwt-font-size-title-medium">{item.storage.as_deref().unwrap()}</div>
+                        <div class="pwt-font-size-title-medium">{&name}</div>
                     })
                     .with_child(html! {
                         <div class="pwt-font-size-title-small">{item.node.as_deref().unwrap()}</div>
                     }),
             )
-            .with_child(html!{
+            .with_child(html! {
                 <div class="pwt-font-size-title-small">{item.status.as_deref().unwrap_or("")}</div>
             });
 
@@ -258,6 +260,9 @@ impl PvePageResources {
             .with_child(row1)
             .with_child(row2)
             .with_child(progress)
+            .onclick(Callback::from(move |_| {
+                super::goto_location(&format!("/resources/storage/{name}"));
+            }))
             .into()
     }
 

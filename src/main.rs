@@ -19,6 +19,9 @@ pub use page_container_status::PageContainerStatus;
 mod page_node_status;
 pub use page_node_status::PageNodeStatus;
 
+mod page_storage_status;
+pub use page_storage_status::PageStorageStatus;
+
 mod page_login;
 pub use page_login::PageLogin;
 
@@ -68,6 +71,8 @@ enum Route {
     Lxc { vmid: u64 },
     #[at("/resources/node/:nodename")]
     Node { nodename: String },
+    #[at("/resources/storage/:name")]
+    Storage { name: String },
     // #[at("/logs")]
     // Logs,
     #[at("/configuration")]
@@ -97,6 +102,13 @@ fn switch(routes: Route) -> Html {
             vec![
                 PageResources::new().into(),
                 PageNodeStatus::new(nodename).into(),
+            ],
+        ),
+        Route::Storage { name } => (
+            "resources",
+            vec![
+                PageResources::new().into(),
+                PageStorageStatus::new(name).into(),
             ],
         ),
         // Route::Logs => ("logs", vec![PageLogs::new().into()]),
