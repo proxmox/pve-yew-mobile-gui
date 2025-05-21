@@ -300,7 +300,7 @@ impl PvePageResources {
             true,
         );
 
-        let filter_button = ActionIcon::new("fa fa-filter")
+        let filter_button = ActionIcon::new("fa fa-lg fa-filter")
             .class("pwt-scheme-surface")
             .on_activate(ctx.link().callback(|_| Msg::ShowFilterDialog));
 
