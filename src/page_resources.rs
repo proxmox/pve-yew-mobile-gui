@@ -192,7 +192,12 @@ impl PvePageResources {
 
     fn create_lxc_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
         let icon = "fa fa-fw fa-cube";
-        self.create_vm_list_item(icon, item).into()
+        let vmid = item.vmid.unwrap();
+        self.create_vm_list_item(icon, item)
+            .onclick(Callback::from(move |_| {
+                super::goto_location(&format!("/resources/lxc/{vmid}"));
+            }))
+            .into()
     }
 
     fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
