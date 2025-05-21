@@ -2,16 +2,16 @@ use std::rc::Rc;
 
 use anyhow::Error;
 
+use pwt::widget::form::{Checkbox, Field};
+use pwt::widget::menu::{Menu, MenuButton, MenuItem};
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::Fab;
-use pwt::widget::{Card, Column, Container, Progress, Row};
+use pwt::touch::{Fab, SideDialog};
+use pwt::widget::{ActionIcon, Card, Column, Container, Panel, Progress, Row, Trigger};
 
 use proxmox_yew_comp::http_get;
 use pve_api_types::{ClusterResource, ClusterResourceType};
-
-use crate::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageResources {}
@@ -22,12 +22,73 @@ impl PageResources {
     }
 }
 
+#[derive(Clone, Default)]
+struct ResourceFilter {
+    name: String,
+    storage: bool,
+    qemu: bool,
+    lxc: bool,
+    nodes: bool,
+}
+
+fn filter_match(item: &ClusterResource, filter: &ResourceFilter) -> bool {
+    let mut include = false;
+
+    if filter.storage && item.ty == ClusterResourceType::Storage {
+        include = true;
+    }
+
+    if filter.nodes && item.ty == ClusterResourceType::Node {
+        include = true;
+    }
+
+    if filter.qemu && item.ty == ClusterResourceType::Qemu {
+        include = true;
+    }
+
+    if filter.lxc && item.ty == ClusterResourceType::Lxc {
+        include = true;
+    }
+
+    if !(filter.storage || filter.nodes || filter.lxc || filter.qemu) {
+        include = true;
+    }
+
+    if !include {
+        return false;
+    }
+
+    if !filter.name.is_empty() {
+        if item.id.to_lowercase().contains(&filter.name) {
+            return true;
+        }
+        if let Some(name) = &item.name {
+            if name.contains(&filter.name) {
+                return true;
+            }
+        }
+        false
+    } else {
+        true
+    }
+}
+
 pub struct PvePageResources {
     data: Result<Vec<ClusterResource>, String>,
+    filter: ResourceFilter,
+    show_filter_dialog: bool,
 }
 
 pub enum Msg {
     LoadResult(Result<Vec<ClusterResource>, Error>),
+    SetTextFilter(String),
+    ClearTextFilter,
+    ShowFilterDialog,
+    CloseFilterDialog,
+    FilterLxc(bool),
+    FilterQemu(bool),
+    FilterStorage(bool),
+    FilterNodes(bool),
 }
 
 impl PvePageResources {
@@ -156,13 +217,21 @@ impl PvePageResources {
     }
 
     fn create_resource_list(&self, ctx: &Context<Self>, data: &[ClusterResource]) -> Html {
+        let mut filter = self.filter.clone();
+        filter.name = filter.name.to_lowercase();
+
         let children: Vec<Html> = data
             .iter()
-            .filter_map(|item| match item.ty {
-                ClusterResourceType::Qemu => Some(self.create_qemu_list_item(ctx, item)),
-                ClusterResourceType::Lxc => Some(self.create_lxc_list_item(ctx, item)),
-                ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
-                _ => None,
+            .filter_map(|item| {
+                if !filter_match(item, &filter) {
+                    return None;
+                }
+                match item.ty {
+                    ClusterResourceType::Qemu => Some(self.create_qemu_list_item(ctx, item)),
+                    ClusterResourceType::Lxc => Some(self.create_lxc_list_item(ctx, item)),
+                    ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
+                    _ => None,
+                }
             })
             .collect();
 
@@ -176,6 +245,85 @@ impl PvePageResources {
             Column::new().class("pwt-fit").children(children).into()
         }
     }
+
+    fn create_filter_panel(&self, ctx: &Context<Self>) -> Html {
+        let grid = Column::new()
+            .padding(2)
+            .gap(2)
+            .with_child(html! { <div style="grid-column: 1/-1;">{"Type"}</div>})
+            .with_child(
+                Checkbox::new()
+                    .checked(self.filter.qemu)
+                    .box_label("Qemu")
+                    .on_change(ctx.link().callback(Msg::FilterQemu)),
+            )
+            .with_child(
+                Checkbox::new()
+                    .checked(self.filter.lxc)
+                    .box_label("Lxc")
+                    .on_change(ctx.link().callback(Msg::FilterLxc)),
+            )
+            .with_child(
+                Checkbox::new()
+                    .checked(self.filter.nodes)
+                    .box_label("Nodes")
+                    .on_change(ctx.link().callback(Msg::FilterNodes)),
+            )
+            .with_child(
+                Checkbox::new()
+                    .checked(self.filter.storage)
+                    .box_label("Storage")
+                    .on_change(ctx.link().callback(Msg::FilterStorage)),
+            )
+            .with_child(Checkbox::new().box_label("Qemu"));
+
+        Panel::new()
+            .title("Filter")
+            .with_child(html! { <hr/>})
+            .with_child(grid)
+            .into()
+    }
+
+    fn create_top_bar(&self, ctx: &Context<Self>) -> Html {
+        let mut search = Field::new()
+            .value(self.filter.name.clone())
+            .on_change(ctx.link().callback(|value| Msg::SetTextFilter(value)))
+            .class(pwt::css::Flex::Fill);
+
+        search.add_trigger(
+            Trigger::new(if self.filter.name.is_empty() {
+                ""
+            } else {
+                "fa fa-times"
+            })
+            .on_activate(ctx.link().callback(|_| Msg::ClearTextFilter)),
+            true,
+        );
+
+        let filter_button = ActionIcon::new("fa fa-filter")
+            .class("pwt-scheme-surface")
+            .on_activate(ctx.link().callback(|_| Msg::ShowFilterDialog));
+
+        let filter_dialog = self.show_filter_dialog.then(|| {
+            SideDialog::new()
+                .direction(pwt::touch::SideDialogLocation::Right)
+                .on_close(ctx.link().callback(|_| Msg::CloseFilterDialog))
+                .with_child(self.create_filter_panel(ctx))
+        });
+
+        Row::new()
+            .gap(1)
+            .padding(1)
+            .attribute("role", "banner")
+            .attribute("aria-label", "Proxmox VE")
+            .class("pwt-navbar")
+            .class("pwt-bg-color-primary pwt-color-on-primary")
+            .class("pwt-align-items-center")
+            .with_child(search)
+            .with_child(filter_button)
+            .with_optional_child(filter_dialog)
+            .into()
+    }
 }
 
 impl Component for PvePageResources {
@@ -185,6 +333,8 @@ impl Component for PvePageResources {
     fn create(ctx: &Context<Self>) -> Self {
         let me = Self {
             data: Err(format!("no data loaded")),
+            filter: ResourceFilter::default(),
+            show_filter_dialog: false,
         };
         me.load(ctx);
         me
@@ -194,6 +344,30 @@ impl Component for PvePageResources {
         match msg {
             Msg::LoadResult(result) => {
                 self.data = result.map_err(|err| err.to_string());
+            }
+            Msg::SetTextFilter(text) => {
+                self.filter.name = text;
+            }
+            Msg::ClearTextFilter => {
+                self.filter.name = String::new();
+            }
+            Msg::ShowFilterDialog => {
+                self.show_filter_dialog = true;
+            }
+            Msg::CloseFilterDialog => {
+                self.show_filter_dialog = false;
+            }
+            Msg::FilterLxc(value) => {
+                self.filter.lxc = value;
+            }
+            Msg::FilterQemu(value) => {
+                self.filter.qemu = value;
+            }
+            Msg::FilterStorage(value) => {
+                self.filter.storage = value;
+            }
+            Msg::FilterNodes(value) => {
+                self.filter.nodes = value;
             }
         }
         true
@@ -215,7 +389,7 @@ impl Component for PvePageResources {
 
         Column::new()
             .class("pwt-fit")
-            .with_child(TopNavBar::new().title("Resources"))
+            .with_child(self.create_top_bar(ctx))
             .with_child(content)
             .with_child(fab)
             .into()
