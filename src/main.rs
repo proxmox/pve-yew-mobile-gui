@@ -16,8 +16,8 @@ pub use vm_status::PageVmStatus;
 mod page_login;
 pub use page_login::PageLogin;
 
-mod page_logs;
-pub use page_logs::PageLogs;
+// mod page_logs;
+// pub use page_logs::PageLogs;
 
 mod page_configuartion;
 pub use page_configuartion::PageConfiguration;
@@ -58,8 +58,8 @@ enum Route {
     Resources,
     #[at("/resources/qemu/:vmid")]
     Qemu { vmid: u64 },
-    #[at("/logs")]
-    Logs,
+    // #[at("/logs")]
+    // Logs,
     #[at("/configuration")]
     Configuration,
     #[not_found]
@@ -75,7 +75,7 @@ fn switch(routes: Route) -> Html {
             "resources",
             vec![PageResources::new().into(), PageVmStatus::new(vmid).into()],
         ),
-        Route::Logs => ("logs", vec![PageLogs::new().into()]),
+        // Route::Logs => ("logs", vec![PageLogs::new().into()]),
         Route::Configuration => ("configuration", vec![PageConfiguration::new().into()]),
         Route::NotFound => ("", vec![html! { <PageNotFound/> }]),
     };
@@ -95,13 +95,13 @@ fn switch(routes: Route) -> Html {
                 goto_location("/resources");
             }))
             .label("Resources"),
-        TabBarItem::new()
-            .key("logs")
-            .icon_class("fa fa-list")
-            .on_activate(Callback::from(|_| {
-                goto_location("/logs");
-            }))
-            .label("Logs"),
+        // TabBarItem::new()
+        //    .key("logs")
+        //    .icon_class("fa fa-list")
+        //    .on_activate(Callback::from(|_| {
+        //        goto_location("/logs");
+        //    }))
+        //    .label("Logs"),
         TabBarItem::new()
             .key("configuration")
             .icon_class("fa fa-cogs")
