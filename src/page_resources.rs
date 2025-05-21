@@ -110,6 +110,8 @@ impl PvePageResources {
             )
         }/>};
 
+        let nodename = item.node.clone().unwrap();
+
         Card::new()
             .class("pwt-d-flex pwt-gap-2")
             .class("pwt-shape-none pwt-card-flat pwt-interactive")
@@ -124,9 +126,7 @@ impl PvePageResources {
                     .class("pwt-flex-fill")
                     .gap(1)
                     .with_child(html! {
-                        <div class="pwt-font-size-title-medium">{
-                           &item.node
-                        }</div>
+                        <div class="pwt-font-size-title-medium">{&nodename}</div>
                     })
                     .with_child(html! {
                         <div class="pwt-font-size-title-small">{
@@ -140,6 +140,9 @@ impl PvePageResources {
             .with_child(html! {
                 <div class="pwt-font-size-title-small">{item.status.as_deref().unwrap_or("")}</div>
             })
+            .onclick(Callback::from(move |_| {
+                super::goto_location(&format!("/resources/node/{nodename}"));
+            }))
             .into()
     }
 

@@ -16,6 +16,9 @@ pub use page_vm_status::PageVmStatus;
 mod page_container_status;
 pub use page_container_status::PageContainerStatus;
 
+mod page_node_status;
+pub use page_node_status::PageNodeStatus;
+
 mod page_login;
 pub use page_login::PageLogin;
 
@@ -63,6 +66,8 @@ enum Route {
     Qemu { vmid: u64 },
     #[at("/resources/lxc/:vmid")]
     Lxc { vmid: u64 },
+    #[at("/resources/node/:nodename")]
+    Node { nodename: String },
     // #[at("/logs")]
     // Logs,
     #[at("/configuration")]
@@ -85,6 +90,13 @@ fn switch(routes: Route) -> Html {
             vec![
                 PageResources::new().into(),
                 PageContainerStatus::new(vmid).into(),
+            ],
+        ),
+        Route::Node { nodename } => (
+            "resources",
+            vec![
+                PageResources::new().into(),
+                PageNodeStatus::new(nodename).into(),
             ],
         ),
         // Route::Logs => ("logs", vec![PageLogs::new().into()]),
