@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 
+use proxmox_human_byte::HumanByte;
 use pwt::widget::form::{Checkbox, Field};
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
 use yew::virtual_dom::{VComp, VNode};
@@ -223,21 +224,15 @@ impl PvePageResources {
             )
         }/>};
 
-        let used = format!(
-            "{:.2} Gib",
-            (item.disk.unwrap_or(0) as f64) / (1024.0 * 1024.0 * 1024.0)
-        );
-        let total = format!(
-            "{:.2} Gib",
-            (item.maxdisk.unwrap_or(0) as f64) / (1024.0 * 1024.0 * 1024.0)
-        );
+        let used = HumanByte::new_binary(item.disk.unwrap_or(0) as f64);
+        let total = HumanByte::new_binary(item.maxdisk.unwrap_or(0) as f64);
 
         let row2 = Row::new()
             .gap(2)
             .class("pwt-align-items-flex-end")
             .with_child(icon)
             .with_child(html! {
-                <div class="pwt-font-size-title-medium pwt-flex-fill">{used}</div>
+                <div class="pwt-font-size-title-medium pwt-flex-fill">{used.to_string()}</div>
             })
             .with_child(html! {
                 <div class="pwt-font-size-title-medium">{format!("Total: {}", total)}</div>
