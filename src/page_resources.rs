@@ -4,12 +4,11 @@ use anyhow::Error;
 
 use proxmox_human_byte::HumanByte;
 use pwt::widget::form::{Checkbox, Field};
-use pwt::widget::menu::{Menu, MenuButton, MenuItem};
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::{Fab, SideDialog};
-use pwt::widget::{ActionIcon, Card, Column, Container, Fa, Panel, Progress, Row, Trigger};
+use pwt::touch::SideDialog;
+use pwt::widget::{ActionIcon, Card, Column, Panel, Progress, Row, Trigger};
 
 use proxmox_yew_comp::http_get;
 use pve_api_types::{ClusterResource, ClusterResourceType};
@@ -423,19 +422,10 @@ impl Component for PvePageResources {
             Ok(data) => self.create_resource_list(ctx, &data),
         };
 
-        let fab = Container::new()
-            .class("pwt-position-absolute")
-            .style("right", "var(--pwt-spacer-2)")
-            .style("bottom", "var(--pwt-spacer-2)")
-            .with_child(
-                Fab::new("fa fa-calendar").class("pwt-scheme-primary"), //.on_click(ctx.link().callback(|_| Msg::ShowDialog))
-            );
-
         Column::new()
             .class("pwt-fit")
             .with_child(self.create_top_bar(ctx))
             .with_child(content)
-            .with_child(fab)
             .into()
     }
 }
