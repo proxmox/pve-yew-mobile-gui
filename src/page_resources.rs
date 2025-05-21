@@ -8,7 +8,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::{Fab, SideDialog};
-use pwt::widget::{ActionIcon, Card, Column, Container, Panel, Progress, Row, Trigger};
+use pwt::widget::{ActionIcon, Card, Column, Container, Fa, Panel, Progress, Row, Trigger};
 
 use proxmox_yew_comp::http_get;
 use pve_api_types::{ClusterResource, ClusterResourceType};
@@ -98,6 +98,49 @@ impl PvePageResources {
             let result = http_get("/cluster/resources", None).await;
             link.send_message(Msg::LoadResult(result));
         });
+    }
+
+    fn create_node_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
+        let icon = html! {<i class={
+            classes!(
+                "pwt-font-size-title-large",
+                "fa",
+                "fa-building",
+                (item.status.as_deref() == Some("online")).then(|| "pwt-color-primary"),
+            )
+        }/>};
+
+        Card::new()
+            .class("pwt-d-flex pwt-gap-2")
+            .class("pwt-shape-none pwt-card-flat pwt-interactive")
+            .class("pwt-scheme-neutral")
+            .padding_x(2)
+            .padding_y(1)
+            .border_bottom(true)
+            .class("pwt-align-items-center")
+            .with_child(icon)
+            .with_child(
+                Column::new()
+                    .class("pwt-flex-fill")
+                    .gap(1)
+                    .with_child(html! {
+                        <div class="pwt-font-size-title-medium">{
+                           &item.node
+                        }</div>
+                    })
+                    .with_child(html! {
+                        <div class="pwt-font-size-title-small">{
+                            match item.level.as_deref() {
+                                Some("") | None => "no subscription",
+                                Some(level) => level,
+                            }
+                        }</div>
+                    }),
+            )
+            .with_child(html! {
+                <div class="pwt-font-size-title-small">{item.status.as_deref().unwrap_or("")}</div>
+            })
+            .into()
     }
 
     fn create_vm_list_item(&self, icon: &str, item: &ClusterResource) -> Card {
@@ -230,7 +273,13 @@ impl PvePageResources {
                     ClusterResourceType::Qemu => Some(self.create_qemu_list_item(ctx, item)),
                     ClusterResourceType::Lxc => Some(self.create_lxc_list_item(ctx, item)),
                     ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
-                    _ => None,
+                    ClusterResourceType::Node => Some(self.create_node_list_item(ctx, item)),
+                    ClusterResourceType::Pool
+                    | ClusterResourceType::Openvz
+                    | ClusterResourceType::Sdn => {
+                        /* ignore for now  */
+                        None
+                    }
                 }
             })
             .collect();
