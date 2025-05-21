@@ -10,8 +10,8 @@ pub use page_dashboard::PageDashboard;
 mod page_resources;
 pub use page_resources::PageResources;
 
-mod vm_status;
-pub use vm_status::PageVmStatus;
+mod page_vm_status;
+pub use page_vm_status::PageVmStatus;
 
 mod page_login;
 pub use page_login::PageLogin;
