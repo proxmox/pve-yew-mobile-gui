@@ -19,6 +19,9 @@ pub use page_container_status::PageContainerStatus;
 mod page_node_status;
 pub use page_node_status::PageNodeStatus;
 
+mod vm_config_panel;
+pub use vm_config_panel::VmConfigPanel;
+
 mod page_storage_status;
 pub use page_storage_status::PageStorageStatus;
 
@@ -65,8 +68,8 @@ enum Route {
     Dashboard,
     #[at("/resources")]
     Resources,
-    #[at("/resources/qemu/:vmid")]
-    Qemu { vmid: u64 },
+    #[at("/resources/qemu/:nodename/:vmid")]
+    Qemu { vmid: u64, nodename: String },
     #[at("/resources/lxc/:vmid")]
     Lxc { vmid: u64 },
     #[at("/resources/node/:nodename")]
@@ -86,9 +89,12 @@ fn switch(routes: Route) -> Html {
     let (active_nav, stack) = match routes {
         Route::Dashboard => ("dashboard", vec![PageDashboard::new().into()]),
         Route::Resources => ("resources", vec![PageResources::new().into()]),
-        Route::Qemu { vmid } => (
+        Route::Qemu { vmid, nodename } => (
             "resources",
-            vec![PageResources::new().into(), PageVmStatus::new(vmid).into()],
+            vec![
+                PageResources::new().into(),
+                PageVmStatus::new(nodename, vmid).into(),
+            ],
         ),
         Route::Lxc { vmid } => (
             "resources",

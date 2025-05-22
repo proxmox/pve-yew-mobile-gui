@@ -183,9 +183,10 @@ impl PvePageResources {
     fn create_qemu_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
         let icon = "fa fa-fw fa-desktop";
         let vmid = item.vmid.unwrap();
+        let nodename = item.node.clone().unwrap();
         self.create_vm_list_item(icon, item)
             .onclick(Callback::from(move |_| {
-                super::goto_location(&format!("/resources/qemu/{vmid}"));
+                super::goto_location(&format!("/resources/qemu/{nodename}/{vmid}"));
             }))
             .into()
     }
