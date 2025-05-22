@@ -2,8 +2,10 @@ use std::rc::Rc;
 
 use anyhow::Error;
 
+use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 use pwt::widget::form::{Checkbox, Field};
+use pwt::AsyncAbortGuard;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
@@ -74,12 +76,15 @@ fn filter_match(item: &ClusterResource, filter: &ResourceFilter) -> bool {
 }
 
 pub struct PvePageResources {
+    reload_timeout: Option<Timeout>,
+    load_guard: Option<AsyncAbortGuard>,
     data: Result<Vec<ClusterResource>, String>,
     filter: ResourceFilter,
     show_filter_dialog: bool,
 }
 
 pub enum Msg {
+    Load,
     LoadResult(Result<Vec<ClusterResource>, Error>),
     SetTextFilter(String),
     ClearTextFilter,
@@ -92,14 +97,6 @@ pub enum Msg {
 }
 
 impl PvePageResources {
-    fn load(&self, ctx: &Context<Self>) {
-        let link = ctx.link().clone();
-        wasm_bindgen_futures::spawn_local(async move {
-            let result = http_get("/cluster/resources", None).await;
-            link.send_message(Msg::LoadResult(result));
-        });
-    }
-
     fn create_node_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
         let icon = html! {<i class={
             classes!(
@@ -387,19 +384,32 @@ impl Component for PvePageResources {
     type Properties = PageResources;
 
     fn create(ctx: &Context<Self>) -> Self {
+        ctx.link().send_message(Msg::Load);
         let me = Self {
             data: Err(format!("no data loaded")),
             filter: ResourceFilter::default(),
             show_filter_dialog: false,
+            reload_timeout: None,
+            load_guard: None,
         };
-        me.load(ctx);
         me
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            Msg::Load => {
+                let link = ctx.link().clone();
+                self.load_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result = http_get("/cluster/resources", None).await;
+                    link.send_message(Msg::LoadResult(result));
+                }));
+            }
             Msg::LoadResult(result) => {
                 self.data = result.map_err(|err| err.to_string());
+                let link = ctx.link().clone();
+                self.reload_timeout = Some(Timeout::new(3000, move || {
+                    link.send_message(Msg::Load);
+                }));
             }
             Msg::SetTextFilter(text) => {
                 self.filter.name = text;

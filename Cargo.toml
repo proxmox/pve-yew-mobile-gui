@@ -18,6 +18,7 @@ serde_json = "1.0"
 wasm-bindgen-futures = "0.4"
 url = "2.1"
 percent-encoding = "2.1"
+gloo-timers = "0.3"
 
 proxmox-schema = "4"
 proxmox-time = "2"
