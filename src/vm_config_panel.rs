@@ -5,13 +5,14 @@ use gloo_timers::callback::Timeout;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use proxmox_schema::ApiType;
 use pwt::prelude::*;
 use pwt::widget::{Button, Card, Column, Container, Fa, List, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
-use pve_api_types::QemuConfig;
+use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
 use crate::ListTile;
 
@@ -36,6 +37,14 @@ fn get_config_url(node: &str, vmid: u64) -> String {
         percent_encode_component(node),
         vmid
     )
+}
+
+fn processor_text(config: &QemuConfig) -> String {
+    let cpu = config.cpu.as_deref().unwrap_or("kvm");
+    let cores = config.cores.unwrap_or(1);
+    let sockets = config.sockets.unwrap_or(1);
+    let count = sockets * cores;
+    format!("{count} ({sockets} sockets, {cores} cores) [{cpu}]")
 }
 
 pub enum Msg {
@@ -64,7 +73,7 @@ fn create_config_tile(icon: &str, title: &str, subtitle: &str) -> ListTile {
 
 impl PveVmConfigPanel {
     fn view_config(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
-        Card::new()
+        let mut card = Card::new()
             .border(true)
             .padding(0)
             .class("pwt-flex-none pwt-overflow-hidden")
@@ -76,7 +85,7 @@ impl PveVmConfigPanel {
             ))
             .with_child(create_config_tile(
                 "cpu",
-                data.cpu.as_deref().unwrap_or("-"),
+                &processor_text(data),
                 "Processor",
             ))
             .with_child(create_config_tile(
@@ -87,7 +96,49 @@ impl PveVmConfigPanel {
                     .unwrap_or(String::from("Default (SeaBIOS)")),
                 "Bios",
             ))
-            .into()
+            .with_child(create_config_tile(
+                "gears",
+                &data.machine.as_deref().unwrap_or("Default (i440fx)"),
+                "Machine Type",
+            ));
+
+        for (n, disk_config) in &data.ide {
+            if let Ok(config) = PveQmIde::API_SCHEMA.parse_property_string(disk_config) {
+                if let Ok(config) = serde_json::from_value::<PveQmIde>(config) {
+                    if config.media == Some(PveQmIdeMedia::Cdrom) {
+                        card.add_child(create_config_tile(
+                            "cdrom",
+                            disk_config,
+                            &format!("CD/DVD Drive (ide{n})"),
+                        ));
+                    } else {
+                        card.add_child(create_config_tile(
+                            "hdd-o",
+                            disk_config,
+                            &format!("Hard Disk (ide{n})"),
+                        ));
+                    }
+                }
+            }
+        }
+
+        for (n, disk_config) in &data.scsi {
+            card.add_child(create_config_tile(
+                "hdd-o",
+                disk_config,
+                &format!("Hard Disk (scsi{n})"),
+            ));
+        }
+
+        for (n, net_config) in &data.net {
+            card.add_child(create_config_tile(
+                "exchange",
+                net_config,
+                &format!("Network Device (new{n})"),
+            ));
+        }
+
+        card.into()
     }
 }
 
