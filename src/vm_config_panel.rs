@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Button, Card, Column, Container, Fa, List, Row};
+use pwt::widget::{Card, Fa};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -72,7 +72,7 @@ fn create_config_tile(icon: &str, title: &str, subtitle: &str) -> ListTile {
 }
 
 impl PveVmConfigPanel {
-    fn view_config(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
+    fn view_config(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let mut card = Card::new()
             .border(true)
             .padding(0)

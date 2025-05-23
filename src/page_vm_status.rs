@@ -2,12 +2,13 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
+use proxmox_yew_comp::http_post;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Card, Column, Container, Fa, ListTile, Row};
-use pwt::AsyncAbortGuard;
+use pwt::widget::{Button, Card, Column, Fa, Row};
+use pwt::AsyncPool;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
@@ -33,14 +34,16 @@ impl PageVmStatus {
 pub struct PvePageVmStatus {
     data: Result<QemuStatus, String>,
     reload_timeout: Option<Timeout>,
-    load_guard: Option<AsyncAbortGuard>,
+    async_pool: AsyncPool,
 }
 
 pub enum Msg {
     Load,
     LoadResult(Result<QemuStatus, Error>),
+    CommandResult(Result<String, Error>),
     Start,
     Stop,
+    Shutdown,
 }
 
 fn get_status_url(node: &str, vmid: u64, cmd: &str) -> String {
@@ -59,6 +62,16 @@ fn large_fa_icon(name: &str, running: bool) -> Fa {
 }
 
 impl PvePageVmStatus {
+    fn vm_command(&self, ctx: &Context<Self>, cmd: &str) {
+        let props = ctx.props();
+        let url = get_status_url(&props.node, props.vmid, cmd);
+        let link = ctx.link().clone();
+        self.async_pool.spawn(async move {
+            let result = http_post(&url, None).await;
+            link.send_message(Msg::CommandResult(result));
+        });
+    }
+
     fn view_status(&self, ctx: &Context<Self>, data: &QemuStatus) -> Html {
         let props = ctx.props();
 
@@ -90,15 +103,26 @@ impl PvePageVmStatus {
     }
 
     fn view_actions(&self, ctx: &Context<Self>, data: &QemuStatus) -> Html {
-        let props = ctx.props();
-
         let running = data.status == IsRunning::Running;
 
         Row::new()
             .gap(2)
             .class(pwt::css::JustifyContent::SpaceBetween)
-            .with_child(Button::new("Start").disabled(running))
-            .with_child(Button::new("Stop").disabled(!running))
+            .with_child(
+                Button::new("Start")
+                    .disabled(running)
+                    .on_activate(ctx.link().callback(|_| Msg::Start)),
+            )
+            .with_child(
+                Button::new("Shutdown")
+                    .disabled(!running)
+                    .on_activate(ctx.link().callback(|_| Msg::Shutdown)),
+            )
+            .with_child(
+                Button::new("Stop")
+                    .disabled(!running)
+                    .on_activate(ctx.link().callback(|_| Msg::Stop)),
+            )
             .with_child(Button::new("Console").disabled(!running))
             .into()
     }
@@ -113,7 +137,7 @@ impl Component for PvePageVmStatus {
         Self {
             data: Err(format!("no data loaded")),
             reload_timeout: None,
-            load_guard: None,
+            async_pool: AsyncPool::new(),
         }
     }
 
@@ -123,10 +147,10 @@ impl Component for PvePageVmStatus {
             Msg::Load => {
                 let link = ctx.link().clone();
                 let url = get_status_url(&props.node, props.vmid, "current");
-                self.load_guard = Some(AsyncAbortGuard::spawn(async move {
+                self.async_pool.spawn(async move {
                     let result = http_get(&url, None).await;
                     link.send_message(Msg::LoadResult(result));
-                }));
+                });
             }
             Msg::LoadResult(result) => {
                 self.data = result.map_err(|err| err.to_string());
@@ -135,8 +159,12 @@ impl Component for PvePageVmStatus {
                     link.send_message(Msg::Load);
                 }));
             }
-            Msg::Start => {}
-            Msg::Stop => {}
+            Msg::CommandResult(result) => {
+                log::info!("Result {:?}", result);
+            }
+            Msg::Start => self.vm_command(ctx, "start"),
+            Msg::Stop => self.vm_command(ctx, "stop"),
+            Msg::Shutdown => self.vm_command(ctx, "shutdown"),
         }
         true
     }
