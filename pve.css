@@ -20,6 +20,20 @@
     display: inline-block;
 }
 
+.fa-2x.fa-memory {
+    background-image: url(./images/icon-memory.svg);
+    background-size: 32px 32px;
+    width: 32px;
+    height: 32px;
+}
+
+.fa-2x.fa-cpu {
+    background-image: url(./images/icon-cpu.svg);
+    background-size: 32px 32px;
+    width: 32px;
+    height: 32px;
+}
+
 :root.pwt-dark-mode {
 
     .fa-memory,
