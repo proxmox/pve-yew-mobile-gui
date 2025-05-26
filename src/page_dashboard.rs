@@ -204,7 +204,6 @@ impl PvePageDashboard {
             .trailing(html! {
                 <div class="pwt-font-size-title-small">{item.status.to_string()}</div>
             })
-            .on_tab(|_| { /* fixme */ })
     }
 
     fn create_nodes_card(&self, _ctx: &Context<Self>) -> Html {
@@ -221,6 +220,9 @@ impl PvePageDashboard {
             .padding(0)
             .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
             .with_child(list)
+            .onclick(Callback::from(move |_| {
+                super::goto_location(&format!("/resources/node"));
+            }))
             .into()
     }
 
@@ -246,7 +248,6 @@ impl PvePageDashboard {
             .trailing(html! {
                 <div class={font_size}>{value.to_string()}</div>
             })
-            .on_tab(|_| { /* fixme */ })
     }
 
     fn create_guests_card(&self, _ctx: &Context<Self>) -> Html {
@@ -273,12 +274,17 @@ impl PvePageDashboard {
                 }
 
                 Column::new()
-                    .with_child(Self::create_guest_info_row(
-                        "fa fa-desktop",
-                        "Virtual Machines",
-                        vm_count,
-                        true,
-                    ))
+                    .with_child(
+                        Self::create_guest_info_row(
+                            "fa fa-desktop",
+                            "Virtual Machines",
+                            vm_count,
+                            true,
+                        )
+                        .on_tab(Callback::from(move |_| {
+                            super::goto_location(&format!("/resources/qemu"));
+                        })),
+                    )
                     .with_child(Self::create_guest_info_row(
                         "fa fa-play pwt-color-primary",
                         "Online",
@@ -291,12 +297,12 @@ impl PvePageDashboard {
                         vm_count - vm_online_count,
                         false,
                     ))
-                    .with_child(Self::create_guest_info_row(
-                        "fa fa-cube",
-                        "LXC Container",
-                        ct_count,
-                        true,
-                    ))
+                    .with_child(
+                        Self::create_guest_info_row("fa fa-cube", "LXC Container", ct_count, true)
+                            .on_tab(Callback::from(move |_| {
+                                super::goto_location(&format!("/resources/lxc"));
+                            })),
+                    )
                     .with_child(Self::create_guest_info_row(
                         "fa fa-play pwt-color-primary",
                         "Online",

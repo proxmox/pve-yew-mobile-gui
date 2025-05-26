@@ -16,21 +16,32 @@ use proxmox_yew_comp::http_get;
 use pve_api_types::{ClusterResource, ClusterResourceType};
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct PageResources {}
+pub struct PageResources {
+    /// Initial filter value
+    pub default_filter: ResourceFilter,
+}
 
 impl PageResources {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            default_filter: ResourceFilter::default(),
+        }
+    }
+
+    pub fn new_with_filter(filter: ResourceFilter) -> Self {
+        Self {
+            default_filter: filter,
+        }
     }
 }
 
-#[derive(Clone, Default)]
-struct ResourceFilter {
-    name: String,
-    storage: bool,
-    qemu: bool,
-    lxc: bool,
-    nodes: bool,
+#[derive(Clone, PartialEq, Default)]
+pub struct ResourceFilter {
+    pub name: String,
+    pub storage: bool,
+    pub qemu: bool,
+    pub lxc: bool,
+    pub nodes: bool,
 }
 
 fn filter_match(item: &ClusterResource, filter: &ResourceFilter) -> bool {
@@ -328,8 +339,7 @@ impl PvePageResources {
                     .checked(self.filter.storage)
                     .box_label("Storage")
                     .on_change(ctx.link().callback(Msg::FilterStorage)),
-            )
-            .with_child(Checkbox::new().box_label("Qemu"));
+            );
 
         Panel::new()
             .title("Filter")
@@ -385,10 +395,11 @@ impl Component for PvePageResources {
     type Properties = PageResources;
 
     fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
         ctx.link().send_message(Msg::Load);
         let me = Self {
             data: Err(format!("no data loaded")),
-            filter: ResourceFilter::default(),
+            filter: props.default_filter.clone(),
             show_filter_dialog: false,
             reload_timeout: None,
             load_guard: None,

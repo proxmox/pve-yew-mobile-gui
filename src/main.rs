@@ -8,7 +8,7 @@ mod page_dashboard;
 pub use page_dashboard::PageDashboard;
 
 mod page_resources;
-pub use page_resources::PageResources;
+pub use page_resources::{PageResources, ResourceFilter};
 
 mod page_vm_status;
 pub use page_vm_status::PageVmStatus;
@@ -68,8 +68,14 @@ enum Route {
     Dashboard,
     #[at("/resources")]
     Resources,
+    #[at("/resources/qemu")]
+    QemuResources,
+    #[at("/resources/node")]
+    NodeResources,
     #[at("/resources/qemu/:nodename/:vmid")]
     Qemu { vmid: u64, nodename: String },
+    #[at("/resources/lxc")]
+    LxcResources,
     #[at("/resources/lxc/:vmid")]
     Lxc { vmid: u64 },
     #[at("/resources/node/:nodename")]
@@ -89,6 +95,31 @@ fn switch(routes: Route) -> Html {
     let (active_nav, stack) = match routes {
         Route::Dashboard => ("dashboard", vec![PageDashboard::new().into()]),
         Route::Resources => ("resources", vec![PageResources::new().into()]),
+        Route::QemuResources => (
+            "resources",
+            vec![PageResources::new_with_filter(ResourceFilter {
+                qemu: true,
+                ..Default::default()
+            })
+            .into()],
+        ),
+        Route::LxcResources => (
+            "resources",
+            vec![PageResources::new_with_filter(ResourceFilter {
+                lxc: true,
+                ..Default::default()
+            })
+            .into()],
+        ),
+        Route::NodeResources => (
+            "resources",
+            vec![PageResources::new_with_filter(ResourceFilter {
+                nodes: true,
+                ..Default::default()
+            })
+            .into()],
+        ),
+
         Route::Qemu { vmid, nodename } => (
             "resources",
             vec![
