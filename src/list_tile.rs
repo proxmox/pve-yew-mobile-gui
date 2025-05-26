@@ -35,6 +35,7 @@ pub struct ListTile {
     pub disabled: bool,
 
     #[prop_or_default]
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     /// Activate callback (click, enter, space)
     pub on_tab: Option<Callback<()>>,
 }
@@ -42,12 +43,6 @@ pub struct ListTile {
 impl ListTile {
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to set the activate callback.
-    pub fn on_tab(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_tab = cb.into_event_callback();
-        self
     }
 }
 
@@ -76,12 +71,24 @@ impl Component for PwtListTile {
         let middle = Column::new().class("pwt-flex-fill").with_child(text);
 
         let interactive = props.on_tab.is_some();
+        let disabled = props.disabled;
 
         let mut tile = Container::new()
             .with_std_props(&props.std_props)
+            .listeners(&props.listeners)
             .attribute("disabled", props.disabled.then(|| ""))
             .class("pwt-list-tile")
-            .class(interactive.then(|| "pwt-interactive"));
+            .class(interactive.then(|| "pwt-interactive"))
+            .onclick({
+                let on_tab = props.on_tab.clone();
+                move |_| {
+                    if let Some(on_tab) = &on_tab {
+                        if interactive && !disabled {
+                            on_tab.emit(());
+                        }
+                    }
+                }
+            });
 
         if let Some(leading) = &props.leading {
             tile.add_child(
