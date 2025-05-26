@@ -226,7 +226,7 @@ impl PvePageDashboard {
             .into()
     }
 
-    fn create_guest_info_row(icon_class: &str, text: &str, value: usize, large: bool) -> ListTile {
+    fn create_guest_info_row(icon_class: &str, text: &str, value: &str, large: bool) -> ListTile {
         let icon_size = if large {
             "pwt-font-size-title-large"
         } else {
@@ -246,7 +246,7 @@ impl PvePageDashboard {
             })
             .title(text.to_string())
             .trailing(html! {
-                <div class={font_size}>{value.to_string()}</div>
+                <div class={font_size}>{value}</div>
             })
     }
 
@@ -278,43 +278,24 @@ impl PvePageDashboard {
                         Self::create_guest_info_row(
                             "fa fa-desktop",
                             "Virtual Machines",
-                            vm_count,
+                            &format!("{vm_count} ({vm_online_count} online)"),
                             true,
                         )
                         .on_tab(Callback::from(move |_| {
                             super::goto_location(&format!("/resources/qemu"));
                         })),
                     )
-                    .with_child(Self::create_guest_info_row(
-                        "fa fa-play pwt-color-primary",
-                        "Online",
-                        vm_online_count,
-                        false,
-                    ))
-                    .with_child(Self::create_guest_info_row(
-                        "fa fa-stop",
-                        "Offline",
-                        vm_count - vm_online_count,
-                        false,
-                    ))
                     .with_child(
-                        Self::create_guest_info_row("fa fa-cube", "LXC Container", ct_count, true)
-                            .on_tab(Callback::from(move |_| {
-                                super::goto_location(&format!("/resources/lxc"));
-                            })),
+                        Self::create_guest_info_row(
+                            "fa fa-cube",
+                            "LXC Container",
+                            &format!("{ct_count} ({ct_online_count} online)"),
+                            true,
+                        )
+                        .on_tab(Callback::from(move |_| {
+                            super::goto_location(&format!("/resources/lxc"));
+                        })),
                     )
-                    .with_child(Self::create_guest_info_row(
-                        "fa fa-play pwt-color-primary",
-                        "Online",
-                        ct_online_count,
-                        false,
-                    ))
-                    .with_child(Self::create_guest_info_row(
-                        "fa fa-stop",
-                        "Offline",
-                        ct_count - ct_online_count,
-                        false,
-                    ))
                     .into()
             }
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
