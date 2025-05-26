@@ -8,7 +8,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Card, Column, Fa, Row};
+use pwt::widget::{Button, Card, Column, Fa, MiniScroll, MiniScrollMode, Row};
 use pwt::AsyncPool;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -117,7 +117,7 @@ impl PvePageVmStatus {
             .menu(menu)
             .on_activate(ctx.link().callback(|_| Msg::Shutdown));
 
-        Row::new()
+        let row = Row::new()
             .gap(2)
             .class(pwt::css::JustifyContent::SpaceBetween)
             .with_child(
@@ -126,7 +126,10 @@ impl PvePageVmStatus {
                     .on_activate(ctx.link().callback(|_| Msg::Start)),
             )
             .with_child(shutdown)
-            .with_child(Button::new("Console").disabled(!running))
+            .with_child(Button::new("Console").disabled(!running));
+
+        MiniScroll::new(row)
+            .scroll_mode(MiniScrollMode::Native)
             .into()
     }
 }
