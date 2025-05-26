@@ -3,6 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::http_post;
+use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
@@ -105,6 +106,17 @@ impl PvePageVmStatus {
     fn view_actions(&self, ctx: &Context<Self>, data: &QemuStatus) -> Html {
         let running = data.status == IsRunning::Running;
 
+        let menu = Menu::new().with_item(
+            MenuItem::new("Stop")
+                .disabled(!running)
+                .on_select(ctx.link().callback(|_| Msg::Stop)),
+        );
+
+        let shutdown = SplitButton::new("Shutdown")
+            .disabled(!running)
+            .menu(menu)
+            .on_activate(ctx.link().callback(|_| Msg::Shutdown));
+
         Row::new()
             .gap(2)
             .class(pwt::css::JustifyContent::SpaceBetween)
@@ -113,16 +125,7 @@ impl PvePageVmStatus {
                     .disabled(running)
                     .on_activate(ctx.link().callback(|_| Msg::Start)),
             )
-            .with_child(
-                Button::new("Shutdown")
-                    .disabled(!running)
-                    .on_activate(ctx.link().callback(|_| Msg::Shutdown)),
-            )
-            .with_child(
-                Button::new("Stop")
-                    .disabled(!running)
-                    .on_activate(ctx.link().callback(|_| Msg::Stop)),
-            )
+            .with_child(shutdown)
             .with_child(Button::new("Console").disabled(!running))
             .into()
     }
