@@ -221,7 +221,7 @@ impl PvePageDashboard {
             .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
             .with_child(list)
             .onclick(Callback::from(move |_| {
-                super::goto_location(&format!("/resources/node"));
+                super::goto_location("/resources/node");
             }))
             .into()
     }
@@ -282,7 +282,7 @@ impl PvePageDashboard {
                             true,
                         )
                         .on_tab(Callback::from(move |_| {
-                            super::goto_location(&format!("/resources/qemu"));
+                            super::goto_location("/resources/qemu");
                         })),
                     )
                     .with_child(
@@ -293,7 +293,7 @@ impl PvePageDashboard {
                             true,
                         )
                         .on_tab(Callback::from(move |_| {
-                            super::goto_location(&format!("/resources/lxc"));
+                            super::goto_location("/resources/lxc");
                         })),
                     )
                     .into()

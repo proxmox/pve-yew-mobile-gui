@@ -28,6 +28,9 @@ pub use page_storage_status::PageStorageStatus;
 mod page_login;
 pub use page_login::PageLogin;
 
+mod page_tasks;
+pub use page_tasks::PageTasks;
+
 // mod page_logs;
 // pub use page_logs::PageLogs;
 
@@ -48,7 +51,8 @@ use pwt::widget::{Column, TabBarItem, ThemeLoader};
 use proxmox_login::Authentication;
 
 use proxmox_yew_comp::{
-    authentication_from_cookie, http_set_auth, register_auth_observer, AuthObserver,
+    authentication_from_cookie, http_set_auth, percent_encoding::percent_encode_component,
+    register_auth_observer, AuthObserver,
 };
 
 pub fn goto_location(path: &str) {
@@ -74,6 +78,8 @@ enum Route {
     NodeResources,
     #[at("/resources/qemu/:nodename/:vmid")]
     Qemu { vmid: u64, nodename: String },
+    #[at("/resources/qemu/:nodename/:vmid/tasks")]
+    QemuTasks { vmid: u64, nodename: String },
     #[at("/resources/lxc")]
     LxcResources,
     #[at("/resources/lxc/:vmid")]
@@ -119,12 +125,30 @@ fn switch(routes: Route) -> Html {
             })
             .into()],
         ),
-
         Route::Qemu { vmid, nodename } => (
             "resources",
             vec![
                 PageResources::new().into(),
                 PageVmStatus::new(nodename, vmid).into(),
+            ],
+        ),
+        Route::QemuTasks { vmid, nodename } => (
+            "resources",
+            vec![
+                PageResources::new().into(),
+                PageVmStatus::new(nodename.clone(), vmid).into(),
+                PageTasks::new(format!(
+                    "/nodes/{}/qemu/{}",
+                    percent_encode_component(&nodename),
+                    vmid
+                ))
+                .title(format!("VM {vmid}"))
+                .back(format!(
+                    "/resources/qemu/{}/{}",
+                    percent_encode_component(&nodename),
+                    vmid
+                ))
+                .into(),
             ],
         ),
         Route::Lxc { vmid } => (

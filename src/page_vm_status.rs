@@ -15,7 +15,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{IsRunning, QemuStatus};
 
-use crate::{TopNavBar, VmConfigPanel};
+use crate::{ListTile, TopNavBar, VmConfigPanel};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageVmStatus {
@@ -132,6 +132,25 @@ impl PvePageVmStatus {
             .scroll_mode(MiniScrollMode::Native)
             .into()
     }
+
+    fn task_button(&self, ctx: &Context<Self>) -> Html {
+        Card::new()
+            .class("pwt-d-flex")
+            .class("pwt-interactive")
+            .class("pwt-elevation0")
+            .class(pwt::css::JustifyContent::Center)
+            .with_child("Task List")
+            .onclick({
+                let props = ctx.props();
+                let url = format!(
+                    "/resources/qemu/{}/{}/tasks",
+                    percent_encode_component(&props.node),
+                    props.vmid,
+                );
+                move |_| super::goto_location(&url)
+            })
+            .into()
+    }
 }
 
 impl Component for PvePageVmStatus {
@@ -184,6 +203,7 @@ impl Component for PvePageVmStatus {
                 .gap(2)
                 .with_child(self.view_status(ctx, data))
                 .with_child(self.view_actions(ctx, data))
+                .with_child(self.task_button(ctx))
                 .with_child(VmConfigPanel::new(props.node.clone(), props.vmid))
                 .into(),
             Err(err) => pwt::widget::error_message(err).into(),
