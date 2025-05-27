@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::widget::Column;
 
-use crate::TopNavBar;
+use crate::widgets::TopNavBar;
 
 use pwt_macros::builder;
 

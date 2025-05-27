@@ -6,7 +6,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::widget::{Column, Container};
 
-use crate::TopNavBar;
+use crate::widgets::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageContainerStatus {

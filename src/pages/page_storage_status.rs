@@ -6,28 +6,26 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::widget::{Column, Container};
 
-use crate::TopNavBar;
+use crate::widgets::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct PageNodeStatus {
-    nodename: AttrValue,
+pub struct PageStorageStatus {
+    name: AttrValue,
 }
 
-impl PageNodeStatus {
-    pub fn new(nodename: impl Into<AttrValue>) -> Self {
-        Self {
-            nodename: nodename.into(),
-        }
+impl PageStorageStatus {
+    pub fn new(name: impl Into<AttrValue>) -> Self {
+        Self { name: name.into() }
     }
 }
 
-pub struct PvePageNodeStatus {}
+pub struct PvePageStorageStatus {}
 
 pub enum Msg {}
 
-impl Component for PvePageNodeStatus {
+impl Component for PvePageStorageStatus {
     type Message = Msg;
-    type Properties = PageNodeStatus;
+    type Properties = PageStorageStatus;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {}
@@ -38,13 +36,13 @@ impl Component for PvePageNodeStatus {
 
         let content = Column::new()
             .padding(2)
-            .with_child(format!("This is the status for node {}", props.nodename));
+            .with_child(format!("This is the status for storage {}", props.name));
 
         Column::new()
             .class("pwt-fit")
             .with_child(
                 TopNavBar::new()
-                    .title(format!("Node {}", props.nodename))
+                    .title(format!("Storage {}", props.name))
                     .back("/resources"),
             )
             .with_child(content)
@@ -52,9 +50,9 @@ impl Component for PvePageNodeStatus {
     }
 }
 
-impl Into<VNode> for PageNodeStatus {
+impl Into<VNode> for PageStorageStatus {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PvePageNodeStatus>(Rc::new(self), None);
+        let comp = VComp::new::<PvePageStorageStatus>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

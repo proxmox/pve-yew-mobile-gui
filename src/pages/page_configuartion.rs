@@ -5,7 +5,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::widget::Column;
 
-use crate::{ListTile, TopNavBar};
+use crate::widgets::{ListTile, TopNavBar};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageConfiguration {}

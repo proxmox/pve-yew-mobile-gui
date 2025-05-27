@@ -1,44 +1,10 @@
-mod list_tile;
-pub use list_tile::*;
+pub mod widgets;
 
-mod top_nav_bar;
-pub use top_nav_bar::TopNavBar;
-
-mod page_dashboard;
-pub use page_dashboard::PageDashboard;
-
-mod page_resources;
-pub use page_resources::{PageResources, ResourceFilter};
-
-mod page_vm_status;
-pub use page_vm_status::PageVmStatus;
-
-mod page_container_status;
-pub use page_container_status::PageContainerStatus;
-
-mod page_node_status;
-pub use page_node_status::PageNodeStatus;
-
-mod vm_config_panel;
-pub use vm_config_panel::VmConfigPanel;
-
-mod page_storage_status;
-pub use page_storage_status::PageStorageStatus;
-
-mod page_login;
-pub use page_login::PageLogin;
-
-mod page_tasks;
-pub use page_tasks::PageTasks;
-
-// mod page_logs;
-// pub use page_logs::PageLogs;
-
-mod page_configuartion;
-pub use page_configuartion::PageConfiguration;
-
-mod page_not_found;
-pub use page_not_found::PageNotFound;
+pub mod pages;
+use pages::{
+    PageConfiguration, PageContainerStatus, PageDashboard, PageLogin, PageNodeStatus, PageNotFound,
+    PageResources, PageStorageStatus, PageTasks, PageVmStatus, ResourceFilter,
+};
 
 use yew::virtual_dom::Key;
 use yew_router::{HashRouter, Routable, Switch};

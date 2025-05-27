@@ -16,7 +16,7 @@ use pve_api_types::{
 
 use proxmox_yew_comp::http_get;
 
-use crate::{ListTile, TopNavBar};
+use crate::widgets::{ListTile, TopNavBar};
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
@@ -221,7 +221,7 @@ impl PvePageDashboard {
             .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
             .with_child(list)
             .onclick(Callback::from(move |_| {
-                super::goto_location("/resources/node");
+                crate::goto_location("/resources/node");
             }))
             .into()
     }
@@ -282,7 +282,7 @@ impl PvePageDashboard {
                             true,
                         )
                         .on_tab(Callback::from(move |_| {
-                            super::goto_location("/resources/qemu");
+                            crate::goto_location("/resources/qemu");
                         })),
                     )
                     .with_child(
@@ -293,7 +293,7 @@ impl PvePageDashboard {
                             true,
                         )
                         .on_tab(Callback::from(move |_| {
-                            super::goto_location("/resources/lxc");
+                            crate::goto_location("/resources/lxc");
                         })),
                     )
                     .into()

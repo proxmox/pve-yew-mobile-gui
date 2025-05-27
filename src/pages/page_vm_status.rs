@@ -15,7 +15,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{IsRunning, QemuStatus};
 
-use crate::{ListTile, TopNavBar, VmConfigPanel};
+use crate::widgets::{ListTile, TopNavBar, VmConfigPanel};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageVmStatus {
@@ -147,7 +147,7 @@ impl PvePageVmStatus {
                     percent_encode_component(&props.node),
                     props.vmid,
                 );
-                move |_| super::goto_location(&url)
+                move |_| crate::goto_location(&url)
             })
             .into()
     }

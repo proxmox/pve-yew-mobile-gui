@@ -1,7 +1,7 @@
 use pwt::prelude::*;
 use pwt::widget::{error_message, Column};
 
-use crate::TopNavBar;
+use crate::widgets::TopNavBar;
 
 #[function_component]
 pub fn PageNotFound() -> Html {

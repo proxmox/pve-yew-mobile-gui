@@ -149,7 +149,7 @@ impl PvePageResources {
                 <div class="pwt-font-size-title-small">{item.status.as_deref().unwrap_or("")}</div>
             })
             .onclick(Callback::from(move |_| {
-                super::goto_location(&format!("/resources/node/{nodename}"));
+                crate::goto_location(&format!("/resources/node/{nodename}"));
             }))
             .into()
     }
@@ -197,7 +197,7 @@ impl PvePageResources {
         let nodename = item.node.clone().unwrap();
         self.create_vm_list_item(icon, item)
             .onclick(Callback::from(move |_| {
-                super::goto_location(&format!("/resources/qemu/{nodename}/{vmid}"));
+                crate::goto_location(&format!("/resources/qemu/{nodename}/{vmid}"));
             }))
             .into()
     }
@@ -207,7 +207,7 @@ impl PvePageResources {
         let vmid = item.vmid.unwrap();
         self.create_vm_list_item(icon, item)
             .onclick(Callback::from(move |_| {
-                super::goto_location(&format!("/resources/lxc/{vmid}"));
+                crate::goto_location(&format!("/resources/lxc/{vmid}"));
             }))
             .into()
     }
@@ -270,7 +270,7 @@ impl PvePageResources {
             .with_child(row2)
             .with_child(progress)
             .onclick(Callback::from(move |_| {
-                super::goto_location(&format!("/resources/storage/{name}"));
+                crate::goto_location(&format!("/resources/storage/{name}"));
             }))
             .into()
     }

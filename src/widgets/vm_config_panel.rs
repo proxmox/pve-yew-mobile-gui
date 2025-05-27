@@ -14,7 +14,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
-use crate::ListTile;
+use crate::widgets::ListTile;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct VmConfigPanel {
