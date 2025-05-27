@@ -104,9 +104,8 @@ fn switch(routes: Route) -> Html {
                 PageResources::new().into(),
                 PageVmStatus::new(nodename.clone(), vmid).into(),
                 PageTasks::new(format!(
-                    "/nodes/{}/qemu/{}",
+                    "/nodes/{}/tasks?vmid={vmid}",
                     percent_encode_component(&nodename),
-                    vmid
                 ))
                 .title(format!("VM {vmid}"))
                 .back(format!(

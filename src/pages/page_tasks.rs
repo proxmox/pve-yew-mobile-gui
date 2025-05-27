@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::widget::Column;
 
-use crate::widgets::TopNavBar;
+use crate::widgets::{TasksPanel, TopNavBar};
 
 use pwt_macros::builder;
 
@@ -18,7 +18,7 @@ pub struct PageTasks {
     #[builder(IntoPropValue, into_prop_value)]
     pub title: Option<AttrValue>,
 
-    pub url: Option<AttrValue>,
+    pub base_url: AttrValue,
 
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
@@ -26,8 +26,10 @@ pub struct PageTasks {
 }
 
 impl PageTasks {
-    pub fn new(url: impl Into<AttrValue>) -> Self {
-        yew::props!(Self { url: url.into() })
+    pub fn new(base_url: impl Into<AttrValue>) -> Self {
+        yew::props!(Self {
+            base_url: base_url.into()
+        })
     }
 }
 
@@ -54,7 +56,7 @@ impl Component for PvePageTasks {
                     .subtitle(&props.title)
                     .back(&props.back),
             )
-            .with_child("TASK LIST")
+            .with_child(TasksPanel::new(props.base_url.clone()))
             .into()
     }
 }
