@@ -135,6 +135,7 @@ impl PvePageVmStatus {
 
     fn task_button(&self, ctx: &Context<Self>) -> Html {
         Card::new()
+            .padding(2)
             .class("pwt-d-flex")
             .class("pwt-interactive")
             .class("pwt-elevation0")
