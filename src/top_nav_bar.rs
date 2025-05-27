@@ -5,18 +5,26 @@ use pwt::prelude::*;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
 
+use pwt::impl_class_prop_builder;
 use pwt::state::{Theme, ThemeObserver};
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
 use pwt::widget::{ActionIcon, Column, Row, ThemeModeSelector};
 
+use pwt_macros::builder;
+
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct TopNavBar {
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub title: Option<AttrValue>,
+
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub subtitle: Option<AttrValue>,
 
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub back: Option<AttrValue>,
 
     #[prop_or_default]
@@ -28,31 +36,7 @@ impl TopNavBar {
         yew::props!(Self {})
     }
 
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
-
-    pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.title = title.into_prop_value();
-        self
-    }
-
-    pub fn subtitle(mut self, subtitle: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.subtitle = subtitle.into_prop_value();
-        self
-    }
-
-    pub fn back(mut self, link: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.back = link.into_prop_value();
-        self
-    }
+    impl_class_prop_builder!();
 }
 
 pub enum Msg {
