@@ -8,7 +8,9 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::props::PwtSpace;
-use pwt::widget::{AlertDialog, Button, Card, Column, Container, Fa, MiniScroll, Progress, Row};
+use pwt::widget::{
+    AlertDialog, Button, Card, Column, Container, Fa, ListTile, MiniScroll, Progress, Row,
+};
 
 use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
@@ -16,7 +18,7 @@ use pve_api_types::{
 
 use proxmox_yew_comp::http_get;
 
-use crate::widgets::{ListTile, TopNavBar};
+use crate::widgets::TopNavBar;
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
@@ -188,20 +190,24 @@ impl PvePageDashboard {
     }
 
     fn create_node_list_item(&self, item: &ClusterNodeIndexResponse) -> ListTile {
-        let icon = html! {<i class={
-            classes!(
-                "pwt-font-size-title-large",
-                "fa",
-                "fa-server",
-                (item.status == ClusterNodeIndexResponseStatus::Online).then(|| "pwt-color-primary"),
-            )
-        }/>};
-
         ListTile::new()
+            .interactive(true)
             .class("pwt-scheme-surface")
-            .leading(icon)
-            .title(item.node.clone())
-            .trailing(html! {
+            .class("pwt-gap-1")
+            .with_child(
+                Container::new()
+                    .class("pwt-font-size-title-medium")
+                    .with_child(
+                        Fa::new("server")
+                            .class(
+                                (item.status == ClusterNodeIndexResponseStatus::Online)
+                                    .then(|| "pwt-color-primary"),
+                            )
+                            .padding_end(PwtSpace::Em(0.5)),
+                    )
+                    .with_child(item.node.clone()),
+            )
+            .with_child(html! {
                 <div class="pwt-font-size-title-small">{item.status.to_string()}</div>
             })
     }
@@ -226,27 +232,20 @@ impl PvePageDashboard {
             .into()
     }
 
-    fn create_guest_info_row(icon_class: &str, text: &str, value: &str, large: bool) -> ListTile {
-        let icon_size = if large {
-            "pwt-font-size-title-large"
-        } else {
-            "pwt-ps-2 pwt-font-size-title-medium"
-        };
-        let font_size = if large {
-            "pwt-font-size-title-medium"
-        } else {
-            "pwt-font-size-title-small"
-        };
-
+    fn create_guest_info_row(icon_class: &str, text: &str, value: &str) -> ListTile {
         ListTile::new()
+            .interactive(true)
             .class("pwt-scheme-surface")
+            .class("pwt-gap-1")
             .border_top(true)
-            .leading(html! {
-                <i class={classes!(icon_size,  "fa-fw", icon_class.to_string())}/>
-            })
-            .title(text.to_string())
-            .trailing(html! {
-                <div class={font_size}>{value}</div>
+            .with_child(
+                Container::new()
+                    .class("pwt-font-size-title-medium")
+                    .with_child(Fa::new(icon_class).padding_end(PwtSpace::Em(0.5)))
+                    .with_child(text),
+            )
+            .with_child(html! {
+                <div class="pwt-font-size-title-small">{value}</div>
             })
     }
 
@@ -276,23 +275,21 @@ impl PvePageDashboard {
                 Column::new()
                     .with_child(
                         Self::create_guest_info_row(
-                            "fa fa-desktop",
+                            "desktop",
                             "Virtual Machines",
                             &format!("{vm_count} ({vm_online_count} online)"),
-                            true,
                         )
-                        .on_tab(Callback::from(move |_| {
+                        .onclick(Callback::from(move |_| {
                             crate::goto_location("/resources/qemu");
                         })),
                     )
                     .with_child(
                         Self::create_guest_info_row(
-                            "fa fa-cube",
+                            "cube",
                             "LXC Container",
                             &format!("{ct_count} ({ct_online_count} online)"),
-                            true,
                         )
-                        .on_tab(Callback::from(move |_| {
+                        .onclick(Callback::from(move |_| {
                             crate::goto_location("/resources/lxc");
                         })),
                     )
