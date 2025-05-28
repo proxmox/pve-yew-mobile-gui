@@ -7,14 +7,12 @@ use yew::virtual_dom::{VComp, VNode};
 
 use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Card, Fa};
+use pwt::widget::{Card, Column, Fa, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
-
-use crate::widgets::ListTile;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct VmConfigPanel {
@@ -66,9 +64,13 @@ fn create_config_tile(icon: &str, title: &str, subtitle: &str) -> ListTile {
         .class("pwt-gap-2")
         .class("pwt-scheme-surface")
         .border_top(true)
-        .leading(icon)
-        .title(title.to_string())
-        .subtitle(subtitle.to_string())
+        .with_child(icon)
+        .with_child(
+            Column::new()
+                .gap(1)
+                .with_child(html! {<div class="pwt-font-size-title-medium">{title}</div>})
+                .with_child(html! {<div class="pwt-font-size-title-small">{subtitle}</div>}),
+        )
 }
 
 impl PveVmConfigPanel {
