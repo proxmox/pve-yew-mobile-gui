@@ -3,9 +3,9 @@ use std::rc::Rc;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::Column;
+use pwt::widget::{Column, ListTile};
 
-use crate::widgets::{ListTile, TopNavBar};
+use crate::widgets::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageConfiguration {}
@@ -59,10 +59,12 @@ impl PvePageConfiguration {
             .class("pwt-flex-fill pwt-overflow-auto")
             .children(CONFIGS.iter().map(|item| {
                 ListTile::new()
+                    .interactive(true)
                     .class("pwt-border-bottom")
-                    .leading(html! {<i class={classes!("pwt-font-size-title-large", item.0)}/>})
-                    .title(item.1)
-                    //.on_tab(|_| { /* fixme */ })
+                    .class("pwt-gap-1")
+                    .with_child(html! {<i class={classes!("pwt-font-size-title-large", item.0)}/>})
+                    .with_child(item.1)
+                    //.onclick(|_| { /* fixme */ })
                     .into()
             }))
             .into()
