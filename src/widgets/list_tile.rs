@@ -1,3 +1,5 @@
+// Note: No longer user: please use pwt::ListTile instead
+
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::VList;
 
