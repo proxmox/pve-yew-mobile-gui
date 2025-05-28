@@ -4,7 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Container};
+use pwt::widget::Column;
 
 use crate::widgets::TopNavBar;
 
