@@ -195,16 +195,28 @@ impl PvePageDashboard {
                 let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
                 List::new(nodes.len() as u64, move |pos| {
                     let item = &nodes[pos as usize];
+                    let nodename = item.node.clone();
+                    let subtitle = match item.level.as_deref() {
+                        Some("") | None => "no subscription",
+                        Some(level) => level,
+                    };
+
                     icon_list_tile(
                         Fa::new("server").class(
                             (item.status == ClusterNodeIndexResponseStatus::Online)
                                 .then(|| "pwt-color-primary"),
                         ),
-                        item.node.clone(),
-                        item.status.to_string(),
-                        None,
+                        nodename.clone(),
+                        subtitle.to_string(),
+                        Some(item.status.to_string().into()),
                     )
                     .interactive(true)
+                    .onclick(Callback::from(
+                        move |event: web_sys::MouseEvent| {
+                            event.stop_propagation();
+                            crate::goto_location(&format!("/resources/node/{nodename}"));
+                        },
+                    ))
                 })
                 .grid_template_columns("auto 1fr auto")
                 .into()
