@@ -9,7 +9,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::props::PwtSpace;
 use pwt::widget::{
-    AlertDialog, Button, Card, Column, Container, Fa, List, ListTile, MiniScroll, Progress, Row,
+    AlertDialog, Button, Card, Column, Container, Fa, List, MiniScroll, Progress, Row,
 };
 
 use pve_api_types::{
@@ -235,23 +235,6 @@ impl PvePageDashboard {
             .into()
     }
 
-    fn create_guest_info_row(icon_class: &str, text: &str, value: &str) -> ListTile {
-        ListTile::new()
-            .interactive(true)
-            .class("pwt-scheme-surface")
-            .class("pwt-gap-1")
-            .border_top(true)
-            .with_child(
-                Container::new()
-                    .class("pwt-font-size-title-medium")
-                    .with_child(Fa::new(icon_class).padding_end(PwtSpace::Em(0.5)))
-                    .with_child(text),
-            )
-            .with_child(html! {
-                <div class="pwt-font-size-title-small">{value}</div>
-            })
-    }
-
     fn create_guests_card(&self, _ctx: &Context<Self>) -> Html {
         let content: Html = match &self.resources {
             Ok(list) => {
@@ -275,28 +258,33 @@ impl PvePageDashboard {
                     }
                 }
 
-                Column::new()
-                    .with_child(
-                        Self::create_guest_info_row(
-                            "desktop",
-                            "Virtual Machines",
-                            &format!("{vm_count} ({vm_online_count} online)"),
-                        )
-                        .onclick(Callback::from(move |_| {
-                            crate::goto_location("/resources/qemu");
-                        })),
-                    )
-                    .with_child(
-                        Self::create_guest_info_row(
-                            "cube",
-                            "LXC Container",
-                            &format!("{ct_count} ({ct_online_count} online)"),
-                        )
-                        .onclick(Callback::from(move |_| {
-                            crate::goto_location("/resources/lxc");
-                        })),
-                    )
-                    .into()
+                let mut items: Vec<(&'static str, &'static str, String, &'static str)> = Vec::new();
+
+                items.push((
+                    "desktop",
+                    "Virtual Machines",
+                    format!("{vm_count} ({vm_online_count} online)"),
+                    "/resources/qemu",
+                ));
+
+                items.push((
+                    "cube",
+                    "LXC Container",
+                    format!("{ct_count} ({ct_online_count} online)"),
+                    "/resources/lxc",
+                ));
+
+                List::new(items.len() as u64, move |pos| {
+                    let (icon, title, subtitle, url) = &items[pos as usize];
+                    icon_list_tile(Fa::new(icon), *title, subtitle.clone(), None).onclick({
+                        let url = *url;
+                        move |_| {
+                            crate::goto_location(url);
+                        }
+                    })
+                })
+                .grid_template_columns("auto 1fr auto")
+                .into()
             }
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
