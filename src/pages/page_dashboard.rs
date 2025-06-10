@@ -9,7 +9,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::props::PwtSpace;
 use pwt::widget::{
-    AlertDialog, Button, Card, Column, Container, Fa, ListTile, MiniScroll, Progress, Row,
+    AlertDialog, Button, Card, Column, Container, Fa, List, ListTile, MiniScroll, Progress, Row,
 };
 
 use pve_api_types::{
@@ -18,7 +18,7 @@ use pve_api_types::{
 
 use proxmox_yew_comp::http_get;
 
-use crate::widgets::TopNavBar;
+use crate::widgets::{icon_list_tile, TopNavBar};
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
@@ -189,43 +189,34 @@ impl PvePageDashboard {
            .into()
     }
 
-    fn create_node_list_item(&self, item: &ClusterNodeIndexResponse) -> ListTile {
-        ListTile::new()
-            .interactive(true)
-            .class("pwt-scheme-surface")
-            .class("pwt-gap-1")
-            .with_child(
-                Container::new()
-                    .class("pwt-font-size-title-medium")
-                    .with_child(
-                        Fa::new("server")
-                            .class(
-                                (item.status == ClusterNodeIndexResponseStatus::Online)
-                                    .then(|| "pwt-color-primary"),
-                            )
-                            .padding_end(PwtSpace::Em(0.5)),
-                    )
-                    .with_child(item.node.clone()),
-            )
-            .with_child(html! {
-                <div class="pwt-font-size-title-small">{item.status.to_string()}</div>
-            })
-    }
-
     fn create_nodes_card(&self, _ctx: &Context<Self>) -> Html {
-        let list: Html = match &self.nodes {
-            Ok(list) => list
-                .iter()
-                .map(|item| self.create_node_list_item(item))
-                .collect(),
-            Err(err) => pwt::widget::error_message(err).padding(2).into(),
+        let content: Html = match self.nodes.as_ref() {
+            Ok(nodes) => {
+                let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
+                List::new(nodes.len() as u64, move |pos| {
+                    let item = &nodes[pos as usize];
+                    icon_list_tile(
+                        Fa::new("server").class(
+                            (item.status == ClusterNodeIndexResponseStatus::Online)
+                                .then(|| "pwt-color-primary"),
+                        ),
+                        item.node.clone(),
+                        item.status.to_string(),
+                        None,
+                    )
+                    .interactive(true)
+                })
+                .grid_template_columns("auto 1fr auto")
+                .into()
+            }
+            Err(err) => pwt::widget::error_message(err).into(),
         };
 
         Card::new()
             .class("pwt-flex-none pwt-overflow-hidden")
             .padding(0)
             .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
-            .with_child(list)
+            .with_child(content)
             .onclick(Callback::from(move |_| {
                 crate::goto_location("/resources/node");
             }))

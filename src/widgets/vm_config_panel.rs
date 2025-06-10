@@ -7,12 +7,14 @@ use yew::virtual_dom::{VComp, VNode};
 
 use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Card, Column, Fa, ListTile};
+use pwt::widget::{Card, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
+
+use super::icon_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct VmConfigPanel {
@@ -56,68 +58,57 @@ pub struct PveVmConfigPanel {
     load_guard: Option<AsyncAbortGuard>,
 }
 
-fn create_config_tile(icon: &str, title: &str, subtitle: &str) -> ListTile {
-    let icon: Html = Fa::new(icon).fixed_width().large_2x().into();
-
-    ListTile::new()
-        .class("pwt-d-flex")
-        .class("pwt-gap-2")
-        .class("pwt-scheme-surface")
-        .border_top(true)
-        .with_child(icon)
-        .with_child(
-            Column::new()
-                .gap(1)
-                .with_child(html! {<div class="pwt-font-size-title-medium">{title}</div>})
-                .with_child(html! {<div class="pwt-font-size-title-small">{subtitle}</div>}),
-        )
-}
-
 impl PveVmConfigPanel {
     fn view_config(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
-        let mut card = Card::new()
-            .border(true)
-            .padding(0)
-            .class("pwt-flex-none pwt-overflow-hidden")
-            .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Hardware"}</div>})
-            .with_child(create_config_tile(
-                "memory",
-                data.memory.as_deref().unwrap_or("-"),
-                "Memory",
-            ))
-            .with_child(create_config_tile(
-                "cpu",
-                &processor_text(data),
-                "Processor",
-            ))
-            .with_child(create_config_tile(
-                "microchip",
-                &data
-                    .bios
-                    .map(|b| b.to_string())
-                    .unwrap_or(String::from("Default (SeaBIOS)")),
-                "Bios",
-            ))
-            .with_child(create_config_tile(
-                "gears",
-                &data.machine.as_deref().unwrap_or("Default (i440fx)"),
-                "Machine Type",
-            ));
+        let mut list: Vec<ListTile> = Vec::new();
+        list.push(icon_list_tile(
+            Fa::new("memory"),
+            data.memory.as_deref().unwrap_or("-").to_string(),
+            "Memory",
+            None,
+        ));
+        list.push(icon_list_tile(
+            Fa::new("cpu"),
+            processor_text(data),
+            "Processor",
+            None,
+        ));
+
+        list.push(icon_list_tile(
+            Fa::new("microchip"),
+            data.bios
+                .map(|b| b.to_string())
+                .unwrap_or(String::from("Default (SeaBIOS)")),
+            "Bios",
+            None,
+        ));
+
+        list.push(icon_list_tile(
+            Fa::new("gears"),
+            data.machine
+                .as_deref()
+                .unwrap_or("Default (i440fx)")
+                .to_string(),
+            "Machine Type",
+            None,
+        ));
 
         for (n, disk_config) in &data.ide {
             if let Ok(config) = PveQmIde::API_SCHEMA.parse_property_string(disk_config) {
                 if let Ok(config) = serde_json::from_value::<PveQmIde>(config) {
                     if config.media == Some(PveQmIdeMedia::Cdrom) {
-                        card.add_child(create_config_tile(
-                            "cdrom",
-                            disk_config,
-                            &format!("CD/DVD Drive (ide{n})"),
+                        list.push(icon_list_tile(
+                            Fa::new("cdrom"),
+                            disk_config.to_string(),
+                            format!("CD/DVD Drive (ide{n})"),
+                            None,
                         ));
                     } else {
-                        card.add_child(create_config_tile(
-                            "hdd-o",
-                            disk_config,
-                            &format!("Hard Disk (ide{n})"),
+                        list.push(icon_list_tile(
+                            Fa::new("hdd-o"),
+                            disk_config.to_string(),
+                            format!("Hard Disk (ide{n})"),
+                            None,
                         ));
                     }
                 }
@@ -125,22 +116,33 @@ impl PveVmConfigPanel {
         }
 
         for (n, disk_config) in &data.scsi {
-            card.add_child(create_config_tile(
-                "hdd-o",
-                disk_config,
-                &format!("Hard Disk (scsi{n})"),
+            list.push(icon_list_tile(
+                Fa::new("hdd-o"),
+                disk_config.to_string(),
+                format!("Hard Disk (scsi{n})"),
+                None,
             ));
         }
 
         for (n, net_config) in &data.net {
-            card.add_child(create_config_tile(
-                "exchange",
-                net_config,
-                &format!("Network Device (new{n})"),
+            list.push(icon_list_tile(
+                Fa::new("exchange"),
+                net_config.to_string(),
+                format!("Network Device (new{n})"),
+                None,
             ));
         }
 
-        card.into()
+        Card::new()
+            .border(true)
+            .padding(0)
+            .class("pwt-flex-none pwt-overflow-hidden")
+            .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Hardware"}</div>})
+            .with_child(
+                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+                    .grid_template_columns("auto 1fr auto"),
+            )
+            .into()
     }
 }
 

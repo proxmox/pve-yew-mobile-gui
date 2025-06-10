@@ -3,12 +3,14 @@ use std::rc::Rc;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, ListTile};
+use pwt::widget::{Column, Fa, List};
 
 use crate::widgets::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageConfiguration {}
+
+use crate::widgets::icon_list_tile;
 
 impl PageConfiguration {
     pub fn new() -> Self {
@@ -18,56 +20,59 @@ impl PageConfiguration {
 pub struct PvePageConfiguration {}
 
 static CONFIGS: &[(&'static str, &'static str, fn() -> Html)] = &[
-    ("fa fa-fw fa-server", "Cluster", || {
+    ("server", "Cluster", || {
         html! {}
     }),
-    ("fa fa-fw fa-gear", "Options", || {
+    ("gear", "Options", || {
         html! {}
     }),
-    ("fa fa-fw fa-database", "Storage", || {
+    ("database", "Storage", || {
         html! {}
     }),
-    ("fa fa-fw fa-floppy-o", "Backup", || {
+    ("floppy-o", "Backup", || {
         html! {}
     }),
-    ("fa fa-fw fa-retweet", "Replication", || {
+    ("retweet", "Replication", || {
         html! {}
     }),
-    ("fa fa-fw fa-unlock", "Permissions", || {
+    ("unlock", "Permissions", || {
         html! {}
     }),
-    ("fa fa-fw fa-heartbeat", "High Availability", || {
+    ("heartbeat", "High Availability", || {
         html! {}
     }),
-    ("fa fa-fw fa-certificate", "ACME", || {
+    ("certificate", "ACME", || {
         html! {}
     }),
-    ("fa fa-fw fa-shield", "Firewall", || {
+    ("shield", "Firewall", || {
         html! {}
     }),
-    ("fa fa-fw fa-bar-chart", "Metric Server", || {
+    ("bar-chart", "Metric Server", || {
         html! {}
     }),
-    ("fa fa-fw fa-comments-o", "Support", || {
+    ("comments-o", "Support", || {
         html! {}
     }),
 ];
 
 impl PvePageConfiguration {
     fn create_menu(&self, _ctx: &Context<Self>) -> Html {
-        Column::new()
-            .class("pwt-flex-fill pwt-overflow-auto")
-            .children(CONFIGS.iter().map(|item| {
-                ListTile::new()
-                    .interactive(true)
-                    .class("pwt-border-bottom")
-                    .class("pwt-gap-1")
-                    .with_child(html! {<i class={classes!("pwt-font-size-title-large", item.0)}/>})
-                    .with_child(item.1)
-                    //.onclick(|_| { /* fixme */ })
-                    .into()
-            }))
+        List::new(CONFIGS.len() as u64, |pos| {
+            let item = CONFIGS[pos as usize];
+
+            icon_list_tile(
+                Fa::new(item.0.to_string()),
+                item.1.to_string(),
+                None::<&str>,
+                None,
+            )
+            .interactive(true)
+            // fixme: add onclick handler
             .into()
+        })
+        .grid_template_columns("auto 1fr")
+        .class("pwt-fit")
+        .into()
     }
 }
 

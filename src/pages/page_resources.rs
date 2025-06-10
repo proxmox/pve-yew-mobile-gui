@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::rc::Rc;
 
 use anyhow::Error;
@@ -10,10 +11,12 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::SideDialog;
-use pwt::widget::{ActionIcon, Card, Column, Panel, Progress, Row, Trigger};
+use pwt::widget::{ActionIcon, Card, Column, Fa, List, ListTile, Panel, Progress, Row, Trigger};
 
 use proxmox_yew_comp::http_get;
 use pve_api_types::{ClusterResource, ClusterResourceType};
+
+use crate::widgets::icon_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageResources {
@@ -108,178 +111,108 @@ pub enum Msg {
 }
 
 impl PvePageResources {
-    fn create_node_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
-        let icon = html! {<i class={
-            classes!(
-                "pwt-font-size-title-large",
-                "fa",
-                "fa-building",
-                (item.status.as_deref() == Some("online")).then(|| "pwt-color-primary"),
-            )
-        }/>};
-
+    fn create_node_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let nodename = item.node.clone().unwrap();
-
-        Card::new()
-            .class("pwt-d-flex pwt-gap-2")
-            .class("pwt-shape-none pwt-card-flat pwt-interactive")
-            .class("pwt-scheme-neutral")
-            .padding_x(2)
-            .padding_y(1)
-            .border_bottom(true)
-            .class("pwt-align-items-center")
-            .with_child(icon)
-            .with_child(
-                Column::new()
-                    .class("pwt-flex-fill")
-                    .gap(1)
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-medium">{&nodename}</div>
-                    })
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-small">{
-                            match item.level.as_deref() {
-                                Some("") | None => "no subscription",
-                                Some(level) => level,
-                            }
-                        }</div>
-                    }),
-            )
-            .with_child(html! {
-                <div class="pwt-font-size-title-small">{item.status.as_deref().unwrap_or("")}</div>
-            })
-            .onclick(Callback::from(move |_| {
-                crate::goto_location(&format!("/resources/node/{nodename}"));
-            }))
-            .into()
+        icon_list_tile(
+            Fa::new("server")
+                .class((item.status.as_deref() == Some("online")).then(|| "pwt-color-primary")),
+            nodename.clone(),
+            match item.level.as_deref() {
+                Some("") | None => "no subscription",
+                Some(level) => level,
+            }
+            .to_string(),
+            item.status.clone().map(|s| s.to_html()),
+        )
+        .interactive(true)
+        .onclick(Callback::from(move |_| {
+            crate::goto_location(&format!("/resources/node/{nodename}"));
+        }))
+        .into()
     }
 
-    fn create_vm_list_item(&self, icon: &str, item: &ClusterResource) -> Card {
-        let icon = html! {<i class={
-            classes!(
-                "pwt-font-size-title-large",
-                icon.to_string(),
-                (item.status.as_deref() == Some("running")).then(|| "pwt-color-primary"),
-            )
-        }/>};
-
-        Card::new()
-            .class("pwt-d-flex pwt-gap-2")
-            .class("pwt-shape-none pwt-card-flat pwt-interactive")
-            .class("pwt-scheme-neutral")
-            .padding_x(2)
-            .padding_y(1)
-            .border_bottom(true)
-            .class("pwt-align-items-center")
-            .with_child(icon)
-            .with_child(
-                Column::new()
-                    .class("pwt-flex-fill")
-                    .gap(1)
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-medium">{
-                            format!("{} {}", item.vmid.unwrap(), item.name.as_deref().unwrap_or(""))
-
-                        }</div>
-                    })
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-small">{item.node.as_deref().unwrap()}</div>
-                    }),
-            )
-            .with_child(html! {
-                <div class="pwt-font-size-title-small">{item.status.as_deref().unwrap_or("")}</div>
-            })
+    fn create_vm_list_item(&self, icon: &str, item: &ClusterResource) -> ListTile {
+        icon_list_tile(
+            Fa::new(icon)
+                .class((item.status.as_deref() == Some("running")).then(|| "pwt-color-primary")),
+            format!(
+                "{} {}",
+                item.vmid.unwrap(),
+                item.name.as_deref().unwrap_or("")
+            ),
+            item.node.clone(),
+            item.status.clone().map(|s| s.to_html()),
+        )
+        .interactive(true)
     }
 
-    fn create_qemu_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
-        let icon = "fa fa-fw fa-desktop";
+    fn create_qemu_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let vmid = item.vmid.unwrap();
         let nodename = item.node.clone().unwrap();
-        self.create_vm_list_item(icon, item)
+        self.create_vm_list_item("desktop", item)
             .onclick(Callback::from(move |_| {
                 crate::goto_location(&format!("/resources/qemu/{nodename}/{vmid}"));
             }))
-            .into()
     }
 
-    fn create_lxc_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
-        let icon = "fa fa-fw fa-cube";
+    fn create_lxc_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let vmid = item.vmid.unwrap();
-        self.create_vm_list_item(icon, item)
+        self.create_vm_list_item("cube", item)
             .onclick(Callback::from(move |_| {
                 crate::goto_location(&format!("/resources/lxc/{vmid}"));
             }))
-            .into()
     }
 
-    fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> Html {
+    fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let name = item.storage.clone().unwrap();
 
-        let row1 = Row::new()
-            .gap(2)
-            .class("pwt-align-items-flex-end")
-            .with_child(
-                Column::new()
-                    .class("pwt-flex-fill")
-                    .gap(1)
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-medium">{&name}</div>
-                    })
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-small">{item.node.as_deref().unwrap()}</div>
-                    }),
-            )
-            .with_child(html! {
-                <div class="pwt-font-size-title-small">{item.status.as_deref().unwrap_or("")}</div>
-            });
+        let mut tile = icon_list_tile(
+            Fa::new("database")
+                .class((item.status.as_deref() == Some("available")).then(|| "pwt-color-primary")),
+            format!("{} {}", item.storage.clone().unwrap(), name,),
+            item.node.clone(),
+            item.status.clone().map(|s| s.to_html()),
+        )
+        .onclick(Callback::from(move |_| {
+            crate::goto_location(&format!("/resources/storage/{name}"));
+        }))
+        .interactive(true);
 
-        let icon = html! {<i class={
-            classes!(
-                "pwt-font-size-title-large",
-                "fa",
-                "fa-database",
-                (item.status.as_deref() == Some("available")).then(|| "pwt-color-primary"),
-            )
-        }/>};
+        if item.disk.is_some() && item.maxdisk.is_some() {
+            let used = HumanByte::new_binary(item.disk.unwrap_or(0) as f64);
+            let total = HumanByte::new_binary(item.maxdisk.unwrap_or(0) as f64);
 
-        let used = HumanByte::new_binary(item.disk.unwrap_or(0) as f64);
-        let total = HumanByte::new_binary(item.maxdisk.unwrap_or(0) as f64);
+            let progress = Progress::new()
+                .value((item.disk.unwrap_or(0) as f32) / (item.maxdisk.unwrap_or(1) as f32));
 
-        let row2 = Row::new()
-            .gap(2)
-            .class("pwt-align-items-flex-end")
-            .with_child(icon)
-            .with_child(html! {
-                <div class="pwt-font-size-title-medium pwt-flex-fill">{used.to_string()}</div>
-            })
-            .with_child(html! {
-                <div class="pwt-font-size-title-medium">{format!("Total: {}", total)}</div>
-            });
+            let row2 = Row::new()
+                .gap(2)
+                .class("pwt-align-items-flex-end")
+                //.with_child(icon)
+                .with_child(html! {
+                    <div class="pwt-font-size-title-small pwt-flex-fill">{used.to_string()}</div>
+                })
+                .with_child(html! {
+                    <div class="pwt-font-size-title-small">{format!("Total: {}", total)}</div>
+                });
 
-        let progress = Progress::new()
-            .value((item.disk.unwrap_or(0) as f32) / (item.maxdisk.unwrap_or(1) as f32));
+            let status = Column::new()
+                .gap(1)
+                .style("grid-column", "1 / -1")
+                .with_child(row2)
+                .with_child(progress);
 
-        Card::new()
-            .class("pwt-d-flex pwt-flex-direction-column pwt-gap-1")
-            .class("pwt-shape-none pwt-card-flat pwt-interactive")
-            .class("pwt-scheme-neutral")
-            .padding_x(2)
-            .padding_y(1)
-            .border_bottom(true)
-            .with_child(row1)
-            .with_child(row2)
-            .with_child(progress)
-            .onclick(Callback::from(move |_| {
-                crate::goto_location(&format!("/resources/storage/{name}"));
-            }))
-            .into()
+            tile.add_child(status);
+        }
+
+        tile
     }
 
     fn create_resource_list(&self, ctx: &Context<Self>, data: &[ClusterResource]) -> Html {
         let mut filter = self.filter.clone();
         filter.name = filter.name.to_lowercase();
 
-        let children: Vec<Html> = data
+        let children: Vec<ListTile> = data
             .iter()
             .filter_map(|item| {
                 if !filter_match(item, &filter) {
@@ -307,7 +240,12 @@ impl PvePageResources {
                 .with_child("List is empty.")
                 .into()
         } else {
-            Column::new().class("pwt-fit").children(children).into()
+            List::new(children.len() as u64, move |pos| {
+                children[pos as usize].clone()
+            })
+            .grid_template_columns("auto 1fr auto")
+            .class("pwt-fit")
+            .into()
         }
     }
 
@@ -390,6 +328,18 @@ impl PvePageResources {
     }
 }
 
+fn type_ordering(ty: ClusterResourceType) -> usize {
+    match ty {
+        ClusterResourceType::Lxc => 1,
+        ClusterResourceType::Openvz => 1,
+        ClusterResourceType::Qemu => 2,
+        ClusterResourceType::Storage => 3,
+        ClusterResourceType::Node => 4,
+        ClusterResourceType::Pool => 5,
+        ClusterResourceType::Sdn => 6,
+    }
+}
+
 impl Component for PvePageResources {
     type Message = Msg;
     type Properties = PageResources;
@@ -418,6 +368,16 @@ impl Component for PvePageResources {
             }
             Msg::LoadResult(result) => {
                 self.data = result.map_err(|err| err.to_string());
+                let _ = self.data.as_mut().map(|d| {
+                    d.sort_by(|item, other| {
+                        let order = type_ordering(item.ty).cmp(&type_ordering(other.ty));
+                        if order != Ordering::Equal {
+                            return order;
+                        }
+
+                        item.id.cmp(&other.id)
+                    })
+                });
                 let link = ctx.link().clone();
                 self.reload_timeout = Some(Timeout::new(3000, move || {
                     link.send_message(Msg::Load);
