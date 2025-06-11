@@ -6,6 +6,7 @@ use anyhow::Error;
 use proxmox_human_byte::HumanByte;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::{
@@ -19,6 +20,7 @@ use pve_api_types::{
 use proxmox_yew_comp::http_get;
 
 use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
+use crate::Route;
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
@@ -55,13 +57,27 @@ impl PvePageDashboard {
         });
     }
 
-    fn create_tab_bar(&self, _ctx: &Context<Self>) -> Html {
+    fn create_tab_bar(&self, ctx: &Context<Self>) -> Html {
         let content = Row::new()
             .padding_y(1)
             .gap(2)
             .with_child(Button::new("Subscription"))
-            .with_child(Button::new("Virtual Machines").icon_class("fa fa-desktop"))
-            .with_child(Button::new("Containers").icon_class("fa fa-cube"));
+            .with_child(
+                Button::new("Virtual Machines")
+                    .icon_class("fa fa-desktop")
+                    .on_activate({
+                        let navigator = ctx.link().navigator().unwrap();
+                        move |_| navigator.push(&Route::QemuResources)
+                    }),
+            )
+            .with_child(
+                Button::new("Containers")
+                    .icon_class("fa fa-cube")
+                    .on_activate({
+                        let navigator = ctx.link().navigator().unwrap();
+                        move |_| navigator.push(&Route::LxcResources)
+                    }),
+            );
 
         MiniScroll::new(content)
             .class(pwt::css::Flex::None)
