@@ -118,6 +118,7 @@ impl PvePageVmStatus {
             .on_activate(ctx.link().callback(|_| Msg::Shutdown));
 
         let row = Row::new()
+            .padding_y(1)
             .gap(2)
             .class(pwt::css::JustifyContent::SpaceBetween)
             .with_child(

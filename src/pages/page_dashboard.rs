@@ -8,7 +8,9 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{AlertDialog, Button, Card, Column, Fa, List, ListTile, MiniScroll, Row};
+use pwt::widget::{
+    AlertDialog, Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row,
+};
 
 use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
@@ -61,7 +63,10 @@ impl PvePageDashboard {
             .with_child(Button::new("Virtual Machines").icon_class("fa fa-desktop"))
             .with_child(Button::new("Containers").icon_class("fa fa-cube"));
 
-        MiniScroll::new(content).into()
+        MiniScroll::new(content)
+            .class(pwt::css::Flex::None)
+            .scroll_mode(MiniScrollMode::Native)
+            .into()
     }
 
     fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
