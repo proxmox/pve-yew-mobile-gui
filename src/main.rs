@@ -173,7 +173,7 @@ fn switch(routes: Route) -> Html {
             .label("Configuration"),
     ];
 
-    let navigation = NavigationBar::new(items).default_active(Key::from(active_nav));
+    let navigation = NavigationBar::new(items).active(Key::from(active_nav));
 
     Column::new()
         .class("pwt-viewport")
