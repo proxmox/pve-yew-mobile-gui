@@ -228,12 +228,14 @@ impl PvePageDashboard {
 
                 List::new(items.len() as u64, move |pos| {
                     let (icon, title, subtitle, url) = &items[pos as usize];
-                    icon_list_tile(Fa::new(icon), *title, subtitle.clone(), None).onclick({
-                        let url = *url;
-                        move |_| {
-                            crate::goto_location(url);
-                        }
-                    })
+                    icon_list_tile(Fa::new(icon), *title, subtitle.clone(), None)
+                        .onclick({
+                            let url = *url;
+                            move |_| {
+                                crate::goto_location(url);
+                            }
+                        })
+                        .interactive(true)
                 })
                 .grid_template_columns("auto 1fr auto")
                 .into()
