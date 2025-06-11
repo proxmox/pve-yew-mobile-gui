@@ -210,35 +210,33 @@ impl PvePageDashboard {
                     }
                 }
 
-                let mut items: Vec<(&'static str, &'static str, String, &'static str)> = Vec::new();
+                let mut tiles: Vec<ListTile> = Vec::new();
 
-                items.push((
-                    "desktop",
-                    "Virtual Machines",
-                    format!("{vm_count} ({vm_online_count} online)"),
-                    "/resources/qemu",
-                ));
+                tiles.push(
+                    icon_list_tile(
+                        Fa::new("desktop"),
+                        "Virtual Machines",
+                        format!("{vm_count} ({vm_online_count} online)"),
+                        None,
+                    )
+                    .onclick(|_| crate::goto_location("/resources/qemu"))
+                    .interactive(true),
+                );
 
-                items.push((
-                    "cube",
-                    "LXC Container",
-                    format!("{ct_count} ({ct_online_count} online)"),
-                    "/resources/lxc",
-                ));
+                tiles.push(
+                    icon_list_tile(
+                        Fa::new("cube"),
+                        "LXC Container",
+                        format!("{ct_count} ({ct_online_count} online)"),
+                        None,
+                    )
+                    .onclick(|_| crate::goto_location("/resources/lxc"))
+                    .interactive(true),
+                );
 
-                List::new(items.len() as u64, move |pos| {
-                    let (icon, title, subtitle, url) = &items[pos as usize];
-                    icon_list_tile(Fa::new(icon), *title, subtitle.clone(), None)
-                        .onclick({
-                            let url = *url;
-                            move |_| {
-                                crate::goto_location(url);
-                            }
-                        })
-                        .interactive(true)
-                })
-                .grid_template_columns("auto 1fr auto")
-                .into()
+                List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
+                    .grid_template_columns("auto 1fr auto")
+                    .into()
             }
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
