@@ -101,7 +101,7 @@ impl Component for PveTopNavBar {
 
         let back_or_logo = if let Some(back) = &props.back {
             let back = back.to_owned();
-            ActionIcon::new("fa fa-angle-left")
+            ActionIcon::new("fa fa-chevron-left")
                 .class("pwt-font-size-headline-small")
                 .class("pwt-scheme-neutral")
                 .on_activate({
