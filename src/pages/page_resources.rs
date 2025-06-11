@@ -11,12 +11,12 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::SideDialog;
-use pwt::widget::{ActionIcon, Card, Column, Fa, List, ListTile, Panel, Progress, Row, Trigger};
+use pwt::widget::{ActionIcon, Card, Column, Fa, List, ListTile, Panel, Row, Trigger};
 
 use proxmox_yew_comp::http_get;
 use pve_api_types::{ClusterResource, ClusterResourceType};
 
-use crate::widgets::icon_list_tile;
+use crate::widgets::{icon_list_tile, list_tile_usage};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageResources {
@@ -182,27 +182,13 @@ impl PvePageResources {
             let used = HumanByte::new_binary(item.disk.unwrap_or(0) as f64);
             let total = HumanByte::new_binary(item.maxdisk.unwrap_or(0) as f64);
 
-            let progress = Progress::new()
-                .value((item.disk.unwrap_or(0) as f32) / (item.maxdisk.unwrap_or(1) as f32));
+            let percentage = (item.disk.unwrap_or(0) as f32) / (item.maxdisk.unwrap_or(1) as f32);
 
-            let row2 = Row::new()
-                .gap(2)
-                .class("pwt-align-items-flex-end")
-                //.with_child(icon)
-                .with_child(html! {
-                    <div class="pwt-font-size-title-small pwt-flex-fill">{used.to_string()}</div>
-                })
-                .with_child(html! {
-                    <div class="pwt-font-size-title-small">{format!("Total: {}", total)}</div>
-                });
-
-            let status = Column::new()
-                .gap(1)
-                .style("grid-column", "1 / -1")
-                .with_child(row2)
-                .with_child(progress);
-
-            tile.add_child(status);
+            tile.add_child(list_tile_usage(
+                used.to_string(),
+                total.to_string(),
+                percentage,
+            ));
         }
 
         tile

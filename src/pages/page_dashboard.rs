@@ -3,14 +3,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Error;
 
+use proxmox_human_byte::HumanByte;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::props::PwtSpace;
-use pwt::widget::{
-    AlertDialog, Button, Card, Column, Container, Fa, List, MiniScroll, Progress, Row,
-};
+use pwt::widget::{AlertDialog, Button, Card, Column, Fa, List, ListTile, MiniScroll, Row};
 
 use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
@@ -18,7 +16,7 @@ use pve_api_types::{
 
 use proxmox_yew_comp::http_get;
 
-use crate::widgets::{icon_list_tile, TopNavBar};
+use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
@@ -67,13 +65,15 @@ impl PvePageDashboard {
     }
 
     fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
+        let mut node_count = 0;
         let content: Html = match &self.nodes {
             Ok(list) => {
                 let mut cpu = 0.0;
                 let mut maxcpu = 0;
-                let mut mem = 0;
-                let mut maxmem = 0;
-                let node_count = list.len();
+                let mut mem = 0.0;
+                let mut maxmem = 0.0;
+
+                node_count = list.len();
 
                 for node in list {
                     if let (Some(node_cpu), Some(node_maxcpu)) = (node.cpu, node.maxcpu) {
@@ -81,13 +81,10 @@ impl PvePageDashboard {
                         maxcpu += node_maxcpu;
                     }
                     if let (Some(node_mem), Some(node_maxmem)) = (node.mem, node.maxmem) {
-                        mem += node_mem;
-                        maxmem += node_maxmem;
+                        mem += node_mem as f64;
+                        maxmem += node_maxmem as f64;
                     }
                 }
-
-                let mem = (mem as f64) / (1024.0 * 1024.0 * 1024.0);
-                let maxmem = (maxmem as f64) / (1024.0 * 1024.0 * 1024.0);
 
                 let cpu_percentage = if maxcpu == 0 {
                     0.0
@@ -101,71 +98,26 @@ impl PvePageDashboard {
                     (mem as f32) / (maxmem as f32)
                 };
 
-                Column::new()
-                    .with_child(
-                        Row::new()
-                            .class("pwt-list-tile")
-                            .class("pwt-scheme-surface")
-                            .padding(2)
-                            .border_bottom(true)
-                            .with_child(
-                                Column::new()
-                                    .class("pwt-flex-fill")
-                                    .gap(1)
-                                    .with_child(
-                                        Container::new()
-                                            .class("pwt-font-size-title-medium")
-                                            .with_child(
-                                                Fa::new("cpu").padding_end(PwtSpace::Em(0.5)),
-                                            )
-                                            .with_child("CPU"),
-                                    )
-                                    .with_child(
-                                        Container::new()
-                                            .class("pwt-font-size-title-small")
-                                            .with_child(format!(
-                                                "Cores {maxcpu} Nodes {node_count}"
-                                            )),
-                                    ),
-                            )
-                            .with_child(
-                                Progress::new()
-                                    .attribute("style", "width: 100px;")
-                                    .value(cpu_percentage),
-                            ),
-                    )
-                    .with_child(
-                        Row::new()
-                            .class("pwt-list-tile")
-                            .class("pwt-scheme-surface")
-                            .padding(2)
-                            .with_child(
-                                Column::new()
-                                    .class("pwt-flex-fill")
-                                    .gap(1)
-                                    .with_child(
-                                        Container::new()
-                                            .class("pwt-font-size-title-medium")
-                                            .with_child(
-                                                Fa::new("memory").padding_end(PwtSpace::Em(0.5)),
-                                            )
-                                            .with_child("Memory"),
-                                    )
-                                    .with_child(
-                                        Container::new()
-                                            .class("pwt-font-size-title-small")
-                                            .with_child(format!(
-                                                "{:.2} Gib of {:.2} Gib",
-                                                mem, maxmem
-                                            )),
-                                    ),
-                            )
-                            .with_child(
-                                Progress::new()
-                                    .attribute("style", "width: 100px;")
-                                    .value(mem_percentage),
-                            ),
-                    )
+                let mut tiles: Vec<ListTile> = Vec::new();
+
+                tiles.push(
+                    icon_list_tile(Fa::new("cpu"), "CPU", None::<&str>, None).with_child(
+                        list_tile_usage(format!("{:.2}", cpu), maxcpu.to_string(), cpu_percentage),
+                    ),
+                );
+
+                tiles.push(
+                    icon_list_tile(Fa::new("memory"), "Memory", None::<&str>, None).with_child(
+                        list_tile_usage(
+                            HumanByte::new_binary(mem).to_string(),
+                            HumanByte::new_binary(maxmem).to_string(),
+                            mem_percentage,
+                        ),
+                    ),
+                );
+
+                List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
+                    .grid_template_columns("auto 1fr")
                     .into()
             }
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
@@ -182,7 +134,7 @@ impl PvePageDashboard {
                         <div class="pwt-font-size-title-large">{"Analytics"}</div>
                     })
                     .with_child(html!{
-                        <div class="pwt-font-size-title-small">{"Usage acress all online nodes."}</div>
+                        <div class="pwt-font-size-title-small">{format!("Usage across all ({node_count}) online nodes.")}</div>
                     })
             )
             .with_child(content)
