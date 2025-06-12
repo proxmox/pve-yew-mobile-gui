@@ -201,6 +201,7 @@ impl Component for PvePageVmStatus {
 
         let content: Html = match &self.data {
             Ok(data) => Column::new()
+                .class(pwt::css::FlexFit)
                 .padding(2)
                 .gap(2)
                 .with_child(self.view_status(ctx, data))
