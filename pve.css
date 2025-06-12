@@ -1,48 +1,31 @@
-.fa-cpu::before {
+.fa-cpu::before,
+.fa-memory::before,
+.fa-cdrom::before {
     content: " ";
-    background-image: url(./images/icon-cpu.svg);
     background-size: 16px 16px;
     background-repeat: no-repeat;
     width: 16px;
     height: 16px;
     vertical-align: bottom;
     display: inline-block;
+
+}
+
+.fa-cpu::before {
+    background-image: url(./images/icon-cpu.svg);
 }
 
 .fa-memory::before {
-    content: " ";
     background-image: url(./images/icon-memory.svg);
-    background-size: 16px 16px;
-    background-repeat: no-repeat;
-    width: 16px;
-    height: 16px;
-    vertical-align: bottom;
-    display: inline-block;
+
 }
 
 .fa-cdrom::before {
-    content: " ";
     background-image: url(./images/icon-cd-drive.svg);
-    background-size: 16px 16px;
-    background-repeat: no-repeat;
-    width: 16px;
-    height: 16px;
-    vertical-align: bottom;
-    display: inline-block;
 }
 
-.fa-2x.fa-memory::before {
-    background-size: 32px 32px;
-    width: 32px;
-    height: 32px;
-}
-
-.fa-2x.fa-cpu::before {
-    background-size: 32px 32px;
-    width: 32px;
-    height: 32px;
-}
-
+.fa-2x.fa-memory::before,
+.fa-2x.fa-cpu::before,
 .fa-2x.fa-cdrom::before {
     background-size: 32px 32px;
     width: 32px;
@@ -50,7 +33,7 @@
 }
 
 :root.pwt-dark-mode {
-
+    .fa-cdrom,
     .fa-memory,
     .fa-cpu {
         filter: invert(90%);
