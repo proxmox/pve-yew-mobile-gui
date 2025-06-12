@@ -1,0 +1,31 @@
+{
+    "short_name": "PVE",
+    "name": "Proxmox Virtual Environment PWA",
+    "description": "Progressive Web App to manage Proxmox Virtual Environment.",
+    "icons": [
+        {
+            "src": "images/proxmox-icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        },
+        {
+            "src": "images/proxmox-icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "images/screenshot-dashboard.png",
+            "sizes": "1082x2402",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Dashboard view displaying key metrics"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "prefer_related_applications": false,
+    "theme_color": "#000000",
+    "background_color": "#ffffff"
+}
