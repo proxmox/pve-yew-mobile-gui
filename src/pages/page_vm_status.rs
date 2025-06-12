@@ -131,6 +131,7 @@ impl PvePageVmStatus {
 
         MiniScroll::new(row)
             .scroll_mode(MiniScrollMode::Native)
+            .class(pwt::css::Flex::None)
             .into()
     }
 
