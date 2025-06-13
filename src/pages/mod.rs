@@ -22,6 +22,9 @@ pub use page_login::PageLogin;
 mod page_tasks;
 pub use page_tasks::PageTasks;
 
+mod page_task_status;
+pub use page_task_status::PageTaskStatus;
+
 // mod page_logs;
 // pub use page_logs::PageLogs;
 

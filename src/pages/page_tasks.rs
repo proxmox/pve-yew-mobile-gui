@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use yew::html::IntoPropValue;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
@@ -23,6 +23,11 @@ pub struct PageTasks {
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     pub back: Option<AttrValue>,
+
+    #[builder_cb(IntoEventCallback, into_event_callback, (String, Option<i64>))]
+    #[prop_or_default]
+    /// Called when the task is opened
+    pub on_show_task: Option<Callback<(String, Option<i64>)>>,
 }
 
 impl PageTasks {
@@ -56,7 +61,9 @@ impl Component for PvePageTasks {
                     .subtitle(&props.title)
                     .back(&props.back),
             )
-            .with_child(TasksPanel::new(props.base_url.clone()))
+            .with_child(
+                TasksPanel::new(props.base_url.clone()).on_show_task(props.on_show_task.clone()),
+            )
             .into()
     }
 }

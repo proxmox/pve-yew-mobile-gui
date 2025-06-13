@@ -3,7 +3,7 @@ pub mod widgets;
 pub mod pages;
 use pages::{
     PageConfiguration, PageContainerStatus, PageDashboard, PageLogin, PageNodeStatus, PageNotFound,
-    PageResources, PageStorageStatus, PageTasks, PageVmStatus, ResourceFilter,
+    PageResources, PageStorageStatus, PageTaskStatus, PageTasks, PageVmStatus, ResourceFilter,
 };
 
 use yew::virtual_dom::Key;
@@ -46,6 +46,12 @@ enum Route {
     Qemu { vmid: u64, nodename: String },
     #[at("/resources/qemu/:nodename/:vmid/tasks")]
     QemuTasks { vmid: u64, nodename: String },
+    #[at("/resources/qemu/:nodename/:vmid/tasks/:upid")]
+    QemuTaskStatus {
+        vmid: u64,
+        nodename: String,
+        upid: String,
+    },
     #[at("/resources/lxc")]
     LxcResources,
     #[at("/resources/lxc/:vmid")]
@@ -110,6 +116,47 @@ fn switch(routes: Route) -> Html {
                 .title(format!("VM {vmid}"))
                 .back(format!(
                     "/resources/qemu/{}/{}",
+                    percent_encode_component(&nodename),
+                    vmid
+                ))
+                .on_show_task(move |(upid, endtime): (String, Option<i64>)| {
+                    let url = format!(
+                        "/resources/qemu/{}/{}/tasks/{}",
+                        percent_encode_component(&nodename),
+                        vmid,
+                        percent_encode_component(&upid)
+                    );
+                    crate::goto_location(&url);
+                })
+                .into(),
+            ],
+        ),
+        Route::QemuTaskStatus {
+            vmid,
+            nodename,
+            upid,
+        } => (
+            "resources",
+            vec![
+                PageResources::new().into(),
+                PageVmStatus::new(nodename.clone(), vmid).into(),
+                PageTasks::new(format!(
+                    "/nodes/{}/tasks?vmid={vmid}",
+                    percent_encode_component(&nodename),
+                ))
+                .title(format!("VM {vmid}"))
+                .back(format!(
+                    "/resources/qemu/{}/{}",
+                    percent_encode_component(&nodename),
+                    vmid
+                ))
+                .into(),
+                PageTaskStatus::new(
+                    format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
+                    upid,
+                )
+                .back(format!(
+                    "/resources/qemu/{}/{}/tasks",
                     percent_encode_component(&nodename),
                     vmid
                 ))
