@@ -22,8 +22,6 @@ use proxmox_yew_comp::http_get;
 use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
 use crate::Route;
 
-static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
-
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageDashboard {}
 
@@ -36,11 +34,15 @@ impl PageDashboard {
 pub struct PvePageDashboard {
     nodes: Result<Vec<ClusterNodeIndexResponse>, String>,
     resources: Result<Vec<ClusterResource>, String>,
+    subscription_ok: bool,
+    show_subscription_alert: bool,
+    subscription_confirmed: bool,
 }
 pub enum Msg {
     NodeLoadResult(Result<Vec<ClusterNodeIndexResponse>, Error>),
     ResourcesLoadResult(Result<Vec<ClusterResource>, Error>),
     ConfirmSubscription,
+    ShowSubscriptionAlert,
 }
 
 impl PvePageDashboard {
@@ -58,10 +60,17 @@ impl PvePageDashboard {
     }
 
     fn create_tab_bar(&self, ctx: &Context<Self>) -> Html {
-        let content = Row::new()
-            .padding_y(1)
-            .gap(2)
-            .with_child(Button::new("Subscription"))
+        let mut content = Row::new().padding_y(1).gap(2);
+
+        if !self.subscription_ok {
+            content.add_child(
+                Button::new("Subscription")
+                    .disabled(self.nodes.is_err())
+                    .on_activate(ctx.link().callback(|_| Msg::ShowSubscriptionAlert)),
+            );
+        }
+
+        let content = content
             .with_child(
                 Button::new("Virtual Machines")
                     .icon_class("fa fa-desktop")
@@ -273,13 +282,19 @@ impl PvePageDashboard {
     }
 
     fn create_subscription_alert(&self, ctx: &Context<Self>) -> AlertDialog {
-        let msg = "
-            One or more nodes do not have a valid subscription.\n\n
-            The Proxmox team works very hard to make sure you are running the best
-            software and getting stable updates and security enhancements,
-            as well as quick enterprise support.\n\n
-            Please consider to buy a subscription.
-        ";
+        let link = "https://www.proxmox.com/proxmox-ve/pricing";
+
+        let msg = Column::new()
+            .gap(1)
+            .with_child(html! {<p>{tr!("One or more nodes do not have a valid subscription.")}</p>})
+            .with_child(html! {<p>{tr!(r#"
+                The Proxmox team works very hard to make sure you are running the best
+                software and getting stable updates and security enhancements,
+                as well as quick enterprise support."#)
+            }</p>})
+            .with_child(
+                html! {<p><a href={link}>{tr!("Please consider to buy a subscription.")}</a></p>},
+            );
 
         AlertDialog::new(msg)
             .title("Subscription")
@@ -295,6 +310,9 @@ impl Component for PvePageDashboard {
         let me = Self {
             nodes: Err(format!("no data loaded")),
             resources: Err(format!("no data loaded")),
+            show_subscription_alert: false,
+            subscription_ok: true, // assume ok by default
+            subscription_confirmed: false,
         };
         me.load(ctx);
         me
@@ -309,19 +327,26 @@ impl Component for PvePageDashboard {
                 self.nodes = result.map_err(|err| err.to_string());
 
                 if let Ok(nodes) = &self.nodes {
-                    let supported = nodes.iter().fold(true, |mut acc, item| {
+                    self.subscription_ok = nodes.iter().fold(true, |mut acc, item| {
                         if item.level.as_deref().unwrap_or("").is_empty() {
                             acc = false;
                         }
                         acc
                     });
-                    if !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed) {
-                        SUBSCRIPTION_CONFIRMED.store(supported, Ordering::Relaxed);
+
+                    if !self.subscription_confirmed {
+                        self.subscription_confirmed = self.subscription_ok;
                     }
                 }
             }
             Msg::ConfirmSubscription => {
-                SUBSCRIPTION_CONFIRMED.store(true, Ordering::Relaxed);
+                self.show_subscription_alert = false;
+                self.subscription_confirmed = true;
+            }
+            Msg::ShowSubscriptionAlert => {
+                if !self.subscription_ok {
+                    self.show_subscription_alert = true;
+                }
             }
         }
         true
@@ -350,7 +375,7 @@ impl Component for PvePageDashboard {
             );
         */
 
-        let alert = (!SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed))
+        let alert = (self.show_subscription_alert || !self.subscription_confirmed)
             .then(|| self.create_subscription_alert(ctx));
 
         Column::new()
