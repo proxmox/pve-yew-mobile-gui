@@ -22,6 +22,8 @@ use proxmox_yew_comp::http_get;
 use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
 use crate::Route;
 
+static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageDashboard {}
 
@@ -36,7 +38,6 @@ pub struct PvePageDashboard {
     resources: Result<Vec<ClusterResource>, String>,
     subscription_ok: bool,
     show_subscription_alert: bool,
-    subscription_confirmed: bool,
 }
 pub enum Msg {
     NodeLoadResult(Result<Vec<ClusterNodeIndexResponse>, Error>),
@@ -312,7 +313,6 @@ impl Component for PvePageDashboard {
             resources: Err(format!("no data loaded")),
             show_subscription_alert: false,
             subscription_ok: true, // assume ok by default
-            subscription_confirmed: false,
         };
         me.load(ctx);
         me
@@ -334,14 +334,14 @@ impl Component for PvePageDashboard {
                         acc
                     });
 
-                    if !self.subscription_confirmed {
-                        self.subscription_confirmed = self.subscription_ok;
+                    if !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed) {
+                        SUBSCRIPTION_CONFIRMED.store(self.subscription_ok, Ordering::Relaxed);
                     }
                 }
             }
             Msg::ConfirmSubscription => {
                 self.show_subscription_alert = false;
-                self.subscription_confirmed = true;
+                SUBSCRIPTION_CONFIRMED.store(true, Ordering::Relaxed);
             }
             Msg::ShowSubscriptionAlert => {
                 if !self.subscription_ok {
@@ -375,8 +375,9 @@ impl Component for PvePageDashboard {
             );
         */
 
-        let alert = (self.show_subscription_alert || !self.subscription_confirmed)
-            .then(|| self.create_subscription_alert(ctx));
+        let alert = (self.show_subscription_alert
+            || !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed))
+        .then(|| self.create_subscription_alert(ctx));
 
         Column::new()
             .class("pwt-fit")
