@@ -1,12 +1,15 @@
 use std::rc::Rc;
 
 use anyhow::Error;
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::widget::{Column, Container, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
+
+use pwt_macros::builder;
 
 // fixme: implement filter
 // fixme: implement reload on scroll down
@@ -17,9 +20,15 @@ use proxmox_yew_comp::utils::render_epoch_short;
 use pve_api_types::ListTasksResponse;
 
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct TasksPanel {
     #[prop_or_default]
     pub base_url: AttrValue,
+
+    #[builder_cb(IntoEventCallback, into_event_callback, (String, Option<i64>))]
+    #[prop_or_default]
+    /// Called when the task is opened
+    pub on_show_task: Option<Callback<(String, Option<i64>)>>,
 }
 
 impl TasksPanel {
@@ -115,7 +124,10 @@ impl Component for PveTasksPanel {
         true
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        let on_show_task = props.on_show_task.clone();
+
         if self.data.is_empty() {
             return Container::new()
                 .padding(2)
@@ -130,7 +142,17 @@ impl Component for PveTasksPanel {
                 .interactive(true)
                 .with_child(task_icon(item).margin_end(1).large_2x())
                 .with_child(task_info(item))
-                .with_child(Fa::new("chevron-down"))
+                .with_child(Fa::new("chevron-right"))
+                .onclick({
+                    let on_show_task = on_show_task.clone();
+                    let upid = item.upid.clone();
+                    let endtime = item.endtime;
+                    move |_| {
+                        if let Some(on_show_task) = &on_show_task {
+                            on_show_task.emit((upid.clone(), endtime));
+                        }
+                    }
+                })
         })
         .min_row_height(60)
         .separator(true)
