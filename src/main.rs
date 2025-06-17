@@ -183,14 +183,22 @@ fn switch(routes: Route) -> Html {
         Route::Node { nodename } => (
             "resources",
             vec![
-                PageResources::new().into(),
+                PageResources::new_with_filter(ResourceFilter {
+                    nodes: true,
+                    ..Default::default()
+                })
+                .into(),
                 PageNodeStatus::new(nodename).into(),
             ],
         ),
         Route::NodeTasks { nodename } => (
             "resources",
             vec![
-                PageResources::new().into(),
+                PageResources::new_with_filter(ResourceFilter {
+                    nodes: true,
+                    ..Default::default()
+                })
+                .into(),
                 PageNodeStatus::new(nodename.clone()).into(),
                 PageTasks::new(format!(
                     "/nodes/{}/tasks",

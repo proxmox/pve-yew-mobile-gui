@@ -70,7 +70,7 @@ impl Component for PvePageNodeStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("Node {}", props.nodename))
-                    .back("/resources"),
+                    .back("/resources/node"),
             )
             .with_child(content)
             .into()
