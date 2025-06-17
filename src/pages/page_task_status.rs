@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::Column;
+use pwt::widget::{Column, List, ListTile, TabBar, TabBarItem};
 
 use proxmox_yew_comp::percent_encoding::percent_encode_component;
 
@@ -39,23 +39,23 @@ impl PageTaskStatus {
     }
 }
 
-pub struct PvePageTaskStatus {
-    active: bool,
+#[derive(Copy, Clone, PartialEq)]
+pub enum ViewState {
+    Output,
+    Status,
 }
 
-pub enum Msg {}
+pub struct PvePageTaskStatus {
+    active: bool,
+    view_state: ViewState,
+}
 
-impl Component for PvePageTaskStatus {
-    type Message = Msg;
-    type Properties = PageTaskStatus;
+pub enum Msg {
+    SetViewState(ViewState),
+}
 
-    fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
-        let active = props.endtime.map(|endtime| endtime == 0).unwrap_or(true);
-        Self { active }
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
+impl PvePageTaskStatus {
+    fn view_output(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         let active = self.active;
 
@@ -65,6 +65,63 @@ impl Component for PvePageTaskStatus {
             percent_encode_component(&props.task_id),
         );
 
+        LogView::new(url)
+            .padding(2)
+            .class("pwt-flex-fill")
+            .active(active)
+            .into()
+    }
+
+    fn view_status(&self, ctx: &Context<Self>) -> Html {
+        let tiles: Vec<ListTile> = Vec::new();
+
+        List::new(tiles.len() as u64, move |pos| {
+            tiles[pos as usize].clone().into()
+        })
+        .into()
+    }
+}
+
+impl Component for PvePageTaskStatus {
+    type Message = Msg;
+    type Properties = PageTaskStatus;
+
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+        let active = props.endtime.map(|endtime| endtime == 0).unwrap_or(true);
+        Self {
+            active,
+            view_state: ViewState::Output,
+        }
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::SetViewState(view_state) => {
+                self.view_state = view_state;
+                true
+            }
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+
+        let tabbar = TabBar::new()
+            .class(pwt::css::JustifyContent::Center)
+            .with_item(
+                TabBarItem::new().label("Output").key("output").on_activate(
+                    ctx.link()
+                        .callback(|_| Msg::SetViewState(ViewState::Output)),
+                ),
+            )
+            .with_item(
+                TabBarItem::new().label("Status").key("status").on_activate(
+                    ctx.link()
+                        .callback(|_| Msg::SetViewState(ViewState::Status)),
+                ),
+            );
+
         Column::new()
             .class("pwt-fit")
             .with_child(
@@ -73,13 +130,11 @@ impl Component for PvePageTaskStatus {
                     //.subtitle(&props.title)
                     .back(&props.back),
             )
-            .with_child(
-                LogView::new(url)
-                    .padding(2)
-                    .class("pwt-flex-fill")
-                    .active(active),
-            )
-            //.with_child(TaskViewer::new(props.task_id.clone()).base_url(props.base_url.clone()))
+            .with_child(tabbar)
+            .with_child(match self.view_state {
+                ViewState::Output => self.view_output(ctx),
+                ViewState::Status => self.view_status(ctx),
+            })
             .into()
     }
 }
