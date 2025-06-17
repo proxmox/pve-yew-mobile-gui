@@ -21,7 +21,7 @@ pub fn standard_list_tile(
     ListTile::new()
         .class(pwt::css::AlignItems::Center)
         .class("pwt-gap-1")
-        .class("pwt-scheme-surface")
+        //.class("pwt-scheme-surface")
         .border_top(true)
         .with_optional_child(leading.into_prop_value())
         .with_child({
