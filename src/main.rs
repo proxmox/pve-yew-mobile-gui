@@ -59,6 +59,8 @@ enum Route {
     Lxc { vmid: u64 },
     #[at("/resources/node/:nodename")]
     Node { nodename: String },
+    #[at("/resources/node/:nodename/tasks")]
+    NodeTasks { nodename: String },
     #[at("/resources/storage/:name")]
     Storage { name: String },
     // #[at("/logs")]
@@ -179,6 +181,23 @@ fn switch(routes: Route) -> Html {
             vec![
                 PageResources::new().into(),
                 PageNodeStatus::new(nodename).into(),
+            ],
+        ),
+        Route::NodeTasks { nodename } => (
+            "resources",
+            vec![
+                PageResources::new().into(),
+                PageNodeStatus::new(nodename.clone()).into(),
+                PageTasks::new(format!(
+                    "/nodes/{}/tasks",
+                    percent_encode_component(&nodename),
+                ))
+                .title(format!("Node {nodename}"))
+                .back(format!(
+                    "/resources/node/{}",
+                    percent_encode_component(&nodename),
+                ))
+                .into(),
             ],
         ),
         Route::Storage { name } => (
