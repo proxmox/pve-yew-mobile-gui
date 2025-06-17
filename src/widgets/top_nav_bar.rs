@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::impl_class_prop_builder;
 use pwt::state::{Theme, ThemeObserver};
-use pwt::widget::menu::{Menu, MenuButton, MenuItem};
+use pwt::widget::menu::{Menu, MenuButton, MenuEntry, MenuItem};
 use pwt::widget::{ActionIcon, Column, Row, ThemeModeSelector};
 
 use pwt_macros::builder;
@@ -29,6 +29,9 @@ pub struct TopNavBar {
 
     #[prop_or_default]
     pub class: Classes,
+
+    #[prop_or_default]
+    menu_items: Vec<MenuEntry>,
 }
 
 impl TopNavBar {
@@ -37,6 +40,28 @@ impl TopNavBar {
     }
 
     impl_class_prop_builder!();
+
+    /// Builder style method to add a menu item.
+    pub fn with_item(mut self, child: impl Into<MenuEntry>) -> Self {
+        self.add_item(child);
+        self
+    }
+
+    /// Method to add a menu item.
+    pub fn add_item(&mut self, child: impl Into<MenuEntry>) {
+        self.menu_items.push(child.into());
+    }
+
+    /// Builder style method to add multiple menu items.
+    pub fn items(mut self, child: impl IntoIterator<Item = MenuEntry>) -> Self {
+        self.add_items(child);
+        self
+    }
+
+    /// Method to add multiple items.
+    pub fn add_items(&mut self, children: impl IntoIterator<Item = MenuEntry>) {
+        self.menu_items.extend(children);
+    }
 }
 
 pub enum Msg {
@@ -78,7 +103,7 @@ impl Component for PveTopNavBar {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let menu = Menu::new().with_item(
+        let menu = Menu::new().items(props.menu_items.clone()).with_item(
             MenuItem::new("Logout")
                 .icon_class("fa fa-sign-out")
                 .on_select(ctx.link().callback(|_| Msg::Logout)),
