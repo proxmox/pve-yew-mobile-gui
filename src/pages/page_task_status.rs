@@ -4,6 +4,7 @@ use anyhow::{format_err, Error};
 
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::LogView;
+use pwt::widget::menu::{MenuEvent, MenuItem};
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -193,7 +194,13 @@ impl Component for PvePageTaskStatus {
                 TopNavBar::new()
                     .title("Task Status")
                     //.subtitle(&props.title)
-                    .back(&props.back),
+                    .back(&props.back)
+                    .with_item(
+                        MenuItem::new(tr!("Stop"))
+                            .icon_class("fa fa-stop")
+                            .disabled(!self.active)
+                            .on_select(ctx.link().callback(|_| Msg::StopTask)),
+                    ),
             )
             .with_child(tabbar)
             .with_child(match self.view_state {
