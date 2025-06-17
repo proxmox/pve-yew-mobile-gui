@@ -58,6 +58,8 @@ enum Route {
     },
     #[at("/resources/lxc")]
     LxcResources,
+    #[at("/resources/guests")]
+    GuestResources,
     #[at("/resources/lxc/:vmid")]
     Lxc { vmid: u64 },
     #[at("/resources/node/:nodename")]
@@ -92,6 +94,15 @@ fn switch(routes: Route) -> Html {
             "resources",
             vec![PageResources::new_with_filter(ResourceFilter {
                 lxc: true,
+                ..Default::default()
+            })
+            .into()],
+        ),
+        Route::GuestResources => (
+            "resources",
+            vec![PageResources::new_with_filter(ResourceFilter {
+                lxc: true,
+                qemu: true,
                 ..Default::default()
             })
             .into()],

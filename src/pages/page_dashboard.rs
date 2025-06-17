@@ -250,7 +250,10 @@ impl PvePageDashboard {
                         format!("{vm_count} ({vm_online_count} online)"),
                         None,
                     )
-                    .onclick(|_| crate::goto_location("/resources/qemu"))
+                    .onclick(|event: MouseEvent| {
+                        event.stop_propagation();
+                        crate::goto_location("/resources/qemu");
+                    })
                     .interactive(true),
                 );
 
@@ -261,7 +264,10 @@ impl PvePageDashboard {
                         format!("{ct_count} ({ct_online_count} online)"),
                         None,
                     )
-                    .onclick(|_| crate::goto_location("/resources/lxc"))
+                    .onclick(|event: MouseEvent| {
+                        event.stop_propagation();
+                        crate::goto_location("/resources/lxc");
+                    })
                     .interactive(true),
                 );
 
@@ -279,6 +285,9 @@ impl PvePageDashboard {
                 <div class="pwt-p-2 pwt-font-size-title-large">{"Guests"}</div>
             })
             .with_child(content)
+            .onclick(Callback::from(move |_| {
+                crate::goto_location("/resources/guests");
+            }))
             .into()
     }
 
