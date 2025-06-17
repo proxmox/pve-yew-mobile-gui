@@ -1,12 +1,17 @@
 use std::rc::Rc;
 
+use anyhow::{format_err, Error};
+
+use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::LogView;
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use pwt::prelude::*;
 use pwt::widget::{Column, List, ListTile, TabBar, TabBarItem};
+use pwt::{prelude::*, AsyncAbortGuard};
+
+use pve_api_types::{IsRunning, TaskStatus};
 
 use proxmox_yew_comp::percent_encoding::percent_encode_component;
 
@@ -48,10 +53,15 @@ pub enum ViewState {
 pub struct PvePageTaskStatus {
     active: bool,
     view_state: ViewState,
+    status: Result<TaskStatus, Error>,
+    reload_timeout: Option<Timeout>,
+    load_guard: Option<AsyncAbortGuard>,
 }
 
 pub enum Msg {
     SetViewState(ViewState),
+    Load,
+    LoadResult(Result<TaskStatus, Error>),
 }
 
 impl PvePageTaskStatus {
@@ -73,12 +83,17 @@ impl PvePageTaskStatus {
     }
 
     fn view_status(&self, ctx: &Context<Self>) -> Html {
-        let tiles: Vec<ListTile> = Vec::new();
+        match &self.status {
+            Ok(status) => {
+                let tiles: Vec<ListTile> = Vec::new();
 
-        List::new(tiles.len() as u64, move |pos| {
-            tiles[pos as usize].clone().into()
-        })
-        .into()
+                List::new(tiles.len() as u64, move |pos| {
+                    tiles[pos as usize].clone().into()
+                })
+                .into()
+            }
+            Err(err) => pwt::widget::error_message(&err.to_string()).into(),
+        }
     }
 }
 
@@ -89,16 +104,50 @@ impl Component for PvePageTaskStatus {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
         let active = props.endtime.map(|endtime| endtime == 0).unwrap_or(true);
+
+        ctx.link().send_message(Msg::Load);
+
         Self {
             active,
             view_state: ViewState::Output,
+            status: Err(format_err!("no data loaded")),
+            load_guard: None,
+            reload_timeout: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
             Msg::SetViewState(view_state) => {
                 self.view_state = view_state;
+                true
+            }
+            Msg::Load => {
+                let link = ctx.link().clone();
+                let url = format!(
+                    "{}/{}/status",
+                    props.base_url,
+                    percent_encode_component(&props.task_id),
+                );
+                self.load_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result = proxmox_yew_comp::http_get(url, None).await;
+                    link.send_message(Msg::LoadResult(result));
+                }));
+                false
+            }
+            Msg::LoadResult(result) => {
+                let link = ctx.link().clone();
+                self.active = match &result {
+                    Ok(status) => status.status == IsRunning::Running,
+                    Err(_) => true,
+                };
+                self.status = result;
+                if self.active {
+                    self.reload_timeout = Some(Timeout::new(1_000, move || {
+                        link.send_message(Msg::Load);
+                    }));
+                }
                 true
             }
         }
