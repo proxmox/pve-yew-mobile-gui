@@ -3,7 +3,8 @@ pub mod widgets;
 pub mod pages;
 use pages::{
     PageConfiguration, PageContainerStatus, PageDashboard, PageLogin, PageNodeStatus, PageNotFound,
-    PageResources, PageStorageStatus, PageTaskStatus, PageTasks, PageVmStatus, ResourceFilter,
+    PageResources, PageSettings, PageStorageStatus, PageTaskStatus, PageTasks, PageVmStatus,
+    ResourceFilter,
 };
 
 use yew::virtual_dom::Key;
@@ -38,6 +39,8 @@ enum Route {
     Dashboard,
     #[at("/resources")]
     Resources,
+    #[at("/settings")]
+    Settings,
     #[at("/resources/qemu")]
     QemuResources,
     #[at("/resources/node")]
@@ -75,6 +78,7 @@ enum Route {
 fn switch(routes: Route) -> Html {
     let (active_nav, stack) = match routes {
         Route::Dashboard => ("dashboard", vec![PageDashboard::new().into()]),
+        Route::Settings => ("dashboard", vec![PageSettings::new().into()]),
         Route::Resources => ("resources", vec![PageResources::new().into()]),
         Route::QemuResources => (
             "resources",

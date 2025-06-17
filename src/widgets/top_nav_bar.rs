@@ -103,11 +103,18 @@ impl Component for PveTopNavBar {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let menu = Menu::new().items(props.menu_items.clone()).with_item(
-            MenuItem::new("Logout")
-                .icon_class("fa fa-sign-out")
-                .on_select(ctx.link().callback(|_| Msg::Logout)),
-        );
+        let menu = Menu::new()
+            .items(props.menu_items.clone())
+            .with_item(
+                MenuItem::new("Setting")
+                    .icon_class("fa fa-cog")
+                    .on_select(|_| crate::goto_location("/settings")),
+            )
+            .with_item(
+                MenuItem::new("Logout")
+                    .icon_class("fa fa-sign-out")
+                    .on_select(ctx.link().callback(|_| Msg::Logout)),
+            );
 
         let button_group = Row::new()
             .gap(1)

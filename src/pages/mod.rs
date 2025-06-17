@@ -28,6 +28,9 @@ pub use page_task_status::PageTaskStatus;
 // mod page_logs;
 // pub use page_logs::PageLogs;
 
+mod page_settings;
+pub use page_settings::PageSettings;
+
 mod page_configuartion;
 pub use page_configuartion::PageConfiguration;
 
