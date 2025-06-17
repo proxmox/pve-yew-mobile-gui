@@ -56,12 +56,14 @@ pub struct PvePageTaskStatus {
     status: Result<TaskStatus, Error>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
+    stop_task_guard: Option<AsyncAbortGuard>,
 }
 
 pub enum Msg {
     SetViewState(ViewState),
     Load,
     LoadResult(Result<TaskStatus, Error>),
+    StopTask,
 }
 
 impl PvePageTaskStatus {
@@ -113,6 +115,7 @@ impl Component for PvePageTaskStatus {
             status: Err(format_err!("no data loaded")),
             load_guard: None,
             reload_timeout: None,
+            stop_task_guard: None,
         }
     }
 
@@ -149,6 +152,19 @@ impl Component for PvePageTaskStatus {
                     }));
                 }
                 true
+            }
+            Msg::StopTask => {
+                let link = ctx.link().clone();
+                let url = format!(
+                    "{}/{}",
+                    props.base_url,
+                    percent_encode_component(&props.task_id),
+                );
+                self.stop_task_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let _ = proxmox_yew_comp::http_delete(url, None).await; // ignore errors
+                    link.send_message(Msg::Load);
+                }));
+                false
             }
         }
     }
