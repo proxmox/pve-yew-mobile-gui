@@ -9,7 +9,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use pwt::widget::{Column, List, ListTile, TabBar, TabBarItem};
+use pwt::widget::{Column, Container, List, ListTile, TabBar, TabBarItem};
 use pwt::{prelude::*, AsyncAbortGuard};
 
 use pve_api_types::{IsRunning, TaskStatus};
@@ -67,6 +67,35 @@ pub enum Msg {
     StopTask,
 }
 
+pub fn status_list_tile(title: impl Into<AttrValue>, subtitle: impl Into<AttrValue>) -> ListTile {
+    ListTile::new()
+        .class(pwt::css::AlignItems::Center)
+        .class("pwt-gap-1")
+        .border_bottom(true)
+        .with_child({
+            let mut column = Column::new().gap(1);
+
+            if let Some(title) = title.into_prop_value() {
+                column.add_child(
+                    Container::new()
+                        .class("pwt-font-size-title-medium")
+                        .key("title")
+                        .with_child(title.into()),
+                );
+            }
+
+            if let Some(subtitle) = subtitle.into_prop_value() {
+                column.add_child(
+                    Container::new()
+                        .class("pwt-font-size-title-small")
+                        .key("subtitle")
+                        .with_child(subtitle.into()),
+                );
+            }
+            column
+        })
+}
+
 impl PvePageTaskStatus {
     fn view_output(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
@@ -86,13 +115,48 @@ impl PvePageTaskStatus {
     }
 
     fn view_status(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
         match &self.status {
             Ok(status) => {
-                let tiles: Vec<ListTile> = Vec::new();
+                let mut tiles: Vec<ListTile> = Vec::new();
+
+                tiles.push(status_list_tile(
+                    tr!("Status"),
+                    match (&status.status, &status.exitstatus) {
+                        (IsRunning::Running, _) => "running".into(),
+                        (IsRunning::Stopped, Some(msg)) => format!("{} ({})", tr!("stopped"), msg),
+                        (IsRunning::Stopped, None) => {
+                            format!("{} ({})", tr!("stopped"), tr!("unknown"))
+                        }
+                    },
+                ));
+
+                tiles.push(status_list_tile(tr!("Task type"), status.ty.clone()));
+
+                tiles.push(status_list_tile(tr!("User name"), status.user.clone()));
+
+                tiles.push(status_list_tile(tr!("Node"), status.node.clone()));
+
+                tiles.push(status_list_tile(
+                    tr!("Start Time"),
+                    proxmox_yew_comp::utils::render_epoch_short(status.starttime),
+                ));
+
+                if let Some(endtime) = props.endtime {
+                    tiles.push(status_list_tile(
+                        tr!("Duration"),
+                        proxmox_yew_comp::utils::format_duration_human(
+                            (endtime - status.starttime) as f64,
+                        ),
+                    ));
+                }
+
+                tiles.push(status_list_tile(tr!("Unique task ID"), status.upid.clone()));
 
                 List::new(tiles.len() as u64, move |pos| {
                     tiles[pos as usize].clone().into()
                 })
+                .class(pwt::css::FlexFit)
                 .into()
             }
             Err(err) => pwt::widget::error_message(&err.to_string()).into(),
