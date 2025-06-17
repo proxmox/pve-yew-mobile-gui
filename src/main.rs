@@ -46,11 +46,12 @@ enum Route {
     Qemu { vmid: u64, nodename: String },
     #[at("/resources/qemu/:nodename/:vmid/tasks")]
     QemuTasks { vmid: u64, nodename: String },
-    #[at("/resources/qemu/:nodename/:vmid/tasks/:upid")]
+    #[at("/resources/qemu/:nodename/:vmid/tasks/:upid/:endtime")]
     QemuTaskStatus {
         vmid: u64,
         nodename: String,
         upid: String,
+        endtime: i64,
     },
     #[at("/resources/lxc")]
     LxcResources,
@@ -121,10 +122,11 @@ fn switch(routes: Route) -> Html {
                 ))
                 .on_show_task(move |(upid, endtime): (String, Option<i64>)| {
                     let url = format!(
-                        "/resources/qemu/{}/{}/tasks/{}",
+                        "/resources/qemu/{}/{}/tasks/{}/{}",
                         percent_encode_component(&nodename),
                         vmid,
-                        percent_encode_component(&upid)
+                        percent_encode_component(&upid),
+                        endtime.unwrap_or(0),
                     );
                     crate::goto_location(&url);
                 })
@@ -135,6 +137,7 @@ fn switch(routes: Route) -> Html {
             vmid,
             nodename,
             upid,
+            endtime,
         } => (
             "resources",
             vec![
@@ -155,6 +158,7 @@ fn switch(routes: Route) -> Html {
                     format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
                     upid,
                 )
+                .endtime(endtime)
                 .back(format!(
                     "/resources/qemu/{}/{}/tasks",
                     percent_encode_component(&nodename),

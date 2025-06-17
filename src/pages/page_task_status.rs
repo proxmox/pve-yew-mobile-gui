@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use proxmox_yew_comp::{LogView, TaskViewer};
+use proxmox_yew_comp::LogView;
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -20,6 +20,10 @@ pub struct PageTaskStatus {
     pub base_url: AttrValue,
 
     pub task_id: String,
+
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub endtime: Option<i64>,
 
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
@@ -45,8 +49,10 @@ impl Component for PvePageTaskStatus {
     type Message = Msg;
     type Properties = PageTaskStatus;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self { active: true }
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+        let active = props.endtime.map(|endtime| endtime == 0).unwrap_or(true);
+        Self { active }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
