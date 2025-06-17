@@ -49,7 +49,10 @@ dist/pve-yew-mobile-gui_bg.wasm.gz: dist/pve-yew-mobile-gui_bg.wasm
 dist/material-yew-style.css: pwt-assets/scss/material-yew-style.scss
 	rust-grass $< $@
 
-install: $(COMPILED_OUTPUT) index.html manifest.json dist/material-yew-style.css
+dist/crisp-yew-style.css: pwt-assets/scss/crisp-yew-style.scss
+	rust-grass $< $@
+
+install: $(COMPILED_OUTPUT) index.html manifest.json dist/material-yew-style.css dist/crisp-yew-style.css
 	install -dm0755 $(DESTDIR)$(UIDIR)
 	install -dm0755 $(DESTDIR)$(UIDIR)/js
 
@@ -72,6 +75,7 @@ install: $(COMPILED_OUTPUT) index.html manifest.json dist/material-yew-style.css
 	install -m0644 index.html $(DESTDIR)$(UIDIR)
 	install -m0644 manifest.json $(DESTDIR)$(UIDIR)
 	install -m0644 dist/material-yew-style.css $(DESTDIR)$(UIDIR)
+	install -m0644 dist/crisp-yew-style.css $(DESTDIR)$(UIDIR)
 
 
 $(BUILDDIR):

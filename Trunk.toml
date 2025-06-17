@@ -4,6 +4,11 @@ command="rust-grass"
 command_arguments= ["pwt-assets/scss/material-yew-style.scss", "dist/.stage/material-yew-style.css"]
 
 [[hooks]]
+stage="pre_build"
+command="rust-grass"
+command_arguments= ["pwt-assets/scss/crisp-yew-style.scss", "dist/.stage/crisp-yew-style.css"]
+
+[[hooks]]
 stage="post_build"
 command="cp"
 command_arguments= ["manifest.json", "dist/.stage/manifest.json"]

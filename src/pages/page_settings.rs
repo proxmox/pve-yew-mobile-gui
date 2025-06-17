@@ -4,7 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, LanguageSelector, ThemeDensitySelector};
+use pwt::widget::{Column, LanguageSelector, ThemeDensitySelector, ThemeNameSelector};
 
 use crate::widgets::TopNavBar;
 
@@ -38,6 +38,12 @@ impl Component for PvePageSettings {
                     .gap(1)
                     .with_child(tr!("Language") + ":")
                     .with_child(LanguageSelector::new()),
+            )
+            .with_child(
+                Column::new()
+                    .gap(1)
+                    .with_child(tr!("Theme") + ":")
+                    .with_child(ThemeNameSelector::new()),
             )
             .with_child(
                 Column::new()
