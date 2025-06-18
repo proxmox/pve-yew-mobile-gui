@@ -54,7 +54,7 @@ pub fn standard_list_tile(
         .class(pwt::css::AlignItems::Center)
         .class("pwt-gap-1")
         //.class("pwt-scheme-surface")
-        .border_top(true)
+        .border_bottom(true)
         .with_optional_child(leading.into_prop_value())
         .with_child({
             let mut column = Column::new().gap(1);
