@@ -2,20 +2,23 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
+use proxmox_human_byte::HumanByte;
 use proxmox_yew_comp::http_post;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Card, Column, Fa, MiniScroll, MiniScrollMode, Row};
+use pwt::widget::{Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
 use pwt::AsyncPool;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{IsRunning, QemuStatus};
 
-use crate::widgets::{TopNavBar, VmConfigPanel};
+use crate::widgets::{
+    icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar, VmConfigPanel,
+};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageVmStatus {
@@ -78,28 +81,61 @@ impl PvePageVmStatus {
 
         let vm_icon = large_fa_icon("desktop", data.status == IsRunning::Running);
 
-        Card::new()
-            .border(true)
-            .class("pwt-d-flex pwt-gap-2")
-            .class("pwt-align-items-center")
-            .with_child(vm_icon)
-            .with_child(
-                Column::new()
-                    .class("pwt-flex-fill")
-                    .gap(1)
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-medium">{
-                            format!("{} {}", data.vmid, data.name.as_deref().unwrap_or(""))
+        let mut tiles: Vec<ListTile> = Vec::new();
 
-                        }</div>
-                    })
-                    .with_child(html! {
-                        <div class="pwt-font-size-title-small">{&props.node}</div>
-                    }),
-            )
-            .with_child(html! {
-                <div class="pwt-font-size-title-small">{data.status.to_string()}</div>
-            })
+        tiles.push(standard_list_tile(
+            format!("{} {}", data.vmid, data.name.as_deref().unwrap_or("")),
+            &props.node,
+            Some(vm_icon.clone().into()),
+            Some(data.status.to_string().into()),
+        ));
+
+        if let Ok(data) = &self.data {
+            if data.status == IsRunning::Running {
+                if let (Some(cpu), Some(maxcpu)) = (data.cpu, data.cpus) {
+                    let cpu_percentage = if maxcpu == 0.0 {
+                        0.0
+                    } else {
+                        (cpu as f32) / (maxcpu as f32)
+                    };
+
+                    tiles.push(
+                        icon_list_tile(Fa::new("cpu"), "CPU", None::<&str>, None).with_child(
+                            list_tile_usage(
+                                format!("{:.2}", cpu),
+                                maxcpu.to_string(),
+                                cpu_percentage,
+                            ),
+                        ),
+                    );
+                }
+
+                if let (Some(mem), Some(maxmem)) = (data.mem, data.maxmem) {
+                    let mem_percentage = if maxmem <= 0 {
+                        0.0
+                    } else {
+                        (mem as f32) / (maxmem as f32)
+                    };
+                    tiles.push(
+                        icon_list_tile(Fa::new("memory"), "Memory", None::<&str>, None).with_child(
+                            list_tile_usage(
+                                HumanByte::new_binary(mem as f64).to_string(),
+                                HumanByte::new_binary(maxmem as f64).to_string(),
+                                mem_percentage,
+                            ),
+                        ),
+                    );
+                }
+            }
+        }
+
+        let status = List::new(tiles.len() as u64, move |pos| {
+            tiles[pos as usize].clone().into()
+        })
+        .grid_template_columns("auto 1fr auto");
+
+        crate::widgets::standard_card(tr!("Status"), None::<&str>)
+            .with_child(status)
             .into()
     }
 
