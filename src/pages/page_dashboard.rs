@@ -67,7 +67,6 @@ impl PvePageDashboard {
                     .padding(2)
                     .class("pwt-d-flex")
                     .class("pwt-interactive")
-                    .class("pwt-elevation0")
                     .class(pwt::css::JustifyContent::Center)
                     .with_child(tr!("Subscription"))
                     .onclick(ctx.link().callback(|_| Msg::ShowSubscriptionAlert))
@@ -182,6 +181,7 @@ impl PvePageDashboard {
 
         crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
             .with_child(content)
+            .class("pwt-interactive")
             .onclick(Callback::from(move |_| {
                 crate::goto_location("/resources/node");
             }))
@@ -249,6 +249,7 @@ impl PvePageDashboard {
         };
 
         crate::widgets::standard_card(tr!("Guests"), None::<&str>)
+            .class("pwt-interactive")
             .with_child(content)
             .onclick(Callback::from(move |_| {
                 crate::goto_location("/resources/guests");

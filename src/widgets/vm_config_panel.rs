@@ -134,6 +134,7 @@ impl PveVmConfigPanel {
         }
 
         crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
+            .class("pwt-elevation0")
             .with_child(
                 List::new(list.len() as u64, move |pos| list[pos as usize].clone())
                     .grid_template_columns("auto 1fr auto"),

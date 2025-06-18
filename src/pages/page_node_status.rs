@@ -33,7 +33,6 @@ impl PvePageNodeStatus {
             .padding(2)
             .class("pwt-d-flex")
             .class("pwt-interactive")
-            .class("pwt-elevation0")
             .class(pwt::css::JustifyContent::Center)
             .with_child("Task List")
             .onclick({

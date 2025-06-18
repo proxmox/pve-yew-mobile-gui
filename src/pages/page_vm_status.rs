@@ -82,6 +82,7 @@ impl PvePageVmStatus {
             .border(true)
             .class("pwt-d-flex pwt-gap-2")
             .class("pwt-align-items-center")
+            .class("pwt-elevation0")
             .with_child(vm_icon)
             .with_child(
                 Column::new()
@@ -140,7 +141,6 @@ impl PvePageVmStatus {
             .padding(2)
             .class("pwt-d-flex")
             .class("pwt-interactive")
-            .class("pwt-elevation0")
             .class(pwt::css::JustifyContent::Center)
             .with_child("Task List")
             .onclick({
