@@ -3,10 +3,12 @@ use std::rc::Rc;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use pwt::prelude::*;
-use pwt::widget::{Column, LanguageSelector, ThemeDensitySelector, ThemeNameSelector};
-
 use crate::widgets::TopNavBar;
+
+use pwt::prelude::*;
+use pwt::props::PwtSpace;
+
+use pwt::widget::{Column, FieldLabel, LanguageSelector, ThemeDensitySelector, ThemeNameSelector};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageSettings {}
@@ -21,6 +23,13 @@ pub struct PvePageSettings {}
 
 pub enum Msg {}
 
+fn label_field(label: impl Into<AttrValue>, field: impl Into<VNode>) -> Html {
+    Column::new()
+        .with_child(FieldLabel::new(label.into()).padding_bottom(PwtSpace::Em(0.3)))
+        .with_child(field)
+        .into()
+}
+
 impl Component for PvePageSettings {
     type Message = Msg;
     type Properties = PageSettings;
@@ -29,29 +38,13 @@ impl Component for PvePageSettings {
         Self {}
     }
 
-    fn view(&self, ctx: &Context<Self>) -> Html {
+    fn view(&self, _ctx: &Context<Self>) -> Html {
         let content = Column::new()
             .padding(2)
             .gap(2)
-            .with_child(
-                Column::new()
-                    .gap(1)
-                    .with_child(tr!("Language") + ":")
-                    .with_child(LanguageSelector::new()),
-            )
-            .with_child(
-                Column::new()
-                    .gap(1)
-                    .with_child(tr!("Theme") + ":")
-                    .with_child(ThemeNameSelector::new()),
-            )
-            .with_child(
-                Column::new()
-                    .gap(1)
-                    .with_child(tr!("Density") + ":")
-                    .with_child(ThemeDensitySelector::new()),
-            )
-            .with_child("This is the settings page");
+            .with_child(label_field(tr!("Language"), LanguageSelector::new()))
+            .with_child(label_field(tr!("Theme"), ThemeNameSelector::new()))
+            .with_child(label_field(tr!("Density"), ThemeDensitySelector::new()));
 
         Column::new()
             .class("pwt-fit")
