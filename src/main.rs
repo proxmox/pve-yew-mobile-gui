@@ -66,6 +66,12 @@ enum Route {
     Node { nodename: String },
     #[at("/resources/node/:nodename/tasks")]
     NodeTasks { nodename: String },
+    #[at("/resources/node/:nodename/tasks/:upid/:endtime")]
+    NodeTasksStatus {
+        nodename: String,
+        upid: String,
+        endtime: i64,
+    },
     #[at("/resources/storage/:name")]
     Storage { name: String },
     // #[at("/logs")]
@@ -218,6 +224,50 @@ fn switch(routes: Route) -> Html {
                 .title(format!("Node {nodename}"))
                 .back(format!(
                     "/resources/node/{}",
+                    percent_encode_component(&nodename),
+                ))
+                .on_show_task(move |(upid, endtime): (String, Option<i64>)| {
+                    let url = format!(
+                        "/resources/node/{}/tasks/{}/{}",
+                        percent_encode_component(&nodename),
+                        percent_encode_component(&upid),
+                        endtime.unwrap_or(0),
+                    );
+                    crate::goto_location(&url);
+                })
+                .into(),
+            ],
+        ),
+        Route::NodeTasksStatus {
+            nodename,
+            upid,
+            endtime,
+        } => (
+            "resources",
+            vec![
+                PageResources::new_with_filter(ResourceFilter {
+                    nodes: true,
+                    ..Default::default()
+                })
+                .into(),
+                PageNodeStatus::new(nodename.clone()).into(),
+                PageTasks::new(format!(
+                    "/nodes/{}/tasks",
+                    percent_encode_component(&nodename),
+                ))
+                .title(format!("Node {nodename}"))
+                .back(format!(
+                    "/resources/node/{}",
+                    percent_encode_component(&nodename),
+                ))
+                .into(),
+                PageTaskStatus::new(
+                    format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
+                    upid,
+                )
+                .endtime(endtime)
+                .back(format!(
+                    "/resources/node/{}/tasks",
                     percent_encode_component(&nodename),
                 ))
                 .into(),
