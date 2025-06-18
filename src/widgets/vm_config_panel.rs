@@ -133,11 +133,7 @@ impl PveVmConfigPanel {
             ));
         }
 
-        Card::new()
-            .border(true)
-            .padding(0)
-            .class("pwt-flex-none pwt-overflow-hidden")
-            .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Hardware"}</div>})
+        crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
             .with_child(
                 List::new(list.len() as u64, move |pos| list[pos as usize].clone())
                     .grid_template_columns("auto 1fr auto"),
