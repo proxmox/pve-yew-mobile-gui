@@ -60,39 +60,22 @@ impl PvePageDashboard {
         });
     }
 
-    fn create_tab_bar(&self, ctx: &Context<Self>) -> Html {
-        let mut content = Row::new().padding_y(1).gap(2);
-
+    fn create_subscription_card(&self, ctx: &Context<Self>) -> Option<Html> {
         if !self.subscription_ok {
-            content.add_child(
-                Button::new("Subscription")
-                    .disabled(self.nodes.is_err())
-                    .on_activate(ctx.link().callback(|_| Msg::ShowSubscriptionAlert)),
-            );
-        }
-
-        let content = content
-            .with_child(
-                Button::new("Virtual Machines")
-                    .icon_class("fa fa-desktop")
-                    .on_activate({
-                        let navigator = ctx.link().navigator().unwrap();
-                        move |_| navigator.push(&Route::QemuResources)
-                    }),
+            Some(
+                Card::new()
+                    .padding(2)
+                    .class("pwt-d-flex")
+                    .class("pwt-interactive")
+                    .class("pwt-elevation0")
+                    .class(pwt::css::JustifyContent::Center)
+                    .with_child(tr!("Subscription"))
+                    .onclick(ctx.link().callback(|_| Msg::ShowSubscriptionAlert))
+                    .into(),
             )
-            .with_child(
-                Button::new("Containers")
-                    .icon_class("fa fa-cube")
-                    .on_activate({
-                        let navigator = ctx.link().navigator().unwrap();
-                        move |_| navigator.push(&Route::LxcResources)
-                    }),
-            );
-
-        MiniScroll::new(content)
-            .class(pwt::css::Flex::None)
-            .scroll_mode(MiniScrollMode::Native)
-            .into()
+        } else {
+            None
+        }
     }
 
     fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
@@ -349,7 +332,7 @@ impl Component for PvePageDashboard {
             .class("pwt-overflow-auto")
             .padding(2)
             .gap(2)
-            .with_child(self.create_tab_bar(ctx))
+            .with_optional_child(self.create_subscription_card(ctx))
             .with_child(self.create_analytics_card(ctx))
             .with_child(self.create_nodes_card(ctx))
             .with_child(self.create_guests_card(ctx));
