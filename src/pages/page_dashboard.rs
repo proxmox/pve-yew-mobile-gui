@@ -6,12 +6,9 @@ use anyhow::Error;
 use proxmox_human_byte::HumanByte;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::widget::{
-    AlertDialog, Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row,
-};
+use pwt::widget::{AlertDialog, Card, Column, Fa, List, ListTile};
 
 use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
@@ -20,7 +17,6 @@ use pve_api_types::{
 use proxmox_yew_comp::http_get;
 
 use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
-use crate::Route;
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
 
