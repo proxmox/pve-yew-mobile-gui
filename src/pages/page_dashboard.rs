@@ -153,23 +153,13 @@ impl PvePageDashboard {
             }
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
-        Card::new()
-            .padding(0)
-            .class("pwt-flex-none pwt-overflow-hidden")
-            .with_child(
-                Column::new()
-                    .padding(2)
-                    .gap(1)
-                    .border_bottom(true)
-                    .with_child(html!{
-                        <div class="pwt-font-size-title-large">{"Analytics"}</div>
-                    })
-                    .with_child(html!{
-                        <div class="pwt-font-size-title-small">{format!("Usage across all ({node_count}) online nodes.")}</div>
-                    })
-            )
-            .with_child(content)
-           .into()
+
+        crate::widgets::standard_card(
+            tr!("Analytics"),
+            format!("Usage across all ({node_count}) online nodes."),
+        )
+        .with_child(content)
+        .into()
     }
 
     fn create_nodes_card(&self, _ctx: &Context<Self>) -> Html {
@@ -207,10 +197,7 @@ impl PvePageDashboard {
             Err(err) => pwt::widget::error_message(err).into(),
         };
 
-        Card::new()
-            .class("pwt-flex-none pwt-overflow-hidden")
-            .padding(0)
-            .with_child(html! {<div class="pwt-p-2 pwt-font-size-title-large">{"Nodes"}</div>})
+        crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
             .with_child(content)
             .onclick(Callback::from(move |_| {
                 crate::goto_location("/resources/node");
@@ -278,12 +265,7 @@ impl PvePageDashboard {
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
 
-        Card::new()
-            .class("pwt-flex-none pwt-overflow-hidden")
-            .padding(0)
-            .with_child(html! {
-                <div class="pwt-p-2 pwt-font-size-title-large">{"Guests"}</div>
-            })
+        crate::widgets::standard_card(tr!("Guests"), None::<&str>)
             .with_child(content)
             .onclick(Callback::from(move |_| {
                 crate::goto_location("/resources/guests");

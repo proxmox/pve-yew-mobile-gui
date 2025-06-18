@@ -4,7 +4,7 @@ use anyhow::{format_err, Error};
 
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::LogView;
-use pwt::widget::menu::{MenuEvent, MenuItem};
+use pwt::widget::menu::MenuItem;
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};

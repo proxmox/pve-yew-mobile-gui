@@ -8,9 +8,41 @@ mod tasks_panel;
 pub use tasks_panel::TasksPanel;
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Container, Fa, ListTile, Progress, Row};
+use pwt::widget::{Card, Column, Container, Fa, ListTile, Progress, Row};
 
 use yew::html::IntoPropValue;
+
+pub fn standard_card(
+    title: impl Into<AttrValue>,
+    subtitle: impl IntoPropValue<Option<AttrValue>>,
+) -> Card {
+    let title = title.into();
+
+    let head: Html = match subtitle.into_prop_value() {
+        Some(subtitle) => Column::new()
+            .padding(2)
+            .gap(1)
+            .border_bottom(true)
+            .with_child(html! {
+                <div class="pwt-font-size-title-large">{title}</div>
+            })
+            .with_child(html! {
+                <div class="pwt-font-size-title-small">{subtitle}</div>
+            })
+            .into(),
+        None => Container::new()
+            .border_bottom(true)
+            .padding(2)
+            .class("pwt-font-size-title-large")
+            .with_child(title)
+            .into(),
+    };
+
+    Card::new()
+        .padding(0)
+        .class("pwt-flex-none pwt-overflow-hidden")
+        .with_child(head)
+}
 
 pub fn standard_list_tile(
     title: impl IntoPropValue<Option<AttrValue>>,
