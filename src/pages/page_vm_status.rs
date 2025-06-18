@@ -82,7 +82,6 @@ impl PvePageVmStatus {
             .border(true)
             .class("pwt-d-flex pwt-gap-2")
             .class("pwt-align-items-center")
-            .class("pwt-elevation0")
             .with_child(vm_icon)
             .with_child(
                 Column::new()
