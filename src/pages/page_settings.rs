@@ -48,7 +48,7 @@ impl Component for PvePageSettings {
 
         Column::new()
             .class("pwt-fit")
-            .with_child(TopNavBar::new().title("Settings").back("/"))
+            .with_child(TopNavBar::new().title("Settings").back(true))
             .with_child(content)
             .into()
     }

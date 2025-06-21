@@ -358,7 +358,6 @@ impl Component for PvePageResources {
 
         if let Some(location) = ctx.link().location() {
             if let Some(state) = location.state::<ResourceFilter>() {
-                log::info!("GOT LOCATION STATE {:?}", state);
                 filter = state.as_ref().clone();
             }
         }

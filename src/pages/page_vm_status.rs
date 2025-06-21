@@ -257,7 +257,7 @@ impl Component for PvePageVmStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("VM {}", props.vmid))
-                    .back("/resources"),
+                    .back(true),
             )
             .with_child(content)
             .into()

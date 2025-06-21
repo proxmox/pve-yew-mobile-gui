@@ -47,7 +47,7 @@ impl Component for PvePageContainerStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("CT {}", props.vmid))
-                    .back("/resources"),
+                    .back(true),
             )
             .with_child(content)
             .into()

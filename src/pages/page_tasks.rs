@@ -20,10 +20,6 @@ pub struct PageTasks {
 
     pub base_url: AttrValue,
 
-    #[prop_or_default]
-    #[builder(IntoPropValue, into_prop_value)]
-    pub back: Option<AttrValue>,
-
     #[builder_cb(IntoEventCallback, into_event_callback, (String, Option<i64>))]
     #[prop_or_default]
     /// Called when the task is opened
@@ -59,7 +55,7 @@ impl Component for PvePageTasks {
                 TopNavBar::new()
                     .title("Task List")
                     .subtitle(&props.title)
-                    .back(&props.back),
+                    .back(true),
             )
             .with_child(
                 TasksPanel::new(props.base_url.clone()).on_show_task(props.on_show_task.clone()),

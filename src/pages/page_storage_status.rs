@@ -43,7 +43,7 @@ impl Component for PvePageStorageStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("Storage {}", props.name))
-                    .back("/resources"),
+                    .back(true),
             )
             .with_child(content)
             .into()

@@ -30,10 +30,6 @@ pub struct PageTaskStatus {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub endtime: Option<i64>,
-
-    #[prop_or_default]
-    #[builder(IntoPropValue, into_prop_value)]
-    pub back: Option<AttrValue>,
 }
 
 impl PageTaskStatus {
@@ -235,8 +231,6 @@ impl Component for PvePageTaskStatus {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
         let tabbar = TabBar::new()
             .class(pwt::css::JustifyContent::Center)
             .with_item(
@@ -258,7 +252,7 @@ impl Component for PvePageTaskStatus {
                 TopNavBar::new()
                     .title("Task Status")
                     //.subtitle(&props.title)
-                    .back(&props.back)
+                    .back(true)
                     .with_item(
                         MenuItem::new(tr!("Stop"))
                             .icon_class("fa fa-stop")

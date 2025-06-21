@@ -4,7 +4,6 @@ pub mod pages;
 use pages::{
     PageConfiguration, PageContainerStatus, PageDashboard, PageLogin, PageNodeStatus, PageNotFound,
     PageResources, PageSettings, PageStorageStatus, PageTaskStatus, PageTasks, PageVmStatus,
-    ResourceFilter,
 };
 
 use yew::virtual_dom::Key;
@@ -161,11 +160,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 percent_encode_component(&nodename),
             ))
             .title(format!("VM {vmid}"))
-            .back(format!(
-                "/resources/qemu/{}/{}",
-                percent_encode_component(&nodename),
-                vmid
-            ))
             .on_show_task({
                 let history = history.clone();
                 move |(upid, endtime): (String, Option<i64>)| {
@@ -201,11 +195,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 upid,
             )
             .endtime(endtime)
-            .back(format!(
-                "/resources/qemu/{}/{}/tasks",
-                percent_encode_component(&nodename),
-                vmid
-            ))
             .into(),
         ),
         Route::Lxc { nodename, vmid } => (
@@ -229,10 +218,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 percent_encode_component(&nodename),
             ))
             .title(format!("Node {nodename}"))
-            .back(format!(
-                "/resources/node/{}",
-                percent_encode_component(&nodename),
-            ))
             .on_show_task({
                 let history = history.clone();
                 move |(upid, endtime): (String, Option<i64>)| {
@@ -265,10 +250,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 upid,
             )
             .endtime(endtime)
-            .back(format!(
-                "/resources/node/{}/tasks",
-                percent_encode_component(&nodename),
-            ))
             .into(),
         ),
         Route::Storage { name } => (
