@@ -17,6 +17,7 @@ use pve_api_types::{
 
 use proxmox_yew_comp::http_get;
 
+use crate::pages::ResourceFilter;
 use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
 
 static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
@@ -185,8 +186,13 @@ impl PvePageDashboard {
             .class("pwt-interactive")
             .onclick(Callback::from({
                 let navigator = ctx.link().navigator().clone().unwrap();
+
                 move |_| {
-                    navigator.push(&crate::Route::NodeResources);
+                    let filter = ResourceFilter {
+                        nodes: true,
+                        ..Default::default()
+                    };
+                    navigator.push_with_state(&crate::Route::Resources, filter);
                 }
             }))
             .into()
@@ -228,7 +234,11 @@ impl PvePageDashboard {
                         let navigator = ctx.link().navigator().clone().unwrap();
                         move |event: MouseEvent| {
                             event.stop_propagation();
-                            navigator.push(&crate::Route::QemuResources);
+                            let filter = ResourceFilter {
+                                qemu: true,
+                                ..Default::default()
+                            };
+                            navigator.push_with_state(&crate::Route::Resources, filter);
                         }
                     })
                     .interactive(true),
@@ -245,7 +255,11 @@ impl PvePageDashboard {
                         let navigator = ctx.link().navigator().clone().unwrap();
                         move |event: MouseEvent| {
                             event.stop_propagation();
-                            navigator.push(&crate::Route::LxcResources);
+                            let filter = ResourceFilter {
+                                lxc: true,
+                                ..Default::default()
+                            };
+                            navigator.push_with_state(&crate::Route::Resources, filter);
                         }
                     })
                     .interactive(true),
@@ -264,7 +278,12 @@ impl PvePageDashboard {
             .onclick({
                 let navigator = ctx.link().navigator().clone().unwrap();
                 move |_| {
-                    navigator.push(&crate::Route::GuestResources);
+                    let filter = ResourceFilter {
+                        lxc: true,
+                        qemu: true,
+                        ..Default::default()
+                    };
+                    navigator.push_with_state(&crate::Route::Resources, filter);
                 }
             })
             .into()

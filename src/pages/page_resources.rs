@@ -39,7 +39,7 @@ impl PageResources {
     }
 }
 
-#[derive(Clone, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct ResourceFilter {
     pub name: String,
     pub storage: bool,
@@ -353,14 +353,23 @@ impl Component for PvePageResources {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
         ctx.link().send_message(Msg::Load);
-        let me = Self {
+
+        let mut filter = props.default_filter.clone();
+
+        if let Some(location) = ctx.link().location() {
+            if let Some(state) = location.state::<ResourceFilter>() {
+                log::info!("GOT LOCATION STATE {:?}", state);
+                filter = state.as_ref().clone();
+            }
+        }
+
+        Self {
             data: Err(format!("no data loaded")),
-            filter: props.default_filter.clone(),
+            filter,
             show_filter_dialog: false,
             reload_timeout: None,
             load_guard: None,
-        };
-        me
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {

@@ -33,14 +33,11 @@ pub enum Msg {
 enum Route {
     #[at("/")]
     Dashboard,
-    #[at("/resources")]
-    Resources,
     #[at("/settings")]
     Settings,
-    #[at("/resources/qemu")]
-    QemuResources,
-    #[at("/resources/node")]
-    NodeResources,
+    #[at("/resources")]
+    Resources,
+
     #[at("/resources/qemu/:nodename/:vmid")]
     Qemu { vmid: u32, nodename: String },
     #[at("/resources/qemu/:nodename/:vmid/tasks")]
@@ -52,10 +49,7 @@ enum Route {
         upid: String,
         endtime: i64,
     },
-    #[at("/resources/lxc")]
-    LxcResources,
-    #[at("/resources/guests")]
-    GuestResources,
+
     #[at("/resources/lxc/:nodename/:vmid")]
     Lxc { vmid: u32, nodename: String },
     #[at("/resources/node/:nodename")]
@@ -148,51 +142,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
         Route::Resources => (
             vec![],
             main_nav_page(active_nav, PageResources::new(), history),
-        ),
-        Route::QemuResources => (
-            vec![],
-            main_nav_page(
-                active_nav,
-                PageResources::new_with_filter(ResourceFilter {
-                    qemu: true,
-                    ..Default::default()
-                }),
-                history,
-            ),
-        ),
-        Route::LxcResources => (
-            vec![],
-            main_nav_page(
-                active_nav,
-                PageResources::new_with_filter(ResourceFilter {
-                    lxc: true,
-                    ..Default::default()
-                }),
-                history,
-            ),
-        ),
-        Route::GuestResources => (
-            vec![],
-            main_nav_page(
-                active_nav,
-                PageResources::new_with_filter(ResourceFilter {
-                    lxc: true,
-                    qemu: true,
-                    ..Default::default()
-                }),
-                history,
-            ),
-        ),
-        Route::NodeResources => (
-            vec![],
-            main_nav_page(
-                active_nav,
-                PageResources::new_with_filter(ResourceFilter {
-                    nodes: true,
-                    ..Default::default()
-                }),
-                history,
-            ),
         ),
         Route::Qemu { vmid, nodename } => (
             switch_route(context, Route::Resources, active_nav),
