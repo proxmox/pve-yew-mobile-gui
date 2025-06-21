@@ -10,12 +10,16 @@ use crate::widgets::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageContainerStatus {
-    vmid: u64,
+    vmid: u32,
+    node: AttrValue,
 }
 
 impl PageContainerStatus {
-    pub fn new(vmid: u64) -> Self {
-        Self { vmid }
+    pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
+        Self {
+            node: node.into(),
+            vmid,
+        }
     }
 }
 

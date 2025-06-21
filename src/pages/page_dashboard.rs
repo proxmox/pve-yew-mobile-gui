@@ -6,6 +6,7 @@ use anyhow::Error;
 use proxmox_human_byte::HumanByte;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::{AlertDialog, Card, Column, Fa, List, ListTile};
@@ -140,11 +141,13 @@ impl PvePageDashboard {
         .into()
     }
 
-    fn create_nodes_card(&self, _ctx: &Context<Self>) -> Html {
+    fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
         let content: Html = match self.nodes.as_ref() {
             Ok(nodes) => {
                 let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
+                let navigator = ctx.link().navigator().clone().unwrap();
                 List::new(nodes.len() as u64, move |pos| {
+                    let navigator = navigator.clone();
                     let item = &nodes[pos as usize];
                     let nodename = item.node.clone();
                     let subtitle = match item.level.as_deref() {
@@ -165,7 +168,9 @@ impl PvePageDashboard {
                     .onclick(Callback::from(
                         move |event: web_sys::MouseEvent| {
                             event.stop_propagation();
-                            crate::goto_location(&format!("/resources/node/{nodename}"));
+                            navigator.push(&crate::Route::Node {
+                                nodename: nodename.clone(),
+                            });
                         },
                     ))
                 })
@@ -178,13 +183,16 @@ impl PvePageDashboard {
         crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
             .with_child(content)
             .class("pwt-interactive")
-            .onclick(Callback::from(move |_| {
-                crate::goto_location("/resources/node");
+            .onclick(Callback::from({
+                let navigator = ctx.link().navigator().clone().unwrap();
+                move |_| {
+                    navigator.push(&crate::Route::NodeResources);
+                }
             }))
             .into()
     }
 
-    fn create_guests_card(&self, _ctx: &Context<Self>) -> Html {
+    fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
         let content: Html = match &self.resources {
             Ok(list) => {
                 let mut vm_count = 0;
@@ -216,9 +224,12 @@ impl PvePageDashboard {
                         format!("{vm_count} ({vm_online_count} online)"),
                         None,
                     )
-                    .onclick(|event: MouseEvent| {
-                        event.stop_propagation();
-                        crate::goto_location("/resources/qemu");
+                    .onclick({
+                        let navigator = ctx.link().navigator().clone().unwrap();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            navigator.push(&crate::Route::QemuResources);
+                        }
                     })
                     .interactive(true),
                 );
@@ -230,9 +241,12 @@ impl PvePageDashboard {
                         format!("{ct_count} ({ct_online_count} online)"),
                         None,
                     )
-                    .onclick(|event: MouseEvent| {
-                        event.stop_propagation();
-                        crate::goto_location("/resources/lxc");
+                    .onclick({
+                        let navigator = ctx.link().navigator().clone().unwrap();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            navigator.push(&crate::Route::LxcResources);
+                        }
                     })
                     .interactive(true),
                 );
@@ -247,9 +261,12 @@ impl PvePageDashboard {
         crate::widgets::standard_card(tr!("Guests"), None::<&str>)
             .class("pwt-interactive")
             .with_child(content)
-            .onclick(Callback::from(move |_| {
-                crate::goto_location("/resources/guests");
-            }))
+            .onclick({
+                let navigator = ctx.link().navigator().clone().unwrap();
+                move |_| {
+                    navigator.push(&crate::Route::GuestResources);
+                }
+            })
             .into()
     }
 

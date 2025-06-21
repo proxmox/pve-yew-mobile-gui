@@ -18,12 +18,12 @@ use super::icon_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct VmConfigPanel {
-    vmid: u64,
+    vmid: u32,
     node: AttrValue,
 }
 
 impl VmConfigPanel {
-    pub fn new(node: impl Into<AttrValue>, vmid: u64) -> Self {
+    pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
             vmid,
@@ -31,7 +31,7 @@ impl VmConfigPanel {
     }
 }
 
-fn get_config_url(node: &str, vmid: u64) -> String {
+fn get_config_url(node: &str, vmid: u32) -> String {
     format!(
         "/nodes/{}/qemu/{}/config",
         percent_encode_component(node),

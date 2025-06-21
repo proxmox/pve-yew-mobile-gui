@@ -4,6 +4,8 @@ use std::rc::Rc;
 use pwt::prelude::*;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::scope_ext::RouterScopeExt;
+use yew_router::AnyRoute;
 
 use pwt::impl_class_prop_builder;
 use pwt::state::{Theme, ThemeObserver};
@@ -105,11 +107,10 @@ impl Component for PveTopNavBar {
 
         let menu = Menu::new()
             .items(props.menu_items.clone())
-            .with_item(
-                MenuItem::new("Setting")
-                    .icon_class("fa fa-cog")
-                    .on_select(|_| crate::goto_location("/settings")),
-            )
+            .with_item(MenuItem::new("Setting").icon_class("fa fa-cog").on_select({
+                let navigator = ctx.link().navigator().clone().unwrap();
+                move |_| navigator.push(&crate::Route::Settings)
+            }))
             .with_item(
                 MenuItem::new("Logout")
                     .icon_class("fa fa-sign-out")
@@ -137,8 +138,9 @@ impl Component for PveTopNavBar {
                 .class("pwt-font-size-headline-small")
                 .class("pwt-scheme-neutral")
                 .on_activate({
+                    let navigator = ctx.link().navigator().clone().unwrap();
                     move |_| {
-                        crate::goto_location(&back);
+                        navigator.push(&AnyRoute::new(back.to_string()));
                     }
                 })
                 .into()

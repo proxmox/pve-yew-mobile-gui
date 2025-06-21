@@ -5,13 +5,14 @@ use anyhow::Error;
 
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
-use pwt::widget::form::{Checkbox, Field};
-use pwt::AsyncAbortGuard;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::touch::SideDialog;
+use pwt::widget::form::{Checkbox, Field};
 use pwt::widget::{ActionIcon, Card, Column, Fa, List, ListTile, Panel, Row, Trigger};
+use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::http_get;
 use pve_api_types::{ClusterResource, ClusterResourceType};
@@ -111,7 +112,7 @@ pub enum Msg {
 }
 
 impl PvePageResources {
-    fn create_node_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
+    fn create_node_list_item(&self, ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let nodename = item.node.clone().unwrap();
         icon_list_tile(
             Fa::new("server")
@@ -125,9 +126,14 @@ impl PvePageResources {
             item.status.clone().map(|s| s.to_html()),
         )
         .interactive(true)
-        .onclick(Callback::from(move |_| {
-            crate::goto_location(&format!("/resources/node/{nodename}"));
-        }))
+        .onclick({
+            let navigator = ctx.link().navigator().clone().unwrap();
+            move |_| {
+                navigator.push(&crate::Route::Node {
+                    nodename: nodename.clone(),
+                });
+            }
+        })
         .into()
     }
 
@@ -146,24 +152,35 @@ impl PvePageResources {
         .interactive(true)
     }
 
-    fn create_qemu_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
+    fn create_qemu_list_item(&self, ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let vmid = item.vmid.unwrap();
         let nodename = item.node.clone().unwrap();
-        self.create_vm_list_item("desktop", item)
-            .onclick(Callback::from(move |_| {
-                crate::goto_location(&format!("/resources/qemu/{nodename}/{vmid}"));
-            }))
+        self.create_vm_list_item("desktop", item).onclick({
+            let navigator = ctx.link().navigator().clone().unwrap();
+            move |_| {
+                navigator.push(&crate::Route::Qemu {
+                    vmid,
+                    nodename: nodename.clone(),
+                });
+            }
+        })
     }
 
-    fn create_lxc_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
+    fn create_lxc_list_item(&self, ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let vmid = item.vmid.unwrap();
-        self.create_vm_list_item("cube", item)
-            .onclick(Callback::from(move |_| {
-                crate::goto_location(&format!("/resources/lxc/{vmid}"));
-            }))
+        let nodename = item.node.clone().unwrap();
+        self.create_vm_list_item("cube", item).onclick({
+            let navigator = ctx.link().navigator().clone().unwrap();
+            move |_| {
+                navigator.push(&crate::Route::Lxc {
+                    vmid,
+                    nodename: nodename.clone(),
+                });
+            }
+        })
     }
 
-    fn create_storage_list_item(&self, _ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
+    fn create_storage_list_item(&self, ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let name = item.storage.clone().unwrap();
 
         let mut tile = icon_list_tile(
@@ -173,9 +190,12 @@ impl PvePageResources {
             item.node.clone(),
             item.status.clone().map(|s| s.to_html()),
         )
-        .onclick(Callback::from(move |_| {
-            crate::goto_location(&format!("/resources/storage/{name}"));
-        }))
+        .onclick({
+            let navigator = ctx.link().navigator().clone().unwrap();
+            move |_| {
+                navigator.push(&crate::Route::Storage { name: name.clone() });
+            }
+        })
         .interactive(true);
 
         if item.disk.is_some() && item.maxdisk.is_some() {

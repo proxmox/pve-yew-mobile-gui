@@ -8,12 +8,14 @@ use pages::{
 };
 
 use yew::virtual_dom::Key;
-use yew_router::{HashRouter, Routable, Switch};
+use yew_router::history::{AnyHistory, History};
+use yew_router::scope_ext::RouterScopeExt;
+use yew_router::Routable;
 
 use pwt::prelude::*;
 use pwt::state::LanguageInfo;
-use pwt::touch::{NavigationBar, PageStack};
-use pwt::widget::{Column, TabBarItem, ThemeLoader};
+use pwt::touch::{MaterialApp, MaterialAppRouteContext, NavigationBar};
+use pwt::widget::{Column, TabBarItem};
 
 use proxmox_login::Authentication;
 
@@ -22,18 +24,12 @@ use proxmox_yew_comp::{
     register_auth_observer, AuthObserver,
 };
 
-pub fn goto_location(path: &str) {
-    let document = web_sys::window().unwrap().document().unwrap();
-    let location = document.location().unwrap();
-    let _ = location.replace(&format!("/#{path}"));
-}
-
 pub enum Msg {
     Login(Authentication),
     Logout,
 }
 
-#[derive(Clone, Routable, PartialEq)]
+#[derive(Clone, Debug, Routable, PartialEq)]
 enum Route {
     #[at("/")]
     Dashboard,
@@ -46,12 +42,12 @@ enum Route {
     #[at("/resources/node")]
     NodeResources,
     #[at("/resources/qemu/:nodename/:vmid")]
-    Qemu { vmid: u64, nodename: String },
+    Qemu { vmid: u32, nodename: String },
     #[at("/resources/qemu/:nodename/:vmid/tasks")]
-    QemuTasks { vmid: u64, nodename: String },
+    QemuTasks { vmid: u32, nodename: String },
     #[at("/resources/qemu/:nodename/:vmid/tasks/:upid/:endtime")]
     QemuTaskStatus {
-        vmid: u64,
+        vmid: u32,
         nodename: String,
         upid: String,
         endtime: i64,
@@ -60,8 +56,8 @@ enum Route {
     LxcResources,
     #[at("/resources/guests")]
     GuestResources,
-    #[at("/resources/lxc/:vmid")]
-    Lxc { vmid: u64 },
+    #[at("/resources/lxc/:nodename/:vmid")]
+    Lxc { vmid: u32, nodename: String },
     #[at("/resources/node/:nodename")]
     Node { nodename: String },
     #[at("/resources/node/:nodename/tasks")]
@@ -83,78 +79,159 @@ enum Route {
     NotFound,
 }
 
-fn switch(routes: Route) -> Html {
-    let (active_nav, stack) = match routes {
-        Route::Dashboard => ("dashboard", vec![PageDashboard::new().into()]),
-        Route::Settings => ("dashboard", vec![PageSettings::new().into()]),
-        Route::Resources => ("resources", vec![PageResources::new().into()]),
-        Route::QemuResources => (
-            "resources",
-            vec![PageResources::new_with_filter(ResourceFilter {
-                qemu: true,
-                ..Default::default()
+fn main_nav_page(active_nav: &str, content: impl Into<Html>, history: &AnyHistory) -> Html {
+    let nav_items = vec![
+        TabBarItem::new()
+            .key("dashboard")
+            .icon_class("fa fa-tachometer")
+            .on_activate({
+                let history = history.clone();
+                move |_| {
+                    history.push(&Route::Dashboard.to_path());
+                }
             })
-            .into()],
+            .label("Dashboard"),
+        TabBarItem::new()
+            .key("resources")
+            .icon_class("fa fa-book")
+            .on_activate({
+                let history = history.clone();
+                move |_| {
+                    history.push(&Route::Resources.to_path());
+                }
+            })
+            .label("Resources"),
+        TabBarItem::new()
+            .key("configuration")
+            .icon_class("fa fa-cogs")
+            .on_activate({
+                let history = history.clone();
+                move |_| {
+                    history.push(&Route::Configuration.to_path());
+                }
+            })
+            .label("Configuration"),
+    ];
+
+    let navigation = NavigationBar::new(nav_items).active(Key::from(active_nav));
+    Column::new()
+        .class("pwt-viewport")
+        .with_child(content)
+        .with_child(navigation)
+        .into()
+}
+
+fn switch(context: &MaterialAppRouteContext, path: &str) -> Vec<Html> {
+    let route = Route::recognize(&path).unwrap();
+    let active_nav = if path.starts_with("/resources") {
+        "resources"
+    } else if path.starts_with("/configuration") {
+        "configuration"
+    } else {
+        "dashboard"
+    };
+    switch_route(context, route, active_nav)
+}
+
+fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &str) -> Vec<Html> {
+    let history = &context.history;
+
+    let (mut stack, content) = match route {
+        Route::Dashboard => (
+            vec![],
+            main_nav_page(active_nav, PageDashboard::new(), history),
+        ),
+        Route::Settings => (
+            switch_route(context, Route::Dashboard, active_nav),
+            PageSettings::new().into(),
+        ),
+        Route::Resources => (
+            vec![],
+            main_nav_page(active_nav, PageResources::new(), history),
+        ),
+        Route::QemuResources => (
+            vec![],
+            main_nav_page(
+                active_nav,
+                PageResources::new_with_filter(ResourceFilter {
+                    qemu: true,
+                    ..Default::default()
+                }),
+                history,
+            ),
         ),
         Route::LxcResources => (
-            "resources",
-            vec![PageResources::new_with_filter(ResourceFilter {
-                lxc: true,
-                ..Default::default()
-            })
-            .into()],
+            vec![],
+            main_nav_page(
+                active_nav,
+                PageResources::new_with_filter(ResourceFilter {
+                    lxc: true,
+                    ..Default::default()
+                }),
+                history,
+            ),
         ),
         Route::GuestResources => (
-            "resources",
-            vec![PageResources::new_with_filter(ResourceFilter {
-                lxc: true,
-                qemu: true,
-                ..Default::default()
-            })
-            .into()],
+            vec![],
+            main_nav_page(
+                active_nav,
+                PageResources::new_with_filter(ResourceFilter {
+                    lxc: true,
+                    qemu: true,
+                    ..Default::default()
+                }),
+                history,
+            ),
         ),
         Route::NodeResources => (
-            "resources",
-            vec![PageResources::new_with_filter(ResourceFilter {
-                nodes: true,
-                ..Default::default()
-            })
-            .into()],
+            vec![],
+            main_nav_page(
+                active_nav,
+                PageResources::new_with_filter(ResourceFilter {
+                    nodes: true,
+                    ..Default::default()
+                }),
+                history,
+            ),
         ),
         Route::Qemu { vmid, nodename } => (
-            "resources",
-            vec![
-                PageResources::new().into(),
-                PageVmStatus::new(nodename, vmid).into(),
-            ],
+            switch_route(context, Route::Resources, active_nav),
+            PageVmStatus::new(nodename, vmid).into(),
         ),
         Route::QemuTasks { vmid, nodename } => (
-            "resources",
-            vec![
-                PageResources::new().into(),
-                PageVmStatus::new(nodename.clone(), vmid).into(),
-                PageTasks::new(format!(
-                    "/nodes/{}/tasks?vmid={vmid}",
-                    percent_encode_component(&nodename),
-                ))
-                .title(format!("VM {vmid}"))
-                .back(format!(
-                    "/resources/qemu/{}/{}",
-                    percent_encode_component(&nodename),
-                    vmid
-                ))
-                .on_show_task(move |(upid, endtime): (String, Option<i64>)| {
-                    let url = format!(
-                        "/resources/qemu/{}/{}/tasks/{}/{}",
-                        percent_encode_component(&nodename),
-                        vmid,
-                        percent_encode_component(&upid),
-                        endtime.unwrap_or(0),
+            switch_route(
+                context,
+                Route::Qemu {
+                    vmid: vmid.clone(),
+                    nodename: nodename.clone(),
+                },
+                active_nav,
+            ),
+            PageTasks::new(format!(
+                "/nodes/{}/tasks?vmid={vmid}",
+                percent_encode_component(&nodename),
+            ))
+            .title(format!("VM {vmid}"))
+            .back(format!(
+                "/resources/qemu/{}/{}",
+                percent_encode_component(&nodename),
+                vmid
+            ))
+            .on_show_task({
+                let history = history.clone();
+                move |(upid, endtime): (String, Option<i64>)| {
+                    history.push(
+                        &Route::QemuTaskStatus {
+                            vmid,
+                            nodename: nodename.clone(),
+                            upid,
+                            endtime: endtime.unwrap_or(0),
+                        }
+                        .to_path(),
                     );
-                    crate::goto_location(&url);
-                })
-                .into(),
-            ],
+                }
+            })
+            .into(),
         ),
         Route::QemuTaskStatus {
             vmid,
@@ -162,168 +239,159 @@ fn switch(routes: Route) -> Html {
             upid,
             endtime,
         } => (
-            "resources",
-            vec![
-                PageResources::new().into(),
-                PageVmStatus::new(nodename.clone(), vmid).into(),
-                PageTasks::new(format!(
-                    "/nodes/{}/tasks?vmid={vmid}",
-                    percent_encode_component(&nodename),
-                ))
-                .title(format!("VM {vmid}"))
-                .back(format!(
-                    "/resources/qemu/{}/{}",
-                    percent_encode_component(&nodename),
-                    vmid
-                ))
-                .into(),
-                PageTaskStatus::new(
-                    format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
-                    upid,
-                )
-                .endtime(endtime)
-                .back(format!(
-                    "/resources/qemu/{}/{}/tasks",
-                    percent_encode_component(&nodename),
-                    vmid
-                ))
-                .into(),
-            ],
+            switch_route(
+                context,
+                Route::QemuTasks {
+                    vmid: vmid.clone(),
+                    nodename: nodename.clone(),
+                },
+                active_nav,
+            ),
+            PageTaskStatus::new(
+                format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
+                upid,
+            )
+            .endtime(endtime)
+            .back(format!(
+                "/resources/qemu/{}/{}/tasks",
+                percent_encode_component(&nodename),
+                vmid
+            ))
+            .into(),
         ),
-        Route::Lxc { vmid } => (
-            "resources",
-            vec![
-                PageResources::new().into(),
-                PageContainerStatus::new(vmid).into(),
-            ],
+        Route::Lxc { nodename, vmid } => (
+            switch_route(context, Route::Resources, active_nav),
+            PageContainerStatus::new(nodename, vmid).into(),
         ),
         Route::Node { nodename } => (
-            "resources",
-            vec![
-                PageResources::new_with_filter(ResourceFilter {
-                    nodes: true,
-                    ..Default::default()
-                })
-                .into(),
-                PageNodeStatus::new(nodename).into(),
-            ],
+            switch_route(context, Route::Resources, active_nav),
+            PageNodeStatus::new(nodename).into(),
         ),
         Route::NodeTasks { nodename } => (
-            "resources",
-            vec![
-                PageResources::new_with_filter(ResourceFilter {
-                    nodes: true,
-                    ..Default::default()
-                })
-                .into(),
-                PageNodeStatus::new(nodename.clone()).into(),
-                PageTasks::new(format!(
-                    "/nodes/{}/tasks",
-                    percent_encode_component(&nodename),
-                ))
-                .title(format!("Node {nodename}"))
-                .back(format!(
-                    "/resources/node/{}",
-                    percent_encode_component(&nodename),
-                ))
-                .on_show_task(move |(upid, endtime): (String, Option<i64>)| {
-                    let url = format!(
-                        "/resources/node/{}/tasks/{}/{}",
-                        percent_encode_component(&nodename),
-                        percent_encode_component(&upid),
-                        endtime.unwrap_or(0),
+            switch_route(
+                context,
+                Route::Node {
+                    nodename: nodename.clone(),
+                },
+                active_nav,
+            ),
+            PageTasks::new(format!(
+                "/nodes/{}/tasks",
+                percent_encode_component(&nodename),
+            ))
+            .title(format!("Node {nodename}"))
+            .back(format!(
+                "/resources/node/{}",
+                percent_encode_component(&nodename),
+            ))
+            .on_show_task({
+                let history = history.clone();
+                move |(upid, endtime): (String, Option<i64>)| {
+                    history.push(
+                        &Route::NodeTasksStatus {
+                            nodename: nodename.clone(),
+                            upid,
+                            endtime: endtime.unwrap_or(0),
+                        }
+                        .to_path(),
                     );
-                    crate::goto_location(&url);
-                })
-                .into(),
-            ],
+                }
+            })
+            .into(),
         ),
         Route::NodeTasksStatus {
             nodename,
             upid,
             endtime,
         } => (
-            "resources",
-            vec![
-                PageResources::new_with_filter(ResourceFilter {
-                    nodes: true,
-                    ..Default::default()
-                })
-                .into(),
-                PageNodeStatus::new(nodename.clone()).into(),
-                PageTasks::new(format!(
-                    "/nodes/{}/tasks",
-                    percent_encode_component(&nodename),
-                ))
-                .title(format!("Node {nodename}"))
-                .back(format!(
-                    "/resources/node/{}",
-                    percent_encode_component(&nodename),
-                ))
-                .into(),
-                PageTaskStatus::new(
-                    format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
-                    upid,
-                )
-                .endtime(endtime)
-                .back(format!(
-                    "/resources/node/{}/tasks",
-                    percent_encode_component(&nodename),
-                ))
-                .into(),
-            ],
+            switch_route(
+                context,
+                Route::NodeTasks {
+                    nodename: nodename.clone(),
+                },
+                active_nav,
+            ),
+            PageTaskStatus::new(
+                format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
+                upid,
+            )
+            .endtime(endtime)
+            .back(format!(
+                "/resources/node/{}/tasks",
+                percent_encode_component(&nodename),
+            ))
+            .into(),
         ),
         Route::Storage { name } => (
-            "resources",
-            vec![
-                PageResources::new().into(),
-                PageStorageStatus::new(name).into(),
-            ],
+            switch_route(context, Route::Resources, active_nav),
+            PageStorageStatus::new(name).into(),
         ),
-        // Route::Logs => ("logs", vec![PageLogs::new().into()]),
-        Route::Configuration => ("configuration", vec![PageConfiguration::new().into()]),
-        Route::NotFound => ("", vec![html! { <PageNotFound/> }]),
+        Route::Configuration => (
+            vec![],
+            main_nav_page(active_nav, PageConfiguration::new(), history),
+        ),
+        Route::NotFound => (vec![], html! { <PageNotFound/> }),
     };
 
-    let items = vec![
-        TabBarItem::new()
-            .key("dashboard")
-            .icon_class("fa fa-tachometer")
-            .on_activate(Callback::from(|_| {
-                goto_location("/");
-            }))
-            .label("Dashboard"),
-        TabBarItem::new()
-            .key("resources")
-            .icon_class("fa fa-book")
-            .on_activate(Callback::from(|_| {
-                goto_location("/resources");
-            }))
-            .label("Resources"),
-        // TabBarItem::new()
-        //    .key("logs")
-        //    .icon_class("fa fa-list")
-        //    .on_activate(Callback::from(|_| {
-        //        goto_location("/logs");
-        //    }))
-        //    .label("Logs"),
-        TabBarItem::new()
-            .key("configuration")
-            .icon_class("fa fa-cogs")
-            .on_activate(Callback::from(|_| {
-                goto_location("/configuration");
-            }))
-            .label("Configuration"),
-    ];
-
-    let navigation = NavigationBar::new(items).active(Key::from(active_nav));
-
-    Column::new()
-        .class("pwt-viewport")
-        .with_child(PageStack::new(stack))
-        .with_child(navigation)
-        .into()
+    stack.push(content);
+    stack
 }
+
+/*
+fn switch(context: &MaterialAppRouteContext, full_path: &str) -> Vec<Html> {
+    log::info!("SWITCH {full_path}");
+    let history = &context.history;
+
+    let mut components: Vec<String> = full_path
+        .trim_matches('/')
+        .split("/")
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect();
+
+    log::info!("COMPS {components:?}");
+
+    let active_nav = match components.get(0).map(|s| s.as_str()) {
+        Some("resources") => "resources",
+        Some("configuration") => "configuration",
+        _ => "dashboard",
+    };
+
+    let mut stack = Vec::new();
+
+    if components.is_empty() {
+        stack.push(switch_single_page(context, Route::recognize("/").unwrap()));
+    } else {
+        let not_found_route = Route::not_found_route();
+
+        loop {
+            if components.is_empty() {
+                break;
+            }
+            let path = format!("/{}", components.join("/"));
+            if let Some(route) = Route::recognize(&path) {
+                if let Some(not_found_route) = &not_found_route {
+                    if route == *not_found_route {
+                        components.pop();
+                        continue;
+                    }
+                }
+                log::info!("PUSH {path} {route:?}");
+
+                let page = switch_single_page(context, route);
+                stack.push(page);
+            }
+            components.pop();
+        }
+
+        stack.reverse();
+    }
+
+    //main_nav_page(active_nav, content);
+
+    stack
+}
+    */
 
 struct PveMobileApp {
     _auth_observer: AuthObserver,
@@ -350,31 +418,34 @@ impl Component for PveMobileApp {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let content: Html = match &self.login_info {
-            Some(_info) => {
-                html! {
-                    <HashRouter>
-                        <Switch<Route> render={switch} />
-                    </HashRouter>
-                }
+        let auth = self.login_info.is_some();
+        let link = ctx.link().clone();
+
+        let render = move |context: &MaterialAppRouteContext, path: &str| {
+            if auth {
+                switch(context, path)
+            } else {
+                return vec![PageLogin::new().on_login(link.callback(Msg::Login)).into()];
             }
-            None => PageLogin::new()
-                .on_login(ctx.link().callback(Msg::Login))
-                .into(),
         };
 
-        ThemeLoader::new(content).into()
+        MaterialApp::new(render).into()
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let navigator = ctx.link().navigator().clone();
         match msg {
             Msg::Login(info) => {
                 self.login_info = Some(info);
-                goto_location("/");
+                if let Some(navigator) = &navigator {
+                    navigator.push(&Route::Dashboard);
+                }
             }
             Msg::Logout => {
                 self.login_info = None;
-                goto_location("/");
+                if let Some(navigator) = &navigator {
+                    navigator.push(&Route::Dashboard);
+                }
             }
         }
         true

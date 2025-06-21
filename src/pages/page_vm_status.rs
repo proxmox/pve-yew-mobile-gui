@@ -7,6 +7,7 @@ use proxmox_yew_comp::http_post;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::{Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
@@ -22,12 +23,12 @@ use crate::widgets::{
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageVmStatus {
-    vmid: u64,
+    vmid: u32,
     node: AttrValue,
 }
 
 impl PageVmStatus {
-    pub fn new(node: impl Into<AttrValue>, vmid: u64) -> Self {
+    pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
             vmid,
@@ -50,7 +51,7 @@ pub enum Msg {
     Shutdown,
 }
 
-fn get_status_url(node: &str, vmid: u64, cmd: &str) -> String {
+fn get_status_url(node: &str, vmid: u32, cmd: &str) -> String {
     format!(
         "/nodes/{}/qemu/{}/status/{cmd}",
         percent_encode_component(node),
@@ -179,13 +180,16 @@ impl PvePageVmStatus {
             .class(pwt::css::JustifyContent::Center)
             .with_child("Task List")
             .onclick({
+                let navigator = ctx.link().navigator().clone().unwrap();
                 let props = ctx.props();
-                let url = format!(
-                    "/resources/qemu/{}/{}/tasks",
-                    percent_encode_component(&props.node),
-                    props.vmid,
-                );
-                move |_| crate::goto_location(&url)
+                let node = props.node.clone();
+                let vmid = props.vmid;
+                move |_| {
+                    navigator.push(&crate::Route::QemuTasks {
+                        vmid,
+                        nodename: node.to_string(),
+                    });
+                }
             })
             .into()
     }

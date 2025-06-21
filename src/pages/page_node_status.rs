@@ -2,13 +2,12 @@ use std::rc::Rc;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::{Card, Column};
 
 use crate::widgets::TopNavBar;
-
-use proxmox_yew_comp::percent_encoding::percent_encode_component;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageNodeStatus {
@@ -37,11 +36,13 @@ impl PvePageNodeStatus {
             .with_child("Task List")
             .onclick({
                 let props = ctx.props();
-                let url = format!(
-                    "/resources/node/{}/tasks",
-                    percent_encode_component(&props.nodename),
-                );
-                move |_| crate::goto_location(&url)
+                let navigator = ctx.link().navigator().clone().unwrap();
+                let nodename = props.nodename.clone();
+                move |_| {
+                    navigator.push(&crate::Route::NodeTasks {
+                        nodename: nodename.to_string(),
+                    });
+                }
             })
             .into()
     }
