@@ -1,5 +1,5 @@
 pub mod widgets;
-pub use widgets::MainNavigation;
+pub use widgets::{MainNavigation, MainNavigationSelection};
 
 pub mod pages;
 use pages::{
@@ -79,9 +79,18 @@ fn switch(context: &MaterialAppRouteContext, path: &str) -> Vec<Html> {
 // that triggers change detection in the PageStack (callbacks are never equal)
 fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
     let (mut stack, content) = match route {
-        Route::Dashboard => (vec![], MainNavigation::new().into()),
-        Route::Configuration => (vec![], MainNavigation::new().into()),
-        Route::Resources => (vec![], MainNavigation::new().into()),
+        Route::Dashboard => (
+            vec![],
+            MainNavigation::new(MainNavigationSelection::Dashboard).into(),
+        ),
+        Route::Configuration => (
+            vec![],
+            MainNavigation::new(MainNavigationSelection::Configuration).into(),
+        ),
+        Route::Resources => (
+            vec![],
+            MainNavigation::new(MainNavigationSelection::Resources).into(),
+        ),
 
         Route::Settings => (
             switch_route(context, Route::Dashboard),
