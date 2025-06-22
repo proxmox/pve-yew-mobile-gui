@@ -12,7 +12,7 @@ use yew_router::Routable;
 
 use pwt::prelude::*;
 use pwt::state::LanguageInfo;
-use pwt::touch::{MaterialApp, MaterialAppRouteContext};
+use pwt::touch::MaterialApp;
 
 use proxmox_login::Authentication;
 
@@ -70,14 +70,14 @@ enum Route {
     NotFound,
 }
 
-fn switch(context: &MaterialAppRouteContext, path: &str) -> Vec<Html> {
+fn switch(path: &str) -> Vec<Html> {
     let route = Route::recognize(&path).unwrap();
-    switch_route(context, route)
+    switch_route(route)
 }
 
 // Warning: Do not define/use callbacks inside the route switch, because
 // that triggers change detection in the PageStack (callbacks are never equal)
-fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
+fn switch_route(route: Route) -> Vec<Html> {
     let (mut stack, content) = match route {
         Route::Dashboard => (
             vec![],
@@ -92,22 +92,16 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
             MainNavigation::new(MainNavigationSelection::Resources).into(),
         ),
 
-        Route::Settings => (
-            switch_route(context, Route::Dashboard),
-            PageSettings::new().into(),
-        ),
+        Route::Settings => (switch_route(Route::Dashboard), PageSettings::new().into()),
         Route::Qemu { vmid, nodename } => (
-            switch_route(context, Route::Resources),
+            switch_route(Route::Resources),
             PageVmStatus::new(nodename, vmid).into(),
         ),
         Route::QemuTasks { vmid, nodename } => (
-            switch_route(
-                context,
-                Route::Qemu {
-                    vmid: vmid.clone(),
-                    nodename: nodename.clone(),
-                },
-            ),
+            switch_route(Route::Qemu {
+                vmid: vmid.clone(),
+                nodename: nodename.clone(),
+            }),
             PageQemuTasks::new(nodename, vmid).into(),
         ),
         Route::QemuTaskStatus {
@@ -116,13 +110,10 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
             upid,
             endtime,
         } => (
-            switch_route(
-                context,
-                Route::QemuTasks {
-                    vmid: vmid.clone(),
-                    nodename: nodename.clone(),
-                },
-            ),
+            switch_route(Route::QemuTasks {
+                vmid: vmid.clone(),
+                nodename: nodename.clone(),
+            }),
             PageTaskStatus::new(
                 format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
                 upid,
@@ -131,20 +122,17 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
             .into(),
         ),
         Route::Lxc { nodename, vmid } => (
-            switch_route(context, Route::Resources),
+            switch_route(Route::Resources),
             PageContainerStatus::new(nodename, vmid).into(),
         ),
         Route::Node { nodename } => (
-            switch_route(context, Route::Resources),
+            switch_route(Route::Resources),
             PageNodeStatus::new(nodename).into(),
         ),
         Route::NodeTasks { nodename } => (
-            switch_route(
-                context,
-                Route::Node {
-                    nodename: nodename.clone(),
-                },
-            ),
+            switch_route(Route::Node {
+                nodename: nodename.clone(),
+            }),
             PageNodeTasks::new(nodename).into(),
         ),
         Route::NodeTaskStatus {
@@ -152,12 +140,9 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
             upid,
             endtime,
         } => (
-            switch_route(
-                context,
-                Route::NodeTasks {
-                    nodename: nodename.clone(),
-                },
-            ),
+            switch_route(Route::NodeTasks {
+                nodename: nodename.clone(),
+            }),
             PageTaskStatus::new(
                 format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
                 upid,
@@ -166,7 +151,7 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
             .into(),
         ),
         Route::Storage { name } => (
-            switch_route(context, Route::Resources),
+            switch_route(Route::Resources),
             PageStorageStatus::new(name).into(),
         ),
         Route::NotFound => (vec![], html! { <PageNotFound/> }),
@@ -260,9 +245,9 @@ impl Component for PveMobileApp {
         let auth = self.login_info.is_some();
         let link = ctx.link().clone();
 
-        let render = move |context: &MaterialAppRouteContext, path: &str| {
+        let render = move |path: &str| {
             if auth {
-                switch(context, path)
+                switch(path)
             } else {
                 return vec![PageLogin::new().on_login(link.callback(Msg::Login)).into()];
             }
