@@ -19,8 +19,11 @@ pub use page_storage_status::PageStorageStatus;
 mod page_login;
 pub use page_login::PageLogin;
 
-mod page_tasks;
-pub use page_tasks::PageTasks;
+mod page_qemu_tasks;
+pub use page_qemu_tasks::PageQemuTasks;
+
+mod page_node_tasks;
+pub use page_node_tasks::PageNodeTasks;
 
 mod page_task_status;
 pub use page_task_status::PageTaskStatus;

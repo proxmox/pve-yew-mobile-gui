@@ -2,8 +2,9 @@ pub mod widgets;
 
 pub mod pages;
 use pages::{
-    PageConfiguration, PageContainerStatus, PageDashboard, PageLogin, PageNodeStatus, PageNotFound,
-    PageResources, PageSettings, PageStorageStatus, PageTaskStatus, PageTasks, PageVmStatus,
+    PageConfiguration, PageContainerStatus, PageDashboard, PageLogin, PageNodeStatus,
+    PageNodeTasks, PageNotFound, PageQemuTasks, PageResources, PageSettings, PageStorageStatus,
+    PageTaskStatus, PageVmStatus,
 };
 
 use yew::virtual_dom::Key;
@@ -56,7 +57,7 @@ enum Route {
     #[at("/resources/node/:nodename/tasks")]
     NodeTasks { nodename: String },
     #[at("/resources/node/:nodename/tasks/:upid/:endtime")]
-    NodeTasksStatus {
+    NodeTaskStatus {
         nodename: String,
         upid: String,
         endtime: i64,
@@ -126,6 +127,8 @@ fn switch(context: &MaterialAppRouteContext, path: &str) -> Vec<Html> {
     switch_route(context, route, active_nav)
 }
 
+// Warning: Do not define/use callbacks inside the route switch, because
+// that triggers change detection in the PageStack (callbacks are never equal)
 fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &str) -> Vec<Html> {
     let history = &context.history;
 
@@ -155,26 +158,7 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 },
                 active_nav,
             ),
-            PageTasks::new(format!(
-                "/nodes/{}/tasks?vmid={vmid}",
-                percent_encode_component(&nodename),
-            ))
-            .title(format!("VM {vmid}"))
-            .on_show_task({
-                let history = history.clone();
-                move |(upid, endtime): (String, Option<i64>)| {
-                    history.push(
-                        &Route::QemuTaskStatus {
-                            vmid,
-                            nodename: nodename.clone(),
-                            upid,
-                            endtime: endtime.unwrap_or(0),
-                        }
-                        .to_path(),
-                    );
-                }
-            })
-            .into(),
+            PageQemuTasks::new(nodename, vmid).into(),
         ),
         Route::QemuTaskStatus {
             vmid,
@@ -213,27 +197,9 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 },
                 active_nav,
             ),
-            PageTasks::new(format!(
-                "/nodes/{}/tasks",
-                percent_encode_component(&nodename),
-            ))
-            .title(format!("Node {nodename}"))
-            .on_show_task({
-                let history = history.clone();
-                move |(upid, endtime): (String, Option<i64>)| {
-                    history.push(
-                        &Route::NodeTasksStatus {
-                            nodename: nodename.clone(),
-                            upid,
-                            endtime: endtime.unwrap_or(0),
-                        }
-                        .to_path(),
-                    );
-                }
-            })
-            .into(),
+            PageNodeTasks::new(nodename).into(),
         ),
-        Route::NodeTasksStatus {
+        Route::NodeTaskStatus {
             nodename,
             upid,
             endtime,
