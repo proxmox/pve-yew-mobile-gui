@@ -7,6 +7,9 @@ pub use vm_config_panel::VmConfigPanel;
 mod tasks_panel;
 pub use tasks_panel::TasksPanel;
 
+mod main_navigation;
+pub use main_navigation::MainNavigation;
+
 use pwt::prelude::*;
 use pwt::widget::{Card, Column, Container, Fa, ListTile, Progress, Row};
 

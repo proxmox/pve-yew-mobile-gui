@@ -1,21 +1,18 @@
 pub mod widgets;
+pub use widgets::MainNavigation;
 
 pub mod pages;
 use pages::{
-    PageConfiguration, PageContainerStatus, PageDashboard, PageLogin, PageNodeStatus,
-    PageNodeTasks, PageNotFound, PageQemuTasks, PageResources, PageSettings, PageStorageStatus,
-    PageTaskStatus, PageVmStatus,
+    PageContainerStatus, PageLogin, PageNodeStatus, PageNodeTasks, PageNotFound, PageQemuTasks,
+    PageSettings, PageStorageStatus, PageTaskStatus, PageVmStatus,
 };
 
-use yew::virtual_dom::Key;
-use yew_router::history::{AnyHistory, History};
 use yew_router::scope_ext::RouterScopeExt;
 use yew_router::Routable;
 
 use pwt::prelude::*;
 use pwt::state::LanguageInfo;
-use pwt::touch::{MaterialApp, MaterialAppRouteContext, NavigationBar};
-use pwt::widget::{Column, TabBarItem};
+use pwt::touch::{MaterialApp, MaterialAppRouteContext};
 
 use proxmox_login::Authentication;
 
@@ -73,80 +70,25 @@ enum Route {
     NotFound,
 }
 
-fn main_nav_page(active_nav: &str, content: impl Into<Html>, history: &AnyHistory) -> Html {
-    let nav_items = vec![
-        TabBarItem::new()
-            .key("dashboard")
-            .icon_class("fa fa-tachometer")
-            .on_activate({
-                let history = history.clone();
-                move |_| {
-                    history.push(&Route::Dashboard.to_path());
-                }
-            })
-            .label("Dashboard"),
-        TabBarItem::new()
-            .key("resources")
-            .icon_class("fa fa-book")
-            .on_activate({
-                let history = history.clone();
-                move |_| {
-                    history.push(&Route::Resources.to_path());
-                }
-            })
-            .label("Resources"),
-        TabBarItem::new()
-            .key("configuration")
-            .icon_class("fa fa-cogs")
-            .on_activate({
-                let history = history.clone();
-                move |_| {
-                    history.push(&Route::Configuration.to_path());
-                }
-            })
-            .label("Configuration"),
-    ];
-
-    let navigation = NavigationBar::new(nav_items).active(Key::from(active_nav));
-    Column::new()
-        .class("pwt-viewport")
-        .with_child(content)
-        .with_child(navigation)
-        .into()
-}
-
 fn switch(context: &MaterialAppRouteContext, path: &str) -> Vec<Html> {
     let route = Route::recognize(&path).unwrap();
-    let active_nav = if path.starts_with("/resources") {
-        "resources"
-    } else if path.starts_with("/configuration") {
-        "configuration"
-    } else {
-        "dashboard"
-    };
-    switch_route(context, route, active_nav)
+    switch_route(context, route)
 }
 
 // Warning: Do not define/use callbacks inside the route switch, because
 // that triggers change detection in the PageStack (callbacks are never equal)
-fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &str) -> Vec<Html> {
-    let history = &context.history;
-
+fn switch_route(context: &MaterialAppRouteContext, route: Route) -> Vec<Html> {
     let (mut stack, content) = match route {
-        Route::Dashboard => (
-            vec![],
-            main_nav_page(active_nav, PageDashboard::new(), history),
-        ),
+        Route::Dashboard => (vec![], MainNavigation::new().into()),
+        Route::Configuration => (vec![], MainNavigation::new().into()),
+        Route::Resources => (vec![], MainNavigation::new().into()),
+
         Route::Settings => (
-            switch_route(context, Route::Dashboard, active_nav),
+            switch_route(context, Route::Dashboard),
             PageSettings::new().into(),
         ),
-        Route::Resources => (
-            vec![],
-            main_nav_page(active_nav, PageResources::new(), history),
-        ),
         Route::Qemu { vmid, nodename } => (
-            switch_route(context, Route::Resources, active_nav),
+            switch_route(context, Route::Resources),
             PageVmStatus::new(nodename, vmid).into(),
         ),
         Route::QemuTasks { vmid, nodename } => (
@@ -156,7 +98,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                     vmid: vmid.clone(),
                     nodename: nodename.clone(),
                 },
-                active_nav,
             ),
             PageQemuTasks::new(nodename, vmid).into(),
         ),
@@ -172,7 +113,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                     vmid: vmid.clone(),
                     nodename: nodename.clone(),
                 },
-                active_nav,
             ),
             PageTaskStatus::new(
                 format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
@@ -182,11 +122,11 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
             .into(),
         ),
         Route::Lxc { nodename, vmid } => (
-            switch_route(context, Route::Resources, active_nav),
+            switch_route(context, Route::Resources),
             PageContainerStatus::new(nodename, vmid).into(),
         ),
         Route::Node { nodename } => (
-            switch_route(context, Route::Resources, active_nav),
+            switch_route(context, Route::Resources),
             PageNodeStatus::new(nodename).into(),
         ),
         Route::NodeTasks { nodename } => (
@@ -195,7 +135,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 Route::Node {
                     nodename: nodename.clone(),
                 },
-                active_nav,
             ),
             PageNodeTasks::new(nodename).into(),
         ),
@@ -209,7 +148,6 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
                 Route::NodeTasks {
                     nodename: nodename.clone(),
                 },
-                active_nav,
             ),
             PageTaskStatus::new(
                 format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
@@ -219,12 +157,8 @@ fn switch_route(context: &MaterialAppRouteContext, route: Route, active_nav: &st
             .into(),
         ),
         Route::Storage { name } => (
-            switch_route(context, Route::Resources, active_nav),
+            switch_route(context, Route::Resources),
             PageStorageStatus::new(name).into(),
-        ),
-        Route::Configuration => (
-            vec![],
-            main_nav_page(active_nav, PageConfiguration::new(), history),
         ),
         Route::NotFound => (vec![], html! { <PageNotFound/> }),
     };
