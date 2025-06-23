@@ -5,12 +5,15 @@ use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 use proxmox_yew_comp::http_post;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
-use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew::{context, prelude::*};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
+use pwt::widget::{
+    Button, Card, Column, Container, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row, TabBar,
+    TabBarItem,
+};
 use pwt::AsyncPool;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -36,7 +39,13 @@ impl PageVmStatus {
     }
 }
 
+enum ViewState {
+    Dashboard,
+    Options,
+    Backup,
+}
 pub struct PvePageVmStatus {
+    view_state: ViewState,
     data: Result<QemuStatus, String>,
     reload_timeout: Option<Timeout>,
     async_pool: AsyncPool,
@@ -49,6 +58,7 @@ pub enum Msg {
     Start,
     Stop,
     Shutdown,
+    SetViewState(ViewState),
 }
 
 fn get_status_url(node: &str, vmid: u32, cmd: &str) -> String {
@@ -193,6 +203,29 @@ impl PvePageVmStatus {
             })
             .into()
     }
+
+    fn view_dashboard(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        match &self.data {
+            Ok(data) => Column::new()
+                .class(pwt::css::FlexFit)
+                .padding(2)
+                .gap(2)
+                .with_child(self.view_status(ctx, data))
+                .with_child(self.view_actions(ctx, data))
+                .with_child(self.task_button(ctx))
+                .with_child(VmConfigPanel::new(props.node.clone(), props.vmid))
+                .into(),
+            Err(err) => pwt::widget::error_message(err).into(),
+        }
+    }
+
+    fn view_backup(&self, ctx: &Context<Self>) -> Html {
+        Container::new().with_child("Backup").into()
+    }
+    fn view_options(&self, ctx: &Context<Self>) -> Html {
+        Container::new().with_child("Options").into()
+    }
 }
 
 impl Component for PvePageVmStatus {
@@ -205,6 +238,7 @@ impl Component for PvePageVmStatus {
             data: Err(format!("no data loaded")),
             reload_timeout: None,
             async_pool: AsyncPool::new(),
+            view_state: ViewState::Dashboard,
         }
     }
 
@@ -232,6 +266,9 @@ impl Component for PvePageVmStatus {
             Msg::Start => self.vm_command(ctx, "start"),
             Msg::Stop => self.vm_command(ctx, "stop"),
             Msg::Shutdown => self.vm_command(ctx, "shutdown"),
+            Msg::SetViewState(view_state) => {
+                self.view_state = view_state;
+            }
         }
         true
     }
@@ -239,18 +276,38 @@ impl Component for PvePageVmStatus {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let content: Html = match &self.data {
-            Ok(data) => Column::new()
-                .class(pwt::css::FlexFit)
-                .padding(2)
-                .gap(2)
-                .with_child(self.view_status(ctx, data))
-                .with_child(self.view_actions(ctx, data))
-                .with_child(self.task_button(ctx))
-                .with_child(VmConfigPanel::new(props.node.clone(), props.vmid))
-                .into(),
-            Err(err) => pwt::widget::error_message(err).into(),
+        let content = match self.view_state {
+            ViewState::Dashboard => self.view_dashboard(ctx),
+            ViewState::Backup => self.view_backup(ctx),
+            ViewState::Options => self.view_options(ctx),
         };
+
+        let tab_bar = TabBar::new()
+            .class(pwt::css::JustifyContent::Center)
+            .with_item(
+                TabBarItem::new()
+                    .label("Dashboard")
+                    .key("dashboard")
+                    .on_activate(
+                        ctx.link()
+                            .callback(|_| Msg::SetViewState(ViewState::Dashboard)),
+                    ),
+            )
+            .with_item(
+                TabBarItem::new()
+                    .label("Options")
+                    .key("options")
+                    .on_activate(
+                        ctx.link()
+                            .callback(|_| Msg::SetViewState(ViewState::Options)),
+                    ),
+            )
+            .with_item(
+                TabBarItem::new().label("Backup").key("backup").on_activate(
+                    ctx.link()
+                        .callback(|_| Msg::SetViewState(ViewState::Backup)),
+                ),
+            );
 
         Column::new()
             .class("pwt-fit")
@@ -259,6 +316,7 @@ impl Component for PvePageVmStatus {
                     .title(format!("VM {}", props.vmid))
                     .back(true),
             )
+            .with_child(tab_bar)
             .with_child(content)
             .into()
     }
