@@ -2,6 +2,8 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 
 use anyhow::Error;
+use pwt::state::PersistentState;
+use serde::{Deserialize, Serialize};
 
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
@@ -20,26 +22,15 @@ use pve_api_types::{ClusterResource, ClusterResourceType};
 use crate::widgets::{icon_list_tile, list_tile_usage};
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct PageResources {
-    /// Initial filter value
-    pub default_filter: ResourceFilter,
-}
+pub struct PageResources {}
 
 impl PageResources {
     pub fn new() -> Self {
-        Self {
-            default_filter: ResourceFilter::default(),
-        }
-    }
-
-    pub fn new_with_filter(filter: ResourceFilter) -> Self {
-        Self {
-            default_filter: filter,
-        }
+        Self {}
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct ResourceFilter {
     pub name: String,
     pub storage: bool,
@@ -94,7 +85,7 @@ pub struct PvePageResources {
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     data: Result<Vec<ClusterResource>, String>,
-    filter: ResourceFilter,
+    filter: PersistentState<ResourceFilter>,
     show_filter_dialog: bool,
 }
 
@@ -256,31 +247,33 @@ impl PvePageResources {
     }
 
     fn create_filter_panel(&self, ctx: &Context<Self>) -> Html {
+        let filter = (*self.filter).clone();
+
         let grid = Column::new()
             .padding(2)
             .gap(2)
             .with_child(html! { <div style="grid-column: 1/-1;">{"Type"}</div>})
             .with_child(
                 Checkbox::new()
-                    .checked(self.filter.qemu)
+                    .checked(filter.qemu)
                     .box_label("Qemu")
                     .on_change(ctx.link().callback(Msg::FilterQemu)),
             )
             .with_child(
                 Checkbox::new()
-                    .checked(self.filter.lxc)
+                    .checked(filter.lxc)
                     .box_label("Lxc")
                     .on_change(ctx.link().callback(Msg::FilterLxc)),
             )
             .with_child(
                 Checkbox::new()
-                    .checked(self.filter.nodes)
+                    .checked(filter.nodes)
                     .box_label("Nodes")
                     .on_change(ctx.link().callback(Msg::FilterNodes)),
             )
             .with_child(
                 Checkbox::new()
-                    .checked(self.filter.storage)
+                    .checked(filter.storage)
                     .box_label("Storage")
                     .on_change(ctx.link().callback(Msg::FilterStorage)),
             );
@@ -351,14 +344,14 @@ impl Component for PvePageResources {
     type Properties = PageResources;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
         ctx.link().send_message(Msg::Load);
 
-        let mut filter = props.default_filter.clone();
+        let mut filter: PersistentState<ResourceFilter> =
+            PersistentState::new("pve-resource-filter");
 
         if let Some(location) = ctx.link().location() {
             if let Some(state) = location.state::<ResourceFilter>() {
-                filter = state.as_ref().clone();
+                filter.update(state.as_ref().clone());
             }
         }
 
@@ -372,6 +365,7 @@ impl Component for PvePageResources {
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let mut filter = (*self.filter).clone();
         match msg {
             Msg::Load => {
                 let link = ctx.link().clone();
@@ -398,10 +392,12 @@ impl Component for PvePageResources {
                 }));
             }
             Msg::SetTextFilter(text) => {
-                self.filter.name = text;
+                filter.name = text;
+                self.filter.update(filter);
             }
             Msg::ClearTextFilter => {
-                self.filter.name = String::new();
+                filter.name = String::new();
+                self.filter.update(filter);
             }
             Msg::ShowFilterDialog => {
                 self.show_filter_dialog = true;
@@ -410,16 +406,20 @@ impl Component for PvePageResources {
                 self.show_filter_dialog = false;
             }
             Msg::FilterLxc(value) => {
-                self.filter.lxc = value;
+                filter.lxc = value;
+                self.filter.update(filter);
             }
             Msg::FilterQemu(value) => {
-                self.filter.qemu = value;
+                filter.qemu = value;
+                self.filter.update(filter);
             }
             Msg::FilterStorage(value) => {
-                self.filter.storage = value;
+                filter.storage = value;
+                self.filter.update(filter);
             }
             Msg::FilterNodes(value) => {
-                self.filter.nodes = value;
+                filter.nodes = value;
+                self.filter.update(filter);
             }
         }
         true
