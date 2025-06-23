@@ -48,8 +48,8 @@ impl Component for PvePageQemuTasks {
 
         let base_url = format!(
             "/nodes/{}/tasks?vmid={}",
+            percent_encode_component(&props.nodename),
             props.vmid,
-            percent_encode_component(&props.nodename)
         );
 
         Column::new()
