@@ -253,7 +253,7 @@ impl Component for PveVmConfigPanel {
             }
             Msg::StoreBoolConfig(name, value) => {
                 let link = ctx.link().clone();
-                let url = get_config_url(&props.node, 10);
+                let url = get_config_url(&props.node, props.vmid);
                 let mut param = json!({});
                 param[name] = value.into();
                 self.store_guard = Some(AsyncAbortGuard::spawn(async move {
