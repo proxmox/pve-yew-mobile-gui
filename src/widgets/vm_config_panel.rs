@@ -5,16 +5,15 @@ use gloo_timers::callback::Timeout;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Card, Fa, List, ListTile};
+use pwt::widget::{Card, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
-use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
+use pve_api_types::QemuConfig;
 
-use super::icon_list_tile;
+use crate::widgets::standard_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct VmConfigPanel {
@@ -39,14 +38,6 @@ fn get_config_url(node: &str, vmid: u32) -> String {
     )
 }
 
-fn processor_text(config: &QemuConfig) -> String {
-    let cpu = config.cpu.as_deref().unwrap_or("kvm");
-    let cores = config.cores.unwrap_or(1);
-    let sockets = config.sockets.unwrap_or(1);
-    let count = sockets * cores;
-    format!("{count} ({sockets} sockets, {cores} cores) [{cpu}]")
-}
-
 pub enum Msg {
     Load,
     LoadResult(Result<QemuConfig, Error>),
@@ -61,83 +52,15 @@ pub struct PveVmConfigPanel {
 impl PveVmConfigPanel {
     fn view_config(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
-        list.push(icon_list_tile(
-            Fa::new("memory"),
-            data.memory.as_deref().unwrap_or("-").to_string(),
-            "Memory",
+        list.push(standard_list_tile(
+            tr!("Name"),
+            data.name.as_deref().unwrap_or("-").to_string(),
             None,
-        ));
-        list.push(icon_list_tile(
-            Fa::new("cpu"),
-            processor_text(data),
-            "Processor",
             None,
         ));
 
-        list.push(icon_list_tile(
-            Fa::new("microchip"),
-            data.bios
-                .map(|b| b.to_string())
-                .unwrap_or(String::from("Default (SeaBIOS)")),
-            "Bios",
-            None,
-        ));
-
-        list.push(icon_list_tile(
-            Fa::new("gears"),
-            data.machine
-                .as_deref()
-                .unwrap_or("Default (i440fx)")
-                .to_string(),
-            "Machine Type",
-            None,
-        ));
-
-        for (n, disk_config) in &data.ide {
-            if let Ok(config) = PveQmIde::API_SCHEMA.parse_property_string(disk_config) {
-                if let Ok(config) = serde_json::from_value::<PveQmIde>(config) {
-                    if config.media == Some(PveQmIdeMedia::Cdrom) {
-                        list.push(icon_list_tile(
-                            Fa::new("cdrom"),
-                            disk_config.to_string(),
-                            format!("CD/DVD Drive (ide{n})"),
-                            None,
-                        ));
-                    } else {
-                        list.push(icon_list_tile(
-                            Fa::new("hdd-o"),
-                            disk_config.to_string(),
-                            format!("Hard Disk (ide{n})"),
-                            None,
-                        ));
-                    }
-                }
-            }
-        }
-
-        for (n, disk_config) in &data.scsi {
-            list.push(icon_list_tile(
-                Fa::new("hdd-o"),
-                disk_config.to_string(),
-                format!("Hard Disk (scsi{n})"),
-                None,
-            ));
-        }
-
-        for (n, net_config) in &data.net {
-            list.push(icon_list_tile(
-                Fa::new("exchange"),
-                net_config.to_string(),
-                format!("Network Device (new{n})"),
-                None,
-            ));
-        }
-
-        crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
-            .with_child(
-                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-                    .grid_template_columns("auto 1fr auto"),
-            )
+        List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+            .grid_template_columns("auto 1fr auto")
             .into()
     }
 }

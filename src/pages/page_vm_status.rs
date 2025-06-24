@@ -3,25 +3,25 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
-use proxmox_yew_comp::http_post;
-use pwt::widget::menu::{Menu, MenuItem, SplitButton};
+
+use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::{context, prelude::*};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
+use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
     Button, Card, Column, Container, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row, TabBar,
     TabBarItem,
 };
 use pwt::AsyncPool;
 
-use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
 
 use pve_api_types::{IsRunning, QemuStatus};
 
 use crate::widgets::{
-    icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar, VmHardwarePanel,
+    icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar, VmConfigPanel, VmHardwarePanel,
 };
 
 #[derive(Clone, PartialEq, Properties)]
@@ -39,7 +39,7 @@ impl PageVmStatus {
     }
 }
 
-enum ViewState {
+pub enum ViewState {
     Dashboard,
     Options,
     Backup,
@@ -220,11 +220,8 @@ impl PvePageVmStatus {
         }
     }
 
-    fn view_backup(&self, ctx: &Context<Self>) -> Html {
+    fn view_backup(&self, _ctx: &Context<Self>) -> Html {
         Container::new().with_child("Backup").into()
-    }
-    fn view_options(&self, ctx: &Context<Self>) -> Html {
-        Container::new().with_child("Options").into()
     }
 }
 
@@ -279,7 +276,7 @@ impl Component for PvePageVmStatus {
         let content = match self.view_state {
             ViewState::Dashboard => self.view_dashboard(ctx),
             ViewState::Backup => self.view_backup(ctx),
-            ViewState::Options => self.view_options(ctx),
+            ViewState::Options => VmConfigPanel::new(props.node.clone(), props.vmid).into(),
         };
 
         let tab_bar = TabBar::new()

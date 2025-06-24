@@ -4,6 +4,9 @@ pub use top_nav_bar::TopNavBar;
 mod vm_hardware_panel;
 pub use vm_hardware_panel::VmHardwarePanel;
 
+mod vm_config_panel;
+pub use vm_config_panel::VmConfigPanel;
+
 mod tasks_panel;
 pub use tasks_panel::TasksPanel;
 
