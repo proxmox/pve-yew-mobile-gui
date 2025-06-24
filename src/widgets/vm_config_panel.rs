@@ -14,7 +14,7 @@ use pwt::widget::{List, ListTile};
 
 use pwt::AsyncAbortGuard;
 
-use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{http_get, http_put, percent_encoding::percent_encode_component};
 
 use pve_api_types::QemuConfig;
 
@@ -257,7 +257,7 @@ impl Component for PveVmConfigPanel {
                 let mut param = json!({});
                 param[name] = value.into();
                 self.store_guard = Some(AsyncAbortGuard::spawn(async move {
-                    let result = http_post(&url, Some(param)).await;
+                    let result = http_put(&url, Some(param)).await;
                     link.send_message(Msg::StoreResult(result));
                 }));
             }
