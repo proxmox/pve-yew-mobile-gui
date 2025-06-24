@@ -3,8 +3,10 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
+use serde::{Deserialize, Serialize};
 
 use pwt::props::StorageLocation;
+use pwt::state::PersistentState;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
@@ -40,13 +42,15 @@ impl PageVmStatus {
     }
 }
 
+#[derive(Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub enum ViewState {
+    #[default]
     Dashboard,
     Options,
     Backup,
 }
 pub struct PvePageVmStatus {
-    view_state: ViewState,
+    view_state: PersistentState<ViewState>,
     data: Result<QemuStatus, String>,
     reload_timeout: Option<Timeout>,
     async_pool: AsyncPool,
@@ -231,12 +235,19 @@ impl Component for PvePageVmStatus {
     type Properties = PageVmStatus;
 
     fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
         ctx.link().send_message(Msg::Load);
+
+        let view_state = PersistentState::new(StorageLocation::session(format!(
+            "vm-{}-status-tab-bar-state",
+            props.vmid
+        )));
+
         Self {
             data: Err(format!("no data loaded")),
             reload_timeout: None,
             async_pool: AsyncPool::new(),
-            view_state: ViewState::Dashboard,
+            view_state,
         }
     }
 
@@ -265,7 +276,7 @@ impl Component for PvePageVmStatus {
             Msg::Stop => self.vm_command(ctx, "stop"),
             Msg::Shutdown => self.vm_command(ctx, "shutdown"),
             Msg::SetViewState(view_state) => {
-                self.view_state = view_state;
+                self.view_state.update(view_state);
             }
         }
         true
@@ -274,18 +285,18 @@ impl Component for PvePageVmStatus {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let content = match self.view_state {
-            ViewState::Dashboard => self.view_dashboard(ctx),
-            ViewState::Backup => self.view_backup(ctx),
-            ViewState::Options => VmConfigPanel::new(props.node.clone(), props.vmid).into(),
+        let (active_tab, content) = match *self.view_state {
+            ViewState::Dashboard => ("dashboard", self.view_dashboard(ctx)),
+            ViewState::Backup => ("backup", self.view_backup(ctx)),
+            ViewState::Options => (
+                "options",
+                VmConfigPanel::new(props.node.clone(), props.vmid).into(),
+            ),
         };
 
         let tab_bar = TabBar::new()
             .class(pwt::css::JustifyContent::Center)
-            .state_id(StorageLocation::session(format!(
-                "vm-{}-status-tab-bar-state",
-                props.vmid
-            )))
+            .active(active_tab)
             .with_item(
                 TabBarItem::new()
                     .label("Dashboard")
