@@ -123,3 +123,39 @@ pub fn list_tile_usage(
         .with_child(text_row)
         .with_child(progress)
 }
+
+pub fn form_list_tile(
+    title: impl Into<AttrValue>,
+    subtitle: impl IntoPropValue<Option<AttrValue>>,
+    trailing: impl IntoPropValue<Option<Html>>,
+) -> ListTile {
+    ListTile::new()
+        .class(pwt::css::AlignItems::Center)
+        .class("pwt-column-gap-2")
+        .class("pwt-row-gap-1")
+        //.class("pwt-scheme-surface")
+        .border_bottom(true)
+        .with_child({
+            let mut column = Column::new().gap(1);
+
+            if let Some(title) = title.into_prop_value() {
+                column.add_child(
+                    Container::new()
+                        .class("pwt-font-size-title-medium")
+                        .key("title")
+                        .with_child(title.into()),
+                );
+            }
+
+            if let Some(subtitle) = subtitle.into_prop_value() {
+                column.add_child(
+                    Container::new()
+                        .class("pwt-font-size-title-small")
+                        .key("subtitle")
+                        .with_child(subtitle),
+                );
+            }
+            column
+        })
+        .with_optional_child(trailing.into_prop_value())
+}
