@@ -21,7 +21,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 use pve_api_types::{IsRunning, QemuStatus};
 
 use crate::widgets::{
-    icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar, VmConfigPanel,
+    icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar, VmHardwarePanel,
 };
 
 #[derive(Clone, PartialEq, Properties)]
@@ -214,7 +214,7 @@ impl PvePageVmStatus {
                 .with_child(self.view_status(ctx, data))
                 .with_child(self.view_actions(ctx, data))
                 .with_child(self.task_button(ctx))
-                .with_child(VmConfigPanel::new(props.node.clone(), props.vmid))
+                .with_child(VmHardwarePanel::new(props.node.clone(), props.vmid))
                 .into(),
             Err(err) => pwt::widget::error_message(err).into(),
         }
