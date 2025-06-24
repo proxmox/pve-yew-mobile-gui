@@ -56,13 +56,15 @@ pub fn standard_list_tile(
     leading: impl IntoPropValue<Option<Html>>,
     trailing: impl IntoPropValue<Option<Html>>,
 ) -> ListTile {
+    let leading = leading.into_prop_value().unwrap_or(html! {<div/>});
+
     ListTile::new()
         .class(pwt::css::AlignItems::Center)
         .class("pwt-column-gap-2")
         .class("pwt-row-gap-1")
         //.class("pwt-scheme-surface")
         .border_bottom(true)
-        .with_optional_child(leading.into_prop_value())
+        .with_child(leading)
         .with_child({
             let mut column = Column::new().gap(1);
 
