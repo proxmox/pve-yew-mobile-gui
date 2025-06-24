@@ -4,6 +4,7 @@ use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 
+use pwt::props::StorageLocation;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
@@ -281,6 +282,10 @@ impl Component for PvePageVmStatus {
 
         let tab_bar = TabBar::new()
             .class(pwt::css::JustifyContent::Center)
+            .state_id(StorageLocation::session(format!(
+                "vm-{}-status-tab-bar-state",
+                props.vmid
+            )))
             .with_item(
                 TabBarItem::new()
                     .label("Dashboard")
