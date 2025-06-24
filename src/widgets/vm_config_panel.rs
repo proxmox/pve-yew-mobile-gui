@@ -103,11 +103,7 @@ impl Component for PveVmConfigPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         match &self.data {
             Ok(data) => self.view_config(ctx, data),
-            Err(err) => Card::new()
-                .border(true)
-                .class("pwt-card-bordered")
-                .with_child(pwt::widget::error_message(err))
-                .into(),
+            Err(err) => pwt::widget::error_message(err).into(),
         }
     }
 }
