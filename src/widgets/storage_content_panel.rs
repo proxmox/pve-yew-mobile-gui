@@ -10,7 +10,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Container, Fa, List, ListTile};
+use pwt::widget::{Container, Fa, List, ListTile, Progress};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -151,10 +151,7 @@ impl Component for PveStorageContentPanel {
                 .with_child(tr!("List is empty."))
                 .into(),
             Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Container::new()
-                .padding(2)
-                .with_child(tr!("Loading..."))
-                .into(),
+            None => Progress::new().into(),
         }
     }
 }
