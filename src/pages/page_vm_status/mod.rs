@@ -7,6 +7,9 @@ pub use vm_config_panel::VmConfigPanel;
 mod dashboard_panel;
 pub use dashboard_panel::VmDashboardPanel;
 
+mod vm_backup_panel;
+pub use vm_backup_panel::VmBackupPanel;
+
 use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
@@ -85,12 +88,15 @@ impl Component for PvePageVmStatus {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let (active_tab, content) = match *self.view_state {
+        let (active_tab, content): (_, Html) = match *self.view_state {
             ViewState::Dashboard => (
                 "dashboard",
                 VmDashboardPanel::new(props.node.clone(), props.vmid).into(),
             ),
-            ViewState::Backup => ("backup", self.view_backup(ctx)),
+            ViewState::Backup => (
+                "backup",
+                VmBackupPanel::new(props.node.clone(), props.vmid).into(),
+            ),
             ViewState::Options => (
                 "options",
                 VmConfigPanel::new(props.node.clone(), props.vmid).into(),
