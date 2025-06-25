@@ -188,6 +188,7 @@ impl Component for PveVmHardwarePanel {
         };
 
         crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
+            .min_height(200)
             .with_child(content)
             .into()
     }

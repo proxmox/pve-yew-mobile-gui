@@ -10,7 +10,9 @@ use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
-use pwt::widget::{Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
+use pwt::widget::{
+    Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
+};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
@@ -37,7 +39,7 @@ impl VmDashboardPanel {
 }
 
 pub struct PveVmDashboardPanel {
-    data: Result<QemuStatus, String>,
+    data: Option<Result<QemuStatus, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     cmd_guard: Option<AsyncAbortGuard>,
@@ -92,7 +94,7 @@ impl PveVmDashboardPanel {
             Some(data.status.to_string().into()),
         ));
 
-        if let Ok(data) = &self.data {
+        if let Some(Ok(data)) = &self.data {
             if data.status == IsRunning::Running {
                 if let (Some(cpu), Some(maxcpu)) = (data.cpu, data.cpus) {
                     let cpu_percentage = if maxcpu == 0.0 {
@@ -203,7 +205,7 @@ impl Component for PveVmDashboardPanel {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
         Self {
-            data: Err(format!("no data loaded")),
+            data: None,
             reload_timeout: None,
             load_guard: None,
             cmd_guard: None,
@@ -222,7 +224,7 @@ impl Component for PveVmDashboardPanel {
                 }));
             }
             Msg::LoadResult(result) => {
-                self.data = result.map_err(|err| err.to_string());
+                self.data = Some(result.map_err(|err| err.to_string()));
                 let link = ctx.link().clone();
                 self.reload_timeout = Some(Timeout::new(3000, move || {
                     link.send_message(Msg::Load);
@@ -241,7 +243,7 @@ impl Component for PveVmDashboardPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         match &self.data {
-            Ok(data) => Column::new()
+            Some(Ok(data)) => Column::new()
                 .class(pwt::css::FlexFit)
                 .padding(2)
                 .gap(2)
@@ -250,7 +252,8 @@ impl Component for PveVmDashboardPanel {
                 .with_child(self.task_button(ctx))
                 .with_child(VmHardwarePanel::new(props.node.clone(), props.vmid))
                 .into(),
-            Err(err) => pwt::widget::error_message(err).into(),
+            Some(Err(err)) => pwt::widget::error_message(err).into(),
+            None => Progress::new().class("pwt-delay-visibility").into(),
         }
     }
 }
