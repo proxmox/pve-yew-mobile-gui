@@ -144,17 +144,12 @@ impl Component for PveTasksPanel {
             }
             Msg::LoadResult(result) => {
                 self.data = Some(result.map(|l| Rc::new(l)).map_err(|err| err.to_string()));
-                // fixme:
-                // log::error!("load error {err}");
             }
         }
         true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-        let on_show_task = props.on_show_task.clone();
-
         match &self.data {
             Some(Ok(data)) if data.is_empty() => Container::new()
                 .padding(2)
