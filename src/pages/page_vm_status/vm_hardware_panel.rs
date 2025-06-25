@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Card, Fa, List, ListTile};
+use pwt::widget::{Card, Fa, List, ListTile, Progress};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -53,13 +53,13 @@ pub enum Msg {
 }
 
 pub struct PveVmHardwarePanel {
-    data: Result<QemuConfig, String>,
+    data: Option<Result<QemuConfig, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
 }
 
 impl PveVmHardwarePanel {
-    fn view_config(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
+    fn view_list(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
         list.push(icon_list_tile(
             Fa::new("memory"),
@@ -133,11 +133,8 @@ impl PveVmHardwarePanel {
             ));
         }
 
-        crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
-            .with_child(
-                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-                    .grid_template_columns("auto 1fr auto"),
-            )
+        List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+            .grid_template_columns("auto 1fr auto")
             .into()
     }
 }
@@ -149,10 +146,16 @@ impl Component for PveVmHardwarePanel {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
         Self {
-            data: Err(format!("no data loaded")),
+            data: None,
             reload_timeout: None,
             load_guard: None,
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        self.data = None;
+        ctx.link().send_message(Msg::Load);
+        true
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -167,7 +170,7 @@ impl Component for PveVmHardwarePanel {
                 }));
             }
             Msg::LoadResult(result) => {
-                self.data = result.map_err(|err| err.to_string());
+                self.data = Some(result.map_err(|err| err.to_string()));
                 let link = ctx.link().clone();
                 self.reload_timeout = Some(Timeout::new(3000, move || {
                     link.send_message(Msg::Load);
@@ -178,14 +181,15 @@ impl Component for PveVmHardwarePanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Ok(data) => self.view_config(ctx, data),
-            Err(err) => Card::new()
-                .border(true)
-                .class("pwt-card-bordered")
-                .with_child(pwt::widget::error_message(err))
-                .into(),
-        }
+        let content = match &self.data {
+            Some(Ok(data)) => self.view_list(ctx, data),
+            Some(Err(err)) => pwt::widget::error_message(err).into(),
+            None => Progress::new().class("pwt-delay-visibility").into(),
+        };
+
+        crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
+            .with_child(content)
+            .into()
     }
 }
 
