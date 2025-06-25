@@ -20,7 +20,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Container, TabBar, TabBarItem};
+use pwt::widget::{Column, TabBar, TabBarItem};
 
 use crate::widgets::TopNavBar;
 
@@ -54,12 +54,6 @@ pub enum Msg {
     SetViewState(ViewState),
 }
 
-impl PvePageVmStatus {
-    fn view_backup(&self, _ctx: &Context<Self>) -> Html {
-        Container::new().with_child("Backup").into()
-    }
-}
-
 impl Component for PvePageVmStatus {
     type Message = Msg;
     type Properties = PageVmStatus;
@@ -75,8 +69,7 @@ impl Component for PvePageVmStatus {
         Self { view_state }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let props = ctx.props();
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::SetViewState(view_state) => {
                 self.view_state.update(view_state);

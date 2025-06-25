@@ -3,27 +3,21 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
-use serde::{Deserialize, Serialize};
 
-use pwt::props::StorageLocation;
-use pwt::state::PersistentState;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
+use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
-use pwt::widget::{
-    Button, Card, Column, Container, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row, TabBar,
-    TabBarItem,
-};
-use pwt::AsyncPool;
-use pwt::{prelude::*, AsyncAbortGuard};
+use pwt::widget::{Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
+use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
 
 use pve_api_types::{IsRunning, QemuStatus};
 
-use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar};
+use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile};
 
 use super::VmHardwarePanel;
 

@@ -146,7 +146,7 @@ impl Component for PveStorageContentPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         match &self.data {
             Some(Ok(data)) if !data.is_empty() => self.view_list(ctx, data),
-            Some(Ok(data)) => Container::new()
+            Some(Ok(_data)) => Container::new()
                 .padding(2)
                 .with_child(tr!("List is empty."))
                 .into(),
