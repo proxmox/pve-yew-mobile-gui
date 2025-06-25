@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Container, Fa, List, ListTile};
+use pwt::widget::{Column, Container, Fa, List, ListTile, Progress};
 use pwt::AsyncAbortGuard;
 
 use pwt_macros::builder;
@@ -45,7 +45,7 @@ pub enum Msg {
 }
 
 pub struct PveTasksPanel {
-    data: Rc<Vec<ListTasksResponse>>,
+    data: Option<Result<Rc<Vec<ListTasksResponse>>, String>>,
     load_guard: Option<AsyncAbortGuard>,
 }
 
@@ -86,57 +86,12 @@ fn task_info(task: &ListTasksResponse) -> Html {
         .into()
 }
 
-impl Component for PveTasksPanel {
-    type Message = Msg;
-    type Properties = TasksPanel;
-
-    fn create(ctx: &Context<Self>) -> Self {
-        ctx.link().send_message(Msg::Load);
-
-        Self {
-            data: Rc::new(Vec::new()),
-            load_guard: None,
-        }
-    }
-
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let props = ctx.props();
-        match msg {
-            Msg::Load => {
-                let link = ctx.link().clone();
-                let url = props.base_url.clone();
-
-                self.load_guard = Some(AsyncAbortGuard::spawn(async move {
-                    let result = http_get(&*url, None).await;
-                    link.send_message(Msg::LoadResult(result));
-                }));
-            }
-            Msg::LoadResult(result) => {
-                match result {
-                    Ok(list) => self.data = Rc::new(list),
-                    Err(err) => {
-                        // fixme:
-                        log::error!("load error {err}");
-                    }
-                }
-            }
-        }
-        true
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
+impl PveTasksPanel {
+    fn view_task_list(&self, ctx: &Context<Self>, data: Rc<Vec<ListTasksResponse>>) -> Html {
         let props = ctx.props();
         let on_show_task = props.on_show_task.clone();
 
-        if self.data.is_empty() {
-            return Container::new()
-                .padding(2)
-                .with_child("list contains no data")
-                .into();
-        }
-
-        let data = Rc::clone(&self.data);
-        List::new(self.data.len() as u64, move |pos| {
+        List::new(data.len() as u64, move |pos| {
             let item = &data[pos as usize];
             ListTile::new()
                 .interactive(true)
@@ -159,6 +114,56 @@ impl Component for PveTasksPanel {
         .class("pwt-flex-fit")
         .grid_template_columns("auto 1fr auto")
         .into()
+    }
+}
+
+impl Component for PveTasksPanel {
+    type Message = Msg;
+    type Properties = TasksPanel;
+
+    fn create(ctx: &Context<Self>) -> Self {
+        ctx.link().send_message(Msg::Load);
+
+        Self {
+            data: None,
+            load_guard: None,
+        }
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+        match msg {
+            Msg::Load => {
+                let link = ctx.link().clone();
+                let url = props.base_url.clone();
+
+                self.load_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result = http_get(&*url, None).await;
+                    link.send_message(Msg::LoadResult(result));
+                }));
+            }
+            Msg::LoadResult(result) => {
+                self.data = Some(result.map(|l| Rc::new(l)).map_err(|err| err.to_string()));
+                // fixme:
+                // log::error!("load error {err}");
+            }
+        }
+        true
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        let on_show_task = props.on_show_task.clone();
+
+        match &self.data {
+            Some(Ok(data)) if data.is_empty() => Container::new()
+                .padding(2)
+                .with_child(tr!("List contains no data"))
+                .into(),
+            Some(Ok(data)) => self.view_task_list(ctx, data.clone()),
+            Some(Err(err)) => pwt::widget::error_message(err).into(),
+            None => Progress::new().class("pwt-delay-visibility").into(),
+        }
     }
 }
 
