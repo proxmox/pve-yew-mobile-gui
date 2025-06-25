@@ -31,6 +31,7 @@ impl VmBackupPanel {
 pub enum Msg {
     LoadStorage,
     LoadStorageResult(Result<Vec<StorageInfo>, Error>),
+    ActiveStorage(String),
 }
 
 pub struct PveVmBackupPanel {
@@ -94,13 +95,22 @@ pub fn storage_card(info: &StorageInfo) -> Card {
 }
 
 impl PveVmBackupPanel {
-    fn view_config(&self, _ctx: &Context<Self>, storage_list: &[StorageInfo]) -> Html {
+    fn view_config(&self, ctx: &Context<Self>, storage_list: &[StorageInfo]) -> Html {
         let mut row = Row::new().gap(2).padding(2);
 
         if storage_list.is_empty() {
         } else {
             for info in storage_list {
-                row.add_child(storage_card(info))
+                let active = self.active_storage.as_deref() == Some(&info.storage);
+
+                row.add_child(
+                    storage_card(info)
+                        .class(active.then(|| pwt::css::ColorScheme::PrimaryContainer))
+                        .onclick(ctx.link().callback({
+                            let name = info.storage.clone();
+                            move |_| Msg::ActiveStorage(name.clone())
+                        })),
+                )
             }
         }
 
@@ -142,6 +152,9 @@ impl Component for PveVmBackupPanel {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::ActiveStorage(name) => {
+                self.active_storage = Some(name);
+            }
             Msg::LoadStorage => {
                 let link = ctx.link().clone();
                 let url = format!("/nodes/{}/storage", percent_encode_component(&props.node));
