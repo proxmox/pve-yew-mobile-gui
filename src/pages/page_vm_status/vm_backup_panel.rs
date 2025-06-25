@@ -37,7 +37,7 @@ pub enum Msg {
 }
 
 pub struct PveVmBackupPanel {
-    storage_list: Result<Vec<StorageInfo>, String>,
+    storage_list: Option<Result<Vec<StorageInfo>, String>>,
     load_storage_guard: Option<AsyncAbortGuard>,
     active_storage: Option<String>,
 }
@@ -156,10 +156,16 @@ impl Component for PveVmBackupPanel {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::LoadStorage);
         Self {
-            storage_list: Err(format!("no data loaded")),
+            storage_list: None,
             load_storage_guard: None,
             active_storage: None,
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        self.storage_list = None;
+        ctx.link().send_message(Msg::LoadStorage);
+        true
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -181,7 +187,7 @@ impl Component for PveVmBackupPanel {
                 }));
             }
             Msg::LoadStorageResult(result) => {
-                self.storage_list = result.map_err(|err| err.to_string());
+                self.storage_list = Some(result.map_err(|err| err.to_string()));
             }
         }
         true
@@ -189,8 +195,9 @@ impl Component for PveVmBackupPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         match &self.storage_list {
-            Ok(data) => self.view_config(ctx, data),
-            Err(err) => pwt::widget::error_message(err).into(),
+            Some(Ok(data)) => self.view_config(ctx, data),
+            Some(Err(err)) => pwt::widget::error_message(err).into(),
+            None => Progress::new().into(),
         }
     }
 }
