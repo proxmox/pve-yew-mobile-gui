@@ -10,7 +10,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::form::{Checkbox, Form, FormContext};
-use pwt::widget::{List, ListTile};
+use pwt::widget::{List, ListTile, Progress};
 
 use pwt::AsyncAbortGuard;
 
@@ -51,7 +51,7 @@ pub enum Msg {
 }
 
 pub struct PveVmConfigPanel {
-    data: Result<QemuConfig, String>,
+    data: Option<Result<QemuConfig, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     store_guard: Option<AsyncAbortGuard>,
@@ -210,7 +210,7 @@ impl Component for PveVmConfigPanel {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
         Self {
-            data: Err(format!("no data loaded")),
+            data: None,
             reload_timeout: None,
             load_guard: None,
             store_guard: None,
@@ -231,8 +231,8 @@ impl Component for PveVmConfigPanel {
                 }));
             }
             Msg::LoadResult(result) => {
-                self.data = result.map_err(|err| err.to_string());
-                if let Ok(data) = &self.data {
+                self.data = Some(result.map_err(|err| err.to_string()));
+                if let Some(Ok(data)) = &self.data {
                     self.form_context
                         .load_form(serde_json::to_value(data).unwrap());
                 }
@@ -266,8 +266,9 @@ impl Component for PveVmConfigPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         match &self.data {
-            Ok(data) => self.view_config(ctx, data),
-            Err(err) => pwt::widget::error_message(err).into(),
+            Some(Ok(data)) => self.view_config(ctx, data),
+            Some(Err(err)) => pwt::widget::error_message(err).into(),
+            None => Progress::new().class("pwt-delay-visibility").into(),
         }
     }
 }

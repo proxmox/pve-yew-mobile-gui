@@ -33,9 +33,25 @@
 }
 
 :root.pwt-dark-mode {
+
     .fa-cdrom,
     .fa-memory,
     .fa-cpu {
         filter: invert(90%);
     }
+}
+
+@keyframes delay-visibility {
+    from {
+        opacity: 0
+    }
+
+    to {
+        opacity: 1
+    }
+}
+
+.pwt-delay-visibility {
+    opacity: 0;
+    animation: delay-visibility 2s ease-in-out 250ms forwards;
 }

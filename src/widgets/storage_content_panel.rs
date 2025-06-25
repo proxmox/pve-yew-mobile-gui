@@ -151,7 +151,7 @@ impl Component for PveStorageContentPanel {
                 .with_child(tr!("List is empty."))
                 .into(),
             Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().into(),
+            None => Progress::new().class("pwt-delay-visibility").into(),
         }
     }
 }
