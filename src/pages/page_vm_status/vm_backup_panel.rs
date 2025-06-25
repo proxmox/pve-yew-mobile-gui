@@ -13,6 +13,8 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::StorageInfo;
 
+use crate::widgets::StorageContentPanel;
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct VmBackupPanel {
     vmid: u32,
@@ -96,6 +98,8 @@ pub fn storage_card(info: &StorageInfo) -> Card {
 
 impl PveVmBackupPanel {
     fn view_config(&self, ctx: &Context<Self>, storage_list: &[StorageInfo]) -> Html {
+        let props = ctx.props();
+
         let mut row = Row::new().gap(2).padding(2);
 
         if storage_list.is_empty() {
@@ -114,8 +118,8 @@ impl PveVmBackupPanel {
             }
         }
 
-        let content: Html = if let Some(active) = &self.active_storage {
-            html! {"test1"}
+        let content: Html = if let Some(active_store) = &self.active_storage {
+            StorageContentPanel::new(props.node.clone(), active_store.clone()).into()
         } else {
             Column::new()
                 .padding(2)
@@ -128,9 +132,16 @@ impl PveVmBackupPanel {
 
         Column::new()
             .class(pwt::css::FlexFit)
-            .gap(2)
-            .with_child(MiniScroll::new(row))
-            .with_child(Row::new().padding_x(2).with_child(tr!("Recent backups")))
+            //.gap(2)
+            .with_child(MiniScroll::new(row).class(pwt::css::Flex::None))
+            .with_child(
+                Row::new()
+                    .border_bottom(true)
+                    .padding_top(1)
+                    .padding_x(2)
+                    .padding_bottom(2)
+                    .with_child(html!{<div class="pwt-font-size-title-medium">{tr!("Recent backups")}</div>}),
+            )
             .with_child(content)
             .into()
     }
