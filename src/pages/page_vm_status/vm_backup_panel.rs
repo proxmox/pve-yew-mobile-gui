@@ -11,7 +11,7 @@ use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
-use pve_api_types::StorageInfo;
+use pve_api_types::{StorageContent, StorageInfo};
 
 use crate::widgets::StorageContentPanel;
 
@@ -119,7 +119,10 @@ impl PveVmBackupPanel {
         }
 
         let content: Html = if let Some(active_store) = &self.active_storage {
-            StorageContentPanel::new(props.node.clone(), active_store.clone()).into()
+            StorageContentPanel::new(props.node.clone(), active_store.clone())
+                .vmid_filter(props.vmid)
+                .content_filter(StorageContent::Backup)
+                .into()
         } else {
             Column::new()
                 .padding(2)
@@ -132,7 +135,6 @@ impl PveVmBackupPanel {
 
         Column::new()
             .class(pwt::css::FlexFit)
-            //.gap(2)
             .with_child(MiniScroll::new(row).class(pwt::css::Flex::None))
             .with_child(
                 Row::new()
