@@ -1,3 +1,9 @@
+mod vm_hardware_panel;
+pub use vm_hardware_panel::VmHardwarePanel;
+
+mod vm_config_panel;
+pub use vm_config_panel::VmConfigPanel;
+
 use std::rc::Rc;
 
 use anyhow::Error;
@@ -23,9 +29,7 @@ use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_com
 
 use pve_api_types::{IsRunning, QemuStatus};
 
-use crate::widgets::{
-    icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar, VmConfigPanel, VmHardwarePanel,
-};
+use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile, TopNavBar};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageVmStatus {
