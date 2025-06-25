@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -10,9 +9,8 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Card, Fa, List, ListTile};
+use pwt::widget::{Container, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -74,8 +72,7 @@ pub enum Msg {
 }
 
 pub struct PveStorageContentPanel {
-    data: Result<Vec<StorageEntry>, String>,
-    reload_timeout: Option<Timeout>,
+    data: Option<Result<Vec<StorageEntry>, String>>,
     load_guard: Option<AsyncAbortGuard>,
 }
 
@@ -106,10 +103,15 @@ impl Component for PveStorageContentPanel {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
         Self {
-            data: Err(format!("no data loaded")),
-            reload_timeout: None,
+            data: None,
             load_guard: None,
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        self.data = None;
+        ctx.link().send_message(Msg::Load);
+        true
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -135,11 +137,7 @@ impl Component for PveStorageContentPanel {
                 }));
             }
             Msg::LoadResult(result) => {
-                self.data = result.map_err(|err| err.to_string());
-                let link = ctx.link().clone();
-                self.reload_timeout = Some(Timeout::new(3000, move || {
-                    link.send_message(Msg::Load);
-                }));
+                self.data = Some(result.map_err(|err| err.to_string()));
             }
         }
         true
@@ -147,8 +145,16 @@ impl Component for PveStorageContentPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         match &self.data {
-            Ok(data) => self.view_list(ctx, data),
-            Err(err) => pwt::widget::error_message(err).into(),
+            Some(Ok(data)) if !data.is_empty() => self.view_list(ctx, data),
+            Some(Ok(data)) => Container::new()
+                .padding(2)
+                .with_child(tr!("List is empty."))
+                .into(),
+            Some(Err(err)) => pwt::widget::error_message(err).into(),
+            None => Container::new()
+                .padding(2)
+                .with_child(tr!("Loading..."))
+                .into(),
         }
     }
 }
