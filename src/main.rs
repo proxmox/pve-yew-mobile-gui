@@ -62,8 +62,8 @@ enum Route {
         upid: String,
         endtime: i64,
     },
-    #[at("/resources/storage/:name")]
-    Storage { name: String },
+    #[at("/resources/node/:nodename/storage/:name")]
+    Storage { nodename: String, name: String },
     // #[at("/logs")]
     // Logs,
     #[at("/configuration")]
@@ -153,9 +153,9 @@ fn switch_route(route: Route) -> Vec<Html> {
             .endtime(endtime)
             .into(),
         ),
-        Route::Storage { name } => (
+        Route::Storage { nodename, name } => (
             switch_route(Route::Resources),
-            PageStorageStatus::new(name).into(),
+            PageStorageStatus::new(nodename, name).into(),
         ),
         Route::NotFound => (vec![], html! { <PageNotFound/> }),
     };

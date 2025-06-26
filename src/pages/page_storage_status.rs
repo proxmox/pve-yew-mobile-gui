@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use anyhow::Error;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
@@ -7,15 +8,20 @@ use pwt::prelude::*;
 use pwt::widget::Column;
 
 use crate::widgets::TopNavBar;
+use crate::StorageEntry;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageStorageStatus {
+    node: AttrValue,
     name: AttrValue,
 }
 
 impl PageStorageStatus {
-    pub fn new(name: impl Into<AttrValue>) -> Self {
-        Self { name: name.into() }
+    pub fn new(node: impl Into<AttrValue>, name: impl Into<AttrValue>) -> Self {
+        Self {
+            node: node.into(),
+            name: name.into(),
+        }
     }
 }
 
@@ -23,6 +29,7 @@ pub struct PvePageStorageStatus {}
 
 pub enum Msg {
     Load,
+    LoadResult(Result<StorageEntry, Error>),
 }
 
 impl Component for PvePageStorageStatus {

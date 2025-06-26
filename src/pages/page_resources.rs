@@ -173,6 +173,7 @@ impl PvePageResources {
 
     fn create_storage_list_item(&self, ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let name = item.storage.clone().unwrap();
+        let nodename = item.storage.clone().unwrap();
 
         let mut tile = icon_list_tile(
             Fa::new("database")
@@ -184,7 +185,10 @@ impl PvePageResources {
         .onclick({
             let navigator = ctx.link().navigator().clone().unwrap();
             move |_| {
-                navigator.push(&crate::Route::Storage { name: name.clone() });
+                navigator.push(&crate::Route::Storage {
+                    nodename: nodename.clone(),
+                    name: name.clone(),
+                });
             }
         })
         .interactive(true);
