@@ -13,6 +13,7 @@ pub use main_navigation::{MainNavigation, MainNavigationSelection};
 use pwt::prelude::*;
 use pwt::widget::{Card, Column, Container, Fa, ListTile, Progress, Row};
 
+use proxmox_human_byte::HumanByte;
 use yew::html::IntoPropValue;
 
 pub fn standard_card(
@@ -45,6 +46,65 @@ pub fn standard_card(
         .padding(0)
         .class("pwt-flex-none pwt-overflow-hidden")
         .with_child(head)
+}
+
+pub fn storage_card(
+    storage: &str,
+    storage_type: &str,
+    total: Option<i64>,
+    used: Option<i64>,
+) -> Card {
+    let (usage_text, percentage) = if let (Some(total), Some(used)) = (total, used) {
+        let left_text = HumanByte::new_binary(used as f64);
+        let right_text = HumanByte::new_binary(total as f64);
+
+        (Row::new()
+            .gap(2)
+            .class("pwt-align-items-flex-end")
+            .with_child(html! {
+                <div class="pwt-font-size-title-small pwt-flex-fill">{left_text.to_string()}</div>
+            })
+            .with_flex_spacer()
+            .with_child(html! {
+                <div class="pwt-font-size-title-small">{right_text.to_string()}</div>
+            }), (used as f32) / (total as f32))
+    } else {
+        (
+            Row::new()
+                .gap(2)
+                .with_child(tr!("Storage size/usage unknown")),
+            0.0,
+        )
+    };
+
+    let usage = Column::new()
+        .gap(1)
+        .with_child(usage_text)
+        .with_child(Progress::new().value(percentage));
+
+    let content_text = Column::new()
+        .gap(1)
+        .class(pwt::css::Flex::Fill)
+        .class(pwt::css::AlignItems::Center)
+        .with_child(html! {<div class="pwt-font-size-title-medium">{storage}</div>})
+        .with_child(
+            html! {<div class="pwt-font-size-title-small">{&format!("({storage_type})")}</div>},
+        );
+
+    let type_icon = match storage_type {
+        "pbs" => "cloud",
+        _ => "folder",
+    };
+
+    let content = Row::new()
+        .gap(2)
+        .with_child(Fa::new(type_icon).large_2x())
+        .with_child(content_text);
+
+    Card::new()
+        .min_width(250)
+        .class("pwt-interactive")
+        .with_child(Column::new().gap(1).with_child(content).with_child(usage))
 }
 
 pub fn standard_list_tile(

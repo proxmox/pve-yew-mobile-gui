@@ -8,7 +8,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::widget::{Column, Container, Progress};
 use pwt::{prelude::*, AsyncAbortGuard};
 
-use crate::widgets::TopNavBar;
+use crate::widgets::{storage_card, StorageContentPanel, TopNavBar};
 use crate::StorageEntry;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -36,6 +36,33 @@ pub struct PvePageStorageStatus {
 pub enum Msg {
     Load,
     LoadResult(Result<Value, Error>),
+}
+
+impl PvePageStorageStatus {
+    fn view_status(&self, ctx: &Context<Self>, status: &Value) -> Html {
+        let props = ctx.props();
+
+        let content = StorageContentPanel::new(props.node.clone(), props.name.clone())
+            //.vmid_filter(props.vmid)
+            //.content_filter(StorageContent::Backup)
+        ;
+
+        Column::new()
+            .class(pwt::css::FlexFit)
+            .with_child(
+                Container::new()
+                    .padding(2)
+                    .with_child(storage_card(
+                        &props.name,
+                        status["type"].as_str().unwrap_or("unknown"),
+                        status["total"].as_i64(),
+                        status["used"].as_i64(),
+                    ))
+                    .border_bottom(true),
+            )
+            .with_child(content)
+            .into()
+    }
 }
 
 impl Component for PvePageStorageStatus {
@@ -78,10 +105,7 @@ impl Component for PvePageStorageStatus {
         let props = ctx.props();
 
         let content: Html = match &self.status {
-            Some(Ok(status)) => Container::new()
-                .padding(2)
-                .with_child(format!("This is the status for storage {}", props.name))
-                .into(),
+            Some(Ok(status)) => self.view_status(ctx, status),
             Some(Err(err)) => pwt::widget::error_message(err).into(),
             None => Progress::new().class("pwt-delay-visibility").into(),
         };
