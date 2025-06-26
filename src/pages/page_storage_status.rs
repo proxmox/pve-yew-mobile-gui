@@ -21,7 +21,9 @@ impl PageStorageStatus {
 
 pub struct PvePageStorageStatus {}
 
-pub enum Msg {}
+pub enum Msg {
+    Load,
+}
 
 impl Component for PvePageStorageStatus {
     type Message = Msg;

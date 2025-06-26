@@ -18,6 +18,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 use pve_api_types::StorageContent;
 
 use crate::widgets::icon_list_tile;
+use crate::StorageEntry;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct StorageContentPanel {
@@ -57,15 +58,6 @@ impl StorageContentPanel {
         self.vmid_filter = vmid.into_prop_value();
     }
 }
-
-// fixme: define in pve-api-types
-#[derive(Deserialize, Serialize)]
-pub struct StorageEntry {
-    format: String,
-    size: i64,
-    volid: String,
-}
-
 pub enum Msg {
     Load,
     LoadResult(Result<Vec<StorageEntry>, Error>),
