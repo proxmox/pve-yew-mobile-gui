@@ -172,8 +172,8 @@ impl PvePageResources {
     }
 
     fn create_storage_list_item(&self, ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
+        let nodename = item.node.clone().unwrap();
         let name = item.storage.clone().unwrap();
-        let nodename = item.storage.clone().unwrap();
 
         let mut tile = icon_list_tile(
             Fa::new("database")
