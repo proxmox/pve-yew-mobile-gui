@@ -76,6 +76,25 @@ impl PvePageDashboard {
     }
 
     fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
+        let mut storage_used_size = 0;
+        let mut storage_total_size = 0;
+        let mut storage_percentage = 0.0;
+
+        if let Ok(list) = &self.resources {
+            for item in list {
+                if item.ty == ClusterResourceType::Storage {
+                    storage_used_size += item.disk.unwrap_or(0);
+                    storage_total_size += item.maxdisk.unwrap_or(0);
+                }
+            }
+
+            storage_percentage = if storage_total_size == 0 {
+                0.0
+            } else {
+                (storage_used_size as f32) / (storage_total_size as f32)
+            };
+        }
+
         let mut node_count = 0;
         let content: Html = match &self.nodes {
             Ok(list) => {
@@ -112,19 +131,27 @@ impl PvePageDashboard {
                 let mut tiles: Vec<ListTile> = Vec::new();
 
                 tiles.push(
-                    icon_list_tile(Fa::new("cpu"), "CPU", None::<&str>, None).with_child(
+                    icon_list_tile(Fa::new("cpu"), tr!("CPU"), None::<&str>, None).with_child(
                         list_tile_usage(format!("{:.2}", cpu), maxcpu.to_string(), cpu_percentage),
                     ),
                 );
 
                 tiles.push(
-                    icon_list_tile(Fa::new("memory"), "Memory", None::<&str>, None).with_child(
-                        list_tile_usage(
+                    icon_list_tile(Fa::new("memory"), tr!("Memory"), None::<&str>, None)
+                        .with_child(list_tile_usage(
                             HumanByte::new_binary(mem).to_string(),
                             HumanByte::new_binary(maxmem).to_string(),
                             mem_percentage,
-                        ),
-                    ),
+                        )),
+                );
+
+                tiles.push(
+                    icon_list_tile(Fa::new("database"), tr!("Storage"), None::<&str>, None)
+                        .with_child(list_tile_usage(
+                            HumanByte::new_binary(storage_used_size as f64).to_string(),
+                            HumanByte::new_binary(storage_total_size as f64).to_string(),
+                            storage_percentage,
+                        )),
                 );
 
                 List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
@@ -205,6 +232,8 @@ impl PvePageDashboard {
                 let mut vm_online_count = 0;
                 let mut ct_count = 0;
                 let mut ct_online_count = 0;
+                let mut storage_count = 0;
+                let mut storage_online_count = 0;
 
                 for item in list {
                     if item.ty == ClusterResourceType::Qemu {
@@ -217,6 +246,12 @@ impl PvePageDashboard {
                         ct_count += 1;
                         if item.status.as_deref() == Some("running") {
                             ct_online_count += 1;
+                        }
+                    }
+                    if item.ty == ClusterResourceType::Storage {
+                        storage_count += 1;
+                        if item.status.as_deref() == Some("available") {
+                            storage_online_count += 1;
                         }
                     }
                 }
@@ -265,6 +300,26 @@ impl PvePageDashboard {
                     .interactive(true),
                 );
 
+                tiles.push(
+                    icon_list_tile(
+                        Fa::new("database"),
+                        "Storage",
+                        format!("{storage_count} ({storage_online_count} online)"),
+                        None,
+                    )
+                    .onclick({
+                        let navigator = ctx.link().navigator().clone().unwrap();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            let filter = ResourceFilter {
+                                storage: true,
+                                ..Default::default()
+                            };
+                            navigator.push_with_state(&crate::Route::Resources, filter);
+                        }
+                    })
+                    .interactive(true),
+                );
                 List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
                     .grid_template_columns("auto 1fr auto")
                     .into()
@@ -272,7 +327,7 @@ impl PvePageDashboard {
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
 
-        crate::widgets::standard_card(tr!("Guests"), None::<&str>)
+        crate::widgets::standard_card(tr!("Resources"), None::<&str>)
             .class("pwt-interactive")
             .with_child(content)
             .onclick({
