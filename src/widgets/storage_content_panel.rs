@@ -68,13 +68,23 @@ pub struct PveStorageContentPanel {
     load_guard: Option<AsyncAbortGuard>,
 }
 
+fn get_content_icon(content: &str) -> &str {
+    match content {
+        "iso" => "cdrom",
+        "vztmpl" | "rootdir" => "cube",
+        "images" => "hdd-o",
+        "backup" => "floppy-o",
+        _ => "file-o",
+    }
+}
+
 impl PveStorageContentPanel {
     fn view_list(&self, _ctx: &Context<Self>, data: &[StorageEntry]) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
 
         for item in data {
             list.push(icon_list_tile(
-                Fa::new("cloud"),
+                Fa::new(get_content_icon(&item.content)),
                 item.volid.clone(),
                 format!("Size {}", HumanByte::new_binary(item.size as f64)),
                 None,

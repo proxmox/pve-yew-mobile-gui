@@ -42,10 +42,7 @@ impl PvePageStorageStatus {
     fn view_status(&self, ctx: &Context<Self>, status: &Value) -> Html {
         let props = ctx.props();
 
-        let content = StorageContentPanel::new(props.node.clone(), props.name.clone())
-            //.vmid_filter(props.vmid)
-            //.content_filter(StorageContent::Backup)
-        ;
+        let content = StorageContentPanel::new(props.node.clone(), props.name.clone());
 
         Column::new()
             .class(pwt::css::FlexFit)
