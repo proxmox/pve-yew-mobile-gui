@@ -84,7 +84,7 @@ impl PveStorageContentPanel {
 
         for item in data {
             list.push(icon_list_tile(
-                Fa::new(get_content_icon(&item.content)),
+                Fa::new(get_content_icon(&item.content)).class("pwt-color-secondary"),
                 item.volid.clone(),
                 format!("Size {}", HumanByte::new_binary(item.size as f64)),
                 None,

@@ -97,7 +97,7 @@ pub fn storage_card(
 
     let content = Row::new()
         .gap(2)
-        .with_child(Fa::new(type_icon).large_2x())
+        .with_child(Fa::new(type_icon).large_2x().class("pwt-color-secondary"))
         .with_child(content_text);
 
     Card::new()
