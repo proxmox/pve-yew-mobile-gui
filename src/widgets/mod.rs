@@ -51,6 +51,8 @@ pub fn standard_card(
 pub fn storage_card(
     storage: &str,
     storage_type: &str,
+    shared: bool,
+    storage_content: &str,
     total: Option<i64>,
     used: Option<i64>,
 ) -> Card {
@@ -86,15 +88,12 @@ pub fn storage_card(
         .gap(1)
         .class(pwt::css::Flex::Fill)
         .class(pwt::css::AlignItems::Center)
-        .with_child(html! {<div class="pwt-font-size-title-medium">{storage}</div>})
+        .with_child(html! {<div class="pwt-font-size-title-medium">{format!("{storage} ({storage_type})")}</div>})
         .with_child(
-            html! {<div class="pwt-font-size-title-small">{&format!("({storage_type})")}</div>},
+            html! {<div class="pwt-font-size-title-small">{storage_content}</div>},
         );
 
-    let type_icon = match storage_type {
-        "pbs" => "cloud",
-        _ => "folder",
-    };
+    let type_icon = if shared { "cloud" } else { "folder" };
 
     let content = Row::new()
         .gap(2)

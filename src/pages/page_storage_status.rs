@@ -55,6 +55,8 @@ impl PvePageStorageStatus {
                     .with_child(storage_card(
                         &props.name,
                         status["type"].as_str().unwrap_or("unknown"),
+                        status["shared"].as_bool().unwrap_or(false),
+                        status["content"].as_str().unwrap_or("default"),
                         status["total"].as_i64(),
                         status["used"].as_i64(),
                     ))

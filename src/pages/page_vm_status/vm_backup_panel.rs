@@ -51,20 +51,35 @@ impl PveVmBackupPanel {
         if storage_list.is_empty() {
         } else {
             for info in storage_list {
+                if !info.enabled.unwrap_or(true) {
+                    continue;
+                }
                 let active = self.active_storage.as_deref() == Some(&info.storage);
 
                 row.add_child(
-                    storage_card(&info.storage, info.ty.as_str(), info.total, info.used)
-                        .class(active.then(|| pwt::css::ColorScheme::PrimaryContainer))
-                        .class(if active {
-                            "pwt-elevation4"
-                        } else {
-                            "pwt-elevation1"
-                        })
-                        .onclick(ctx.link().callback({
-                            let name = info.storage.clone();
-                            move |_| Msg::ActiveStorage(name.clone())
-                        })),
+                    storage_card(
+                        &info.storage,
+                        info.ty.as_str(),
+                        info.shared.unwrap_or(false),
+                        &info
+                            .content
+                            .iter()
+                            .map(|c| c.to_string())
+                            .collect::<Vec<String>>()
+                            .join(", "),
+                        info.total,
+                        info.used,
+                    )
+                    .class(active.then(|| pwt::css::ColorScheme::PrimaryContainer))
+                    .class(if active {
+                        "pwt-elevation4"
+                    } else {
+                        "pwt-elevation1"
+                    })
+                    .onclick(ctx.link().callback({
+                        let name = info.storage.clone();
+                        move |_| Msg::ActiveStorage(name.clone())
+                    })),
                 )
             }
         }
