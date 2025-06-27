@@ -56,6 +56,11 @@ impl PveVmBackupPanel {
                 row.add_child(
                     storage_card(&info.storage, info.ty.as_str(), info.total, info.used)
                         .class(active.then(|| pwt::css::ColorScheme::PrimaryContainer))
+                        .class(if active {
+                            "pwt-elevation4"
+                        } else {
+                            "pwt-elevation1"
+                        })
                         .onclick(ctx.link().callback({
                             let name = info.storage.clone();
                             move |_| Msg::ActiveStorage(name.clone())
