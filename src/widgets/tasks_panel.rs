@@ -15,7 +15,7 @@ use pwt_macros::builder;
 // fixme: implement reload on scroll down
 
 use proxmox_yew_comp::http_get;
-use proxmox_yew_comp::utils::render_epoch_short;
+use proxmox_yew_comp::utils::{format_upid, render_epoch_short};
 
 use pve_api_types::ListTasksResponse;
 
@@ -76,7 +76,7 @@ fn task_info(task: &ListTasksResponse) -> Html {
         .with_child(
             Container::new()
                 .class("pwt-font-size-title-medium")
-                .with_child(format!("Task: {}", task.ty)),
+                .with_child(format!("Task: {}", format_upid(&task.upid))),
         )
         .with_child(
             Container::new()

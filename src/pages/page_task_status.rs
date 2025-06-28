@@ -15,6 +15,7 @@ use pwt::{prelude::*, AsyncAbortGuard};
 use pve_api_types::{IsRunning, TaskStatus};
 
 use proxmox_yew_comp::percent_encoding::percent_encode_component;
+use proxmox_yew_comp::utils::format_upid;
 
 use crate::widgets::TopNavBar;
 
@@ -129,6 +130,8 @@ impl PvePageTaskStatus {
 
                 tiles.push(status_list_tile(tr!("Task type"), status.ty.clone()));
 
+                tiles.push(status_list_tile(tr!("Worker ID"), status.id.clone()));
+
                 tiles.push(status_list_tile(tr!("User name"), status.user.clone()));
 
                 tiles.push(status_list_tile(tr!("Node"), status.node.clone()));
@@ -231,6 +234,8 @@ impl Component for PvePageTaskStatus {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+
         let tabbar = TabBar::new()
             .class(pwt::css::JustifyContent::Center)
             .with_item(
@@ -251,7 +256,7 @@ impl Component for PvePageTaskStatus {
             .with_child(
                 TopNavBar::new()
                     .title("Task Status")
-                    //.subtitle(&props.title)
+                    .subtitle(format_upid(&props.task_id))
                     .back(true)
                     .with_item(
                         MenuItem::new(tr!("Stop"))

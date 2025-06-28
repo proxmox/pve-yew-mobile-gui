@@ -282,6 +282,9 @@ impl Component for PveMobileApp {
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
 
+    // register task description for PVE
+    proxmox_yew_comp::utils::register_pve_tasks();
+
     proxmox_yew_comp::http_setup(&proxmox_yew_comp::ExistingProduct::PVE);
 
     pwt::props::set_http_get_method(
