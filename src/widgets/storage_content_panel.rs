@@ -128,6 +128,7 @@ impl PveStorageContentPanel {
         };
 
         Column::new()
+            .class(pwt::css::FlexFit)
             .with_child(search)
             .with_child(self.view_list(ctx, &data))
             .into()
