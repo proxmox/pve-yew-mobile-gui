@@ -1,12 +1,11 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use proxmox_human_byte::HumanByte;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Card, Column, Fa, MiniScroll, Progress, Row};
+use pwt::widget::{Column, MiniScroll, Progress, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -104,7 +103,6 @@ impl PveVmBackupPanel {
             .with_child(MiniScroll::new(row).class(pwt::css::Flex::None))
             .with_child(
                 Row::new()
-                    .border_bottom(true)
                     .padding_top(1)
                     .padding_x(2)
                     .padding_bottom(2)

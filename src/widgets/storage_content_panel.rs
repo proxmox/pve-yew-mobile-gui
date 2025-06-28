@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use proxmox_human_byte::HumanByte;
-use serde::{Deserialize, Serialize};
+use pwt::widget::form::Field;
 use serde_json::json;
 
 use yew::html::IntoPropValue;
@@ -10,7 +10,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Container, Fa, List, ListTile, Progress};
+use pwt::widget::{Column, Container, Fa, List, ListTile, Progress, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -61,9 +61,11 @@ impl StorageContentPanel {
 pub enum Msg {
     Load,
     LoadResult(Result<Vec<StorageEntry>, Error>),
+    SetFilter(String),
 }
 
 pub struct PveStorageContentPanel {
+    filter: String,
     data: Option<Result<Vec<StorageEntry>, String>>,
     load_guard: Option<AsyncAbortGuard>,
 }
@@ -94,6 +96,40 @@ impl PveStorageContentPanel {
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
             .class(pwt::css::FlexFit)
             .grid_template_columns("auto 1fr auto")
+            .border_top(true)
+            .into()
+    }
+
+    fn view_content(&self, ctx: &Context<Self>, data: &[StorageEntry]) -> Html {
+        let search = Row::new().padding_x(2).padding_bottom(2).with_child({
+            let mut field = Field::new()
+                .value(self.filter.clone())
+                .on_input(ctx.link().callback(Msg::SetFilter));
+            if !self.filter.is_empty() {
+                field.add_trigger(
+                    Trigger::new("fa fa-times")
+                        .on_activate(ctx.link().callback(|_| Msg::SetFilter(String::new()))),
+                    true,
+                );
+            }
+
+            field.add_trigger(Trigger::new("fa fa-search pwt-opacity-50"), true);
+
+            field
+        });
+
+        let data: Vec<StorageEntry> = if self.filter.is_empty() {
+            data.to_vec()
+        } else {
+            data.iter()
+                .filter(|item| item.volid.contains(&self.filter))
+                .cloned()
+                .collect()
+        };
+
+        Column::new()
+            .with_child(search)
+            .with_child(self.view_list(ctx, &data))
             .into()
     }
 }
@@ -107,6 +143,7 @@ impl Component for PveStorageContentPanel {
         Self {
             data: None,
             load_guard: None,
+            filter: String::new(),
         }
     }
 
@@ -119,6 +156,9 @@ impl Component for PveStorageContentPanel {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::SetFilter(filter) => {
+                self.filter = filter;
+            }
             Msg::Load => {
                 let link = ctx.link().clone();
                 let url = format!(
@@ -147,7 +187,7 @@ impl Component for PveStorageContentPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         match &self.data {
-            Some(Ok(data)) if !data.is_empty() => self.view_list(ctx, data),
+            Some(Ok(data)) if !data.is_empty() => self.view_content(ctx, data),
             Some(Ok(_data)) => Container::new()
                 .padding(2)
                 .with_child(tr!("List is empty."))

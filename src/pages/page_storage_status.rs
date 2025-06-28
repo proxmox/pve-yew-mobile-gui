@@ -9,7 +9,6 @@ use pwt::widget::{Column, Container, Progress};
 use pwt::{prelude::*, AsyncAbortGuard};
 
 use crate::widgets::{storage_card, StorageContentPanel, TopNavBar};
-use crate::StorageEntry;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
@@ -46,19 +45,14 @@ impl PvePageStorageStatus {
 
         Column::new()
             .class(pwt::css::FlexFit)
-            .with_child(
-                Container::new()
-                    .padding(2)
-                    .with_child(storage_card(
-                        &props.name,
-                        status["type"].as_str().unwrap_or("unknown"),
-                        status["shared"].as_bool().unwrap_or(false),
-                        status["content"].as_str().unwrap_or("default"),
-                        status["total"].as_i64(),
-                        status["used"].as_i64(),
-                    ))
-                    .border_bottom(true),
-            )
+            .with_child(Container::new().padding(2).with_child(storage_card(
+                &props.name,
+                status["type"].as_str().unwrap_or("unknown"),
+                status["shared"].as_bool().unwrap_or(false),
+                status["content"].as_str().unwrap_or("default"),
+                status["total"].as_i64(),
+                status["used"].as_i64(),
+            )))
             .with_child(content)
             .into()
     }
