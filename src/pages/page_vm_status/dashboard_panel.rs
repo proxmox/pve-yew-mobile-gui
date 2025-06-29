@@ -10,16 +10,14 @@ use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
-use pwt::widget::{
-    Button, Card, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
-};
+use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
 
 use pve_api_types::{IsRunning, QemuStatus};
 
-use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile};
+use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile, TasksListButton};
 
 use super::VmHardwarePanel;
 
@@ -43,6 +41,7 @@ pub struct PveVmDashboardPanel {
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     cmd_guard: Option<AsyncAbortGuard>,
+    running_upid: Option<String>,
 }
 
 pub enum Msg {
@@ -176,13 +175,9 @@ impl PveVmDashboardPanel {
     }
 
     fn task_button(&self, ctx: &Context<Self>) -> Html {
-        Card::new()
-            .padding(2)
-            .class("pwt-d-flex")
-            .class("pwt-interactive")
-            .class(pwt::css::JustifyContent::Center)
-            .with_child("Task List")
-            .onclick({
+        TasksListButton::new()
+            .running_upid(self.running_upid.clone())
+            .on_show_task_list({
                 let navigator = ctx.link().navigator().clone().unwrap();
                 let props = ctx.props();
                 let node = props.node.clone();
@@ -209,6 +204,7 @@ impl Component for PveVmDashboardPanel {
             reload_timeout: None,
             load_guard: None,
             cmd_guard: None,
+            running_upid: None,
         }
     }
 
@@ -232,6 +228,17 @@ impl Component for PveVmDashboardPanel {
             }
             Msg::CommandResult(result) => {
                 log::info!("Result {:?}", result);
+
+                match result {
+                    Ok(upid) => {
+                        self.running_upid = Some(upid);
+                    }
+                    Err(err) => {
+                        self.running_upid = None;
+                        log::info!("Command failed: {err}");
+                        //fixme: log error
+                    }
+                }
             }
             Msg::Start => self.vm_command(ctx, "start"),
             Msg::Stop => self.vm_command(ctx, "stop"),

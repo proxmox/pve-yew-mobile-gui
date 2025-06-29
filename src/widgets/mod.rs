@@ -4,6 +4,9 @@ pub use top_nav_bar::TopNavBar;
 mod tasks_panel;
 pub use tasks_panel::TasksPanel;
 
+mod task_list_button;
+pub use task_list_button::TasksListButton;
+
 mod storage_content_panel;
 pub use storage_content_panel::StorageContentPanel;
 
