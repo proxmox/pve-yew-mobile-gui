@@ -8,6 +8,8 @@ use pwt::prelude::*;
 use pwt::touch::NavigationBar;
 use pwt::widget::{Column, TabBarItem};
 
+use crate::pages::ResourceFilter;
+
 #[derive(Copy, Clone, PartialEq)]
 pub enum MainNavigationSelection {
     Dashboard,
@@ -69,7 +71,10 @@ impl Component for PveMainNavigation {
                 .on_activate({
                     let navigator = ctx.link().navigator().unwrap();
                     move |_| {
-                        navigator.push(&crate::Route::Resources);
+                        // clear filter state? not sure if this is good or bad
+                        let filter = ResourceFilter::default();
+                        navigator.push_with_state(&crate::Route::Resources, filter);
+                        // navigator.push(&crate::Route::Resources);
                     }
                 })
                 .label("Resources"),
