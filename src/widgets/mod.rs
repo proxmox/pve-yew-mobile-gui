@@ -1,4 +1,5 @@
 mod top_nav_bar;
+use pwt::props::PwtSpace;
 pub use top_nav_bar::TopNavBar;
 
 mod tasks_panel;
@@ -14,7 +15,7 @@ mod main_navigation;
 pub use main_navigation::{MainNavigation, MainNavigationSelection};
 
 use pwt::prelude::*;
-use pwt::widget::{Card, Column, Container, Fa, ListTile, Progress, Row};
+use pwt::widget::{Card, Column, Container, Fa, FieldLabel, ListTile, Progress, Row};
 
 use proxmox_human_byte::HumanByte;
 use yew::html::IntoPropValue;
@@ -217,4 +218,11 @@ pub fn form_list_tile(
             column
         })
         .with_optional_child(trailing.into_prop_value())
+}
+
+pub fn label_field(label: impl Into<AttrValue>, field: impl Into<Html>) -> Html {
+    Column::new()
+        .with_child(FieldLabel::new(label.into()).padding_bottom(PwtSpace::Em(0.3)))
+        .with_child(field)
+        .into()
 }

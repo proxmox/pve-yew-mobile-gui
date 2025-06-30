@@ -6,9 +6,10 @@ use yew::virtual_dom::{VComp, VNode};
 use crate::widgets::TopNavBar;
 
 use pwt::prelude::*;
-use pwt::props::PwtSpace;
 
-use pwt::widget::{Column, FieldLabel, LanguageSelector, ThemeDensitySelector, ThemeNameSelector};
+use pwt::widget::{Column, LanguageSelector, ThemeDensitySelector, ThemeNameSelector};
+
+use crate::widgets::label_field;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageSettings {}
@@ -22,13 +23,6 @@ impl PageSettings {
 pub struct PvePageSettings {}
 
 pub enum Msg {}
-
-fn label_field(label: impl Into<AttrValue>, field: impl Into<VNode>) -> Html {
-    Column::new()
-        .with_child(FieldLabel::new(label.into()).padding_bottom(PwtSpace::Em(0.3)))
-        .with_child(field)
-        .into()
-}
 
 impl Component for PvePageSettings {
     type Message = Msg;

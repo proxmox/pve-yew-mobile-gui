@@ -1,19 +1,21 @@
 use std::rc::Rc;
 
 use anyhow::Error;
+use pwt::touch::{Fab, FabSize, SideDialog};
+use pwt::widget::form::{Combobox, Field, Form, FormContext};
 use serde_json::json;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, MiniScroll, Progress, Row};
+use pwt::widget::{Button, Column, Container, MiniScroll, Progress, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{StorageContent, StorageInfo};
 
-use crate::widgets::{storage_card, StorageContentPanel};
+use crate::widgets::{label_field, storage_card, StorageContentPanel};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct VmBackupPanel {
@@ -34,15 +36,67 @@ pub enum Msg {
     LoadStorage,
     LoadStorageResult(Result<Vec<StorageInfo>, Error>),
     ActiveStorage(String),
+    ShowBackupDialog(bool),
 }
 
 pub struct PveVmBackupPanel {
     storage_list: Option<Result<Vec<StorageInfo>, String>>,
     load_storage_guard: Option<AsyncAbortGuard>,
     active_storage: Option<String>,
+    show_backup_dialog: bool,
+    form_context: FormContext,
 }
 
 impl PveVmBackupPanel {
+    fn create_backup_panel(&self, ctx: &Context<Self>) -> Html {
+        let mode_selector = Combobox::new()
+            .required(true)
+            .with_item("SNAPSHOT")
+            .with_item("SUSPEND")
+            .with_item("STOP");
+
+        let comp_selector = Combobox::new()
+            .required(true)
+            .default("zstd")
+            .with_item("none")
+            .with_item("gzip")
+            .with_item("lzo")
+            .with_item("zstd")
+            .render_value(|comp: &AttrValue| {
+                let text = match comp.as_str() {
+                    "none" => "none",
+                    "gzip" => "GZIP (good)",
+                    "lzo" => "LZO (fast)",
+                    "zstd" => "ZSTD (fast & good)",
+                    _ => panic!("unknown compression mode - internal error"),
+                };
+                text.into()
+            });
+
+        Form::new()
+            .form_context(self.form_context.clone())
+            .class(pwt::css::FlexFit)
+            .with_child(
+                Column::new()
+                    .class(pwt::css::FlexFit)
+                    .padding(2)
+                    .gap(2)
+                    .with_child(label_field(tr!("Mode"), mode_selector))
+                    .with_child(label_field(tr!("Compression"), comp_selector))
+                    .with_child(label_field(tr!("Email to"), Field::new()))
+                    .with_child(
+                        Row::new()
+                            .class(pwt::css::JustifyContent::Center)
+                            .with_child(
+                                Button::new(tr!("Start backup now"))
+                                    .icon_class("fa fa-floppy-o")
+                                    .class("pwt-button-outline"),
+                            ),
+                    ),
+            )
+            .into()
+    }
+
     fn view_config(&self, ctx: &Context<Self>, storage_list: &[StorageInfo]) -> Html {
         let props = ctx.props();
 
@@ -99,6 +153,23 @@ impl PveVmBackupPanel {
                 .into()
         };
 
+        let fab = self.active_storage.is_some().then(|| {
+            Fab::new("fa fa-floppy-o")
+                .size(FabSize::Small)
+                .text("Backup now")
+                .class("pwt-position-absolute")
+                .style("right", "var(--pwt-spacer-2)")
+                .style("bottom", "var(--pwt-spacer-2)")
+                .on_activate(ctx.link().callback(|_| Msg::ShowBackupDialog(true)))
+        });
+
+        let backup_dialog = self.show_backup_dialog.then(|| {
+            SideDialog::new()
+                .direction(pwt::touch::SideDialogLocation::Bottom)
+                .on_close(ctx.link().callback(|_| Msg::ShowBackupDialog(false)))
+                .with_child(self.create_backup_panel(ctx))
+        });
+
         Column::new()
             .class(pwt::css::FlexFit)
             .with_child(MiniScroll::new(row).class(pwt::css::Flex::None))
@@ -110,6 +181,8 @@ impl PveVmBackupPanel {
                     .with_child(html!{<div class="pwt-font-size-title-medium">{tr!("Recent backups")}</div>}),
             )
             .with_child(content)
+            .with_optional_child(fab)
+            .with_optional_child(backup_dialog)
             .into()
     }
 }
@@ -124,6 +197,8 @@ impl Component for PveVmBackupPanel {
             storage_list: None,
             load_storage_guard: None,
             active_storage: None,
+            show_backup_dialog: false,
+            form_context: FormContext::new(),
         }
     }
 
@@ -136,6 +211,9 @@ impl Component for PveVmBackupPanel {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::ShowBackupDialog(show_backup_dialog) => {
+                self.show_backup_dialog = show_backup_dialog;
+            }
             Msg::ActiveStorage(name) => {
                 self.active_storage = Some(name);
             }
