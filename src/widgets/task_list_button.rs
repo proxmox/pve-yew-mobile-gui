@@ -7,7 +7,7 @@ use proxmox_yew_comp::common_api_types::ProxmoxUpid;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{VComp, VNode};
 
-use pwt::widget::{Card, Column, Container};
+use pwt::widget::{Button, Card, Column, Container};
 use pwt::{prelude::*, AsyncAbortGuard};
 
 use proxmox_yew_comp::http_get;
@@ -145,7 +145,8 @@ impl Component for ProxmoxTaskListButton {
                         Err(_) => None,
                     };
                     self.last_task_status = Some(format!(
-                        "{task_descr} ({})",
+                        "{}: {task_descr} ({})",
+                        tr!("Finished"),
                         exit_status.as_deref().unwrap_or("unknown")
                     ));
                     self.running_upid = None;
@@ -159,21 +160,19 @@ impl Component for ProxmoxTaskListButton {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let mut content = Column::new()
-            .gap(1)
-            .with_child(Container::new().with_child(tr!("Task List")));
+        let content = match &self.last_task_status {
+            Some(last_task_status) => Some(
+                Container::new()
+                    .class("pwt-font-size-title-medium")
+                    .with_child(last_task_status),
+            ),
+            None => None,
+        };
 
-        if let Some(last_task_status) = &self.last_task_status {
-            content.add_child(Container::new().with_child(last_task_status));
-        }
-
-        Card::new()
-            .padding(2)
-            .class("pwt-d-flex")
-            .class("pwt-interactive")
-            .class(pwt::css::JustifyContent::Center)
-            .onclick(props.on_show_task_list.clone())
-            .with_child(content)
+        Column::new()
+            .gap(2)
+            .with_child(Button::new(tr!("Task List")).on_activate(props.on_show_task_list.clone()))
+            .with_optional_child(content)
             .into()
     }
 }
