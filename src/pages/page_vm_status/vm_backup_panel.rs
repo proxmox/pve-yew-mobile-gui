@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
+use serde_json::json;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
@@ -142,7 +143,7 @@ impl Component for PveVmBackupPanel {
                 let link = ctx.link().clone();
                 let url = format!("/nodes/{}/storage", percent_encode_component(&props.node));
                 self.load_storage_guard = Some(AsyncAbortGuard::spawn(async move {
-                    let result = http_get(&url, None).await;
+                    let result = http_get(&url, Some(json!({"content": "backup"}))).await;
                     let result = result.map(|mut l: Vec<StorageInfo>| {
                         l.sort_by_key(|i| i.storage.clone());
                         l
