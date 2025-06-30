@@ -2,13 +2,13 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use pwt::touch::{Fab, FabSize, SideDialog};
-use pwt::widget::form::{Combobox, Field, Form, FormContext};
+use pwt::widget::form::{Combobox, Field, Form, FormContext, SubmitButton};
 use serde_json::json;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Column, Container, MiniScroll, Progress, Row};
+use pwt::widget::{Column, MiniScroll, Progress, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -37,6 +37,7 @@ pub enum Msg {
     LoadStorageResult(Result<Vec<StorageInfo>, Error>),
     ActiveStorage(String),
     ShowBackupDialog(bool),
+    StartBackup(FormContext),
 }
 
 pub struct PveVmBackupPanel {
@@ -50,12 +51,14 @@ pub struct PveVmBackupPanel {
 impl PveVmBackupPanel {
     fn create_backup_panel(&self, ctx: &Context<Self>) -> Html {
         let mode_selector = Combobox::new()
+            .name("mode")
             .required(true)
             .with_item("SNAPSHOT")
             .with_item("SUSPEND")
             .with_item("STOP");
 
         let comp_selector = Combobox::new()
+            .name("compression")
             .required(true)
             .default("zstd")
             .with_item("none")
@@ -83,14 +86,16 @@ impl PveVmBackupPanel {
                     .gap(2)
                     .with_child(label_field(tr!("Mode"), mode_selector))
                     .with_child(label_field(tr!("Compression"), comp_selector))
-                    .with_child(label_field(tr!("Email to"), Field::new()))
+                    .with_child(label_field(tr!("Email to"), Field::new().name("email")))
                     .with_child(
                         Row::new()
                             .class(pwt::css::JustifyContent::Center)
                             .with_child(
-                                Button::new(tr!("Start backup now"))
+                                SubmitButton::new()
+                                    .text(tr!("Start backup now"))
                                     .icon_class("fa fa-floppy-o")
-                                    .class("pwt-button-outline"),
+                                    .class("pwt-button-outline")
+                                    .on_submit(ctx.link().callback(Msg::StartBackup)),
                             ),
                     ),
             )
@@ -211,6 +216,10 @@ impl Component for PveVmBackupPanel {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::StartBackup(form_context) => {
+                self.show_backup_dialog = false;
+                log::info!("START BACKUP {:?}", form_context.get_submit_data());
+            }
             Msg::ShowBackupDialog(show_backup_dialog) => {
                 self.show_backup_dialog = show_backup_dialog;
             }
