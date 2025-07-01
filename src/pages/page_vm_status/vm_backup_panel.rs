@@ -121,7 +121,7 @@ impl PveVmBackupPanel {
         );
 
         SideDialog::new()
-            .direction(pwt::touch::SideDialogLocation::Bottom)
+            .location(pwt::touch::SideDialogLocation::Bottom)
             .with_child(
                 LogView::new(url)
                     .max_height(400)
@@ -202,7 +202,7 @@ impl PveVmBackupPanel {
 
         let backup_dialog = self.show_backup_dialog.then(|| {
             SideDialog::new()
-                .direction(pwt::touch::SideDialogLocation::Bottom)
+                .location(pwt::touch::SideDialogLocation::Bottom)
                 .on_close(ctx.link().callback(|_| Msg::ShowBackupDialog(false)))
                 .with_child(self.create_backup_panel(ctx))
         });

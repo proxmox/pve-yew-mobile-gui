@@ -311,7 +311,7 @@ impl PvePageResources {
 
         let filter_dialog = self.show_filter_dialog.then(|| {
             SideDialog::new()
-                .direction(pwt::touch::SideDialogLocation::Right)
+                .location(pwt::touch::SideDialogLocation::Right)
                 .on_close(ctx.link().callback(|_| Msg::CloseFilterDialog))
                 .with_child(self.create_filter_panel(ctx))
         });

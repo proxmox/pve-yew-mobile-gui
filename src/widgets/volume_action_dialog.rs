@@ -19,7 +19,7 @@ pub fn show_volume_actions<COMP: Component>(
 
     controller.show_side_dialog(
         SideDialog::new()
-            .direction(pwt::touch::SideDialogLocation::Bottom)
+            .location(pwt::touch::SideDialogLocation::Bottom)
             .with_child(VolumeActionDialog::new(node, storage, item)),
     );
 }

@@ -2,7 +2,6 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use proxmox_human_byte::HumanByte;
-use pwt::touch::SideDialog;
 use pwt::widget::form::Field;
 use serde_json::json;
 
@@ -11,7 +10,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Column, Container, Fa, List, ListTile, Progress, Row, Trigger};
+use pwt::widget::{Column, Container, Fa, List, ListTile, Progress, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -64,7 +63,6 @@ pub enum Msg {
     LoadResult(Result<Vec<StorageEntry>, Error>),
     SetFilter(String),
     ShowContentDialog(StorageEntry),
-    HideContentDialog,
 }
 
 pub struct PveStorageContentPanel {
@@ -203,9 +201,6 @@ impl Component for PveStorageContentPanel {
                     props.storage.clone(),
                     item.clone(),
                 );
-            }
-            Msg::HideContentDialog => {
-                self.content_dialog = None;
             }
         }
         true
