@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use proxmox_yew_comp::http_post;
+use proxmox_yew_comp::{http_post, LogView};
 use pwt::touch::{Fab, FabSize, SideDialog};
 use pwt::widget::form::{Combobox, Field, Form, FormContext, SubmitButton};
 use serde_json::json;
@@ -41,6 +41,7 @@ pub enum Msg {
     ShowBackupDialog(bool),
     StartBackup(FormContext),
     StartBackupResult(Result<String, Error>),
+    CloseLogDialog,
 }
 
 pub struct PveVmBackupPanel {
@@ -50,7 +51,8 @@ pub struct PveVmBackupPanel {
     show_backup_dialog: bool,
     form_context: FormContext,
     backup_now_guard: Option<AsyncAbortGuard>,
-    running_upid: Option<String>,
+    //running_upid: Option<String>,
+    log_dialog: Option<Html>,
 }
 
 impl PveVmBackupPanel {
@@ -109,12 +111,35 @@ impl PveVmBackupPanel {
             .into()
     }
 
+    fn create_log_view(&self, ctx: &Context<Self>, upid: &str) -> Html {
+        let props = ctx.props();
+
+        let url = format!(
+            "/nodes/{}/tasks/{}/log",
+            props.node,
+            percent_encode_component(&upid),
+        );
+
+        SideDialog::new()
+            .direction(pwt::touch::SideDialogLocation::Bottom)
+            .with_child(
+                LogView::new(url)
+                    .max_height(400)
+                    .padding(2)
+                    .class(pwt::css::FlexFit)
+                    .active(true),
+            )
+            .on_close(ctx.link().callback(|_| Msg::CloseLogDialog))
+            .into()
+    }
+
     fn view_config(&self, ctx: &Context<Self>, storage_list: &[StorageInfo]) -> Html {
         let props = ctx.props();
 
         let mut row = Row::new().gap(2).padding(2);
 
         if storage_list.is_empty() {
+            // fixme:
         } else {
             for info in storage_list {
                 if !info.enabled.unwrap_or(true) {
@@ -195,6 +220,7 @@ impl PveVmBackupPanel {
             .with_child(content)
             .with_optional_child(fab)
             .with_optional_child(backup_dialog)
+            .with_optional_child(self.log_dialog.clone())
             .into()
     }
 }
@@ -212,7 +238,7 @@ impl Component for PveVmBackupPanel {
             show_backup_dialog: false,
             form_context: FormContext::new(),
             backup_now_guard: None,
-            running_upid: None,
+            log_dialog: None,
         }
     }
 
@@ -239,12 +265,17 @@ impl Component for PveVmBackupPanel {
                 }));
             }
             Msg::StartBackupResult(result) => match result {
-                Ok(upid) => self.running_upid = Some(upid),
+                Ok(upid) => {
+                    self.log_dialog = Some(self.create_log_view(ctx, &upid));
+                }
                 Err(err) => {
                     ctx.link()
                         .show_snackbar(SnackBar::new().message(format!("Backup failed: {err}")));
                 }
             },
+            Msg::CloseLogDialog => {
+                self.log_dialog = None;
+            }
             Msg::ShowBackupDialog(show_backup_dialog) => {
                 self.show_backup_dialog = show_backup_dialog;
             }
