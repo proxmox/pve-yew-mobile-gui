@@ -232,9 +232,7 @@ impl Component for PveVmBackupPanel {
                 let mut data = form_context.get_submit_data();
                 data["storage"] = self.active_storage.clone().into();
                 data["vmid"] = props.vmid.into();
-                log::info!("START BACKUP {:?}", data);
                 let link = ctx.link().clone();
-
                 self.backup_now_guard = Some(AsyncAbortGuard::spawn(async move {
                     let result = http_post(url, Some(data.clone())).await;
                     link.send_message(Msg::StartBackupResult(result));

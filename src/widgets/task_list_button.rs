@@ -7,7 +7,7 @@ use proxmox_yew_comp::common_api_types::ProxmoxUpid;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{VComp, VNode};
 
-use pwt::widget::{Button, Card, Column, Container};
+use pwt::widget::{Button, Column, Container};
 use pwt::{prelude::*, AsyncAbortGuard};
 
 use proxmox_yew_comp::http_get;
@@ -62,7 +62,6 @@ impl ProxmoxTaskListButton {
     }
 
     fn check_running_task_status(&mut self, ctx: &Context<Self>) {
-        let props = ctx.props();
         let upid = match &self.running_upid {
             Some(upid) => upid.clone(),
             None => return,
@@ -70,7 +69,7 @@ impl ProxmoxTaskListButton {
 
         let node = match upid.parse::<ProxmoxUpid>() {
             Ok(upid) => upid.node,
-            Err(err) => {
+            Err(_err) => {
                 // fixme: log error
                 return;
             }
