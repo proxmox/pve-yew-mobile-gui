@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use proxmox_human_byte::HumanByte;
+use pwt::touch::SideDialog;
 use pwt::widget::form::Field;
 use serde_json::json;
 
@@ -10,14 +11,14 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Container, Fa, List, ListTile, Progress, Row, Trigger};
+use pwt::widget::{Button, Column, Container, Fa, List, ListTile, Progress, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::StorageContent;
 
-use crate::widgets::icon_list_tile;
+use crate::widgets::{icon_list_tile, show_volume_actions};
 use crate::StorageEntry;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -62,12 +63,15 @@ pub enum Msg {
     Load,
     LoadResult(Result<Vec<StorageEntry>, Error>),
     SetFilter(String),
+    ShowContentDialog(StorageEntry),
+    HideContentDialog,
 }
 
 pub struct PveStorageContentPanel {
     filter: String,
     data: Option<Result<Vec<StorageEntry>, String>>,
     load_guard: Option<AsyncAbortGuard>,
+    content_dialog: Option<Html>,
 }
 
 fn get_content_icon(content: &str) -> &str {
@@ -81,16 +85,24 @@ fn get_content_icon(content: &str) -> &str {
 }
 
 impl PveStorageContentPanel {
-    fn view_list(&self, _ctx: &Context<Self>, data: &[StorageEntry]) -> Html {
+    fn view_list(&self, ctx: &Context<Self>, data: &[StorageEntry]) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
 
         for item in data {
-            list.push(icon_list_tile(
-                Fa::new(get_content_icon(&item.content)).class("pwt-color-secondary"),
-                item.volid.clone(),
-                format!("Size {}", HumanByte::new_binary(item.size as f64)),
-                None,
-            ));
+            let item = item.clone();
+            list.push(
+                icon_list_tile(
+                    Fa::new(get_content_icon(&item.content)).class("pwt-color-secondary"),
+                    item.volid.clone(),
+                    format!("Size {}", HumanByte::new_binary(item.size as f64)),
+                    Some(Fa::new("ellipsis-v").large().into()),
+                )
+                .interactive(true)
+                .onclick(
+                    ctx.link()
+                        .callback(move |_| Msg::ShowContentDialog(item.clone())),
+                ),
+            );
         }
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
@@ -131,6 +143,7 @@ impl PveStorageContentPanel {
             .class(pwt::css::FlexFit)
             .with_child(search)
             .with_child(self.view_list(ctx, &data))
+            .with_optional_child(self.content_dialog.clone())
             .into()
     }
 }
@@ -145,6 +158,7 @@ impl Component for PveStorageContentPanel {
             data: None,
             load_guard: None,
             filter: String::new(),
+            content_dialog: None,
         }
     }
 
@@ -181,6 +195,17 @@ impl Component for PveStorageContentPanel {
             }
             Msg::LoadResult(result) => {
                 self.data = Some(result.map_err(|err| err.to_string()));
+            }
+            Msg::ShowContentDialog(item) => {
+                show_volume_actions(
+                    ctx.link().clone(),
+                    props.node.clone(),
+                    props.storage.clone(),
+                    item.clone(),
+                );
+            }
+            Msg::HideContentDialog => {
+                self.content_dialog = None;
             }
         }
         true
