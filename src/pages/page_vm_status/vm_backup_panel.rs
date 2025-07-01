@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
+use proxmox_yew_comp::http_post;
 use pwt::touch::{Fab, FabSize, SideDialog};
 use pwt::widget::form::{Combobox, Field, Form, FormContext, SubmitButton};
 use serde_json::json;
@@ -8,6 +9,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
+use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::{Column, MiniScroll, Progress, Row};
 use pwt::AsyncAbortGuard;
 
@@ -38,6 +40,7 @@ pub enum Msg {
     ActiveStorage(String),
     ShowBackupDialog(bool),
     StartBackup(FormContext),
+    StartBackupResult(Result<String, Error>),
 }
 
 pub struct PveVmBackupPanel {
@@ -46,6 +49,8 @@ pub struct PveVmBackupPanel {
     active_storage: Option<String>,
     show_backup_dialog: bool,
     form_context: FormContext,
+    backup_now_guard: Option<AsyncAbortGuard>,
+    running_upid: Option<String>,
 }
 
 impl PveVmBackupPanel {
@@ -53,21 +58,22 @@ impl PveVmBackupPanel {
         let mode_selector = Combobox::new()
             .name("mode")
             .required(true)
-            .with_item("SNAPSHOT")
-            .with_item("SUSPEND")
-            .with_item("STOP");
+            .default("suspend")
+            .with_item("snapshot")
+            .with_item("suspend")
+            .with_item("stop");
 
         let comp_selector = Combobox::new()
-            .name("compression")
+            .name("compress")
             .required(true)
             .default("zstd")
-            .with_item("none")
+            .with_item("0")
             .with_item("gzip")
             .with_item("lzo")
             .with_item("zstd")
             .render_value(|comp: &AttrValue| {
                 let text = match comp.as_str() {
-                    "none" => "none",
+                    "0" => "none",
                     "gzip" => "GZIP (good)",
                     "lzo" => "LZO (fast)",
                     "zstd" => "ZSTD (fast & good)",
@@ -86,12 +92,13 @@ impl PveVmBackupPanel {
                     .gap(2)
                     .with_child(label_field(tr!("Mode"), mode_selector))
                     .with_child(label_field(tr!("Compression"), comp_selector))
-                    .with_child(label_field(tr!("Email to"), Field::new().name("email")))
+                    .with_child(label_field(tr!("Email to"), Field::new().name("mailto")))
                     .with_child(
                         Row::new()
                             .class(pwt::css::JustifyContent::Center)
                             .with_child(
                                 SubmitButton::new()
+                                    .check_dirty(false)
                                     .text(tr!("Start backup now"))
                                     .icon_class("fa fa-floppy-o")
                                     .class("pwt-button-outline")
@@ -204,6 +211,8 @@ impl Component for PveVmBackupPanel {
             active_storage: None,
             show_backup_dialog: false,
             form_context: FormContext::new(),
+            backup_now_guard: None,
+            running_upid: None,
         }
     }
 
@@ -218,8 +227,26 @@ impl Component for PveVmBackupPanel {
         match msg {
             Msg::StartBackup(form_context) => {
                 self.show_backup_dialog = false;
-                log::info!("START BACKUP {:?}", form_context.get_submit_data());
+                let url = format!("/nodes/{}/vzdump", percent_encode_component(&props.node));
+
+                let mut data = form_context.get_submit_data();
+                data["storage"] = self.active_storage.clone().into();
+                data["vmid"] = props.vmid.into();
+                log::info!("START BACKUP {:?}", data);
+                let link = ctx.link().clone();
+
+                self.backup_now_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result = http_post(url, Some(data.clone())).await;
+                    link.send_message(Msg::StartBackupResult(result));
+                }));
             }
+            Msg::StartBackupResult(result) => match result {
+                Ok(upid) => self.running_upid = Some(upid),
+                Err(err) => {
+                    ctx.link()
+                        .show_snackbar(SnackBar::new().message(format!("Backup failed: {err}")));
+                }
+            },
             Msg::ShowBackupDialog(show_backup_dialog) => {
                 self.show_backup_dialog = show_backup_dialog;
             }
