@@ -73,6 +73,7 @@ impl Component for PveVolumeActionDialog {
                         Box::new(Row::new())
                             .class("pwt-font-size-title-small")
                             .with_child(Container::new().with_child(&props.item.volid))
+                            .with_flex_spacer()
                             .with_child(
                                 Container::new()
                                     .class("pwt-white-space-nowrap")
