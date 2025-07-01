@@ -46,13 +46,13 @@ dist/pve-yew-mobile-gui_bundle.js: dist/pve-yew-mobile-gui.js dist/pve-yew-mobil
 dist/pve-yew-mobile-gui_bg.wasm.gz: dist/pve-yew-mobile-gui_bg.wasm
 	gzip -c9 $^ > $@
 
-dist/material-yew-style.css: pwt-assets/scss/material-yew-style.scss
+dist/mobile-yew-style.css: pwt-assets/scss/mobile-yew-style.scss
 	rust-grass $< $@
 
 dist/crisp-yew-style.css: pwt-assets/scss/crisp-yew-style.scss
 	rust-grass $< $@
 
-install: $(COMPILED_OUTPUT) index.html manifest.json dist/material-yew-style.css dist/crisp-yew-style.css
+install: $(COMPILED_OUTPUT) index.html manifest.json dist/mobile-yew-style.css dist/crisp-yew-style.css
 	install -dm0755 $(DESTDIR)$(UIDIR)
 	install -dm0755 $(DESTDIR)$(UIDIR)/js
 
@@ -74,7 +74,7 @@ install: $(COMPILED_OUTPUT) index.html manifest.json dist/material-yew-style.css
 	install -m0644 dist/pve-yew-mobile-gui_bg.wasm.gz $(DESTDIR)$(UIDIR)/js
 	install -m0644 index.html $(DESTDIR)$(UIDIR)
 	install -m0644 manifest.json $(DESTDIR)$(UIDIR)
-	install -m0644 dist/material-yew-style.css $(DESTDIR)$(UIDIR)
+	install -m0644 dist/mobile-yew-style.css $(DESTDIR)$(UIDIR)
 	install -m0644 dist/crisp-yew-style.css $(DESTDIR)$(UIDIR)
 
 

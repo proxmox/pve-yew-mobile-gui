@@ -291,7 +291,7 @@ fn main() {
         |url| async move { proxmox_yew_comp::http_get(&url, None).await },
     );
 
-    pwt::state::set_available_themes(&["Material", "Crisp"]);
+    pwt::state::set_available_themes(&["Mobile", "Crisp"]);
 
     pwt::state::set_available_languages(vec![LanguageInfo::new(
         "en",

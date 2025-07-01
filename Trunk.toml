@@ -1,7 +1,7 @@
 [[hooks]]
 stage="pre_build"
 command="rust-grass"
-command_arguments= ["pwt-assets/scss/material-yew-style.scss", "dist/.stage/material-yew-style.css"]
+command_arguments= ["pwt-assets/scss/mobile-yew-style.scss", "dist/.stage/mobile-yew-style.css"]
 
 [[hooks]]
 stage="pre_build"
