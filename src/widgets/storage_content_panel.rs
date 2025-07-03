@@ -11,7 +11,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::{MaterialAppScopeExt, SnackBar, SnackBarContextExt};
-use pwt::widget::{Column, Container, Fa, List, ListTile, Progress, Row, Trigger};
+use pwt::widget::{Column, Container, Dialog, Fa, List, ListTile, Progress, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_delete_get, http_get, percent_encoding::percent_encode_component};
@@ -67,6 +67,9 @@ pub enum Msg {
     ShowContentDialog(StorageEntry),
     Remove(String),
     RemoveResult(Result<String, Error>),
+    ExtractConfig(String),
+    ExtractConfigResult(Result<String, Error>),
+    CloseConfigDialog,
 }
 
 pub struct PveStorageContentPanel {
@@ -74,7 +77,8 @@ pub struct PveStorageContentPanel {
     data: Option<Result<Vec<StorageEntry>, String>>,
     load_guard: Option<AsyncAbortGuard>,
     remove_guard: Option<AsyncAbortGuard>,
-    content_dialog: Option<Html>,
+    extract_config_guard: Option<AsyncAbortGuard>,
+    config_dialog: Option<Html>,
 }
 
 fn get_content_icon(content: &str) -> &str {
@@ -146,7 +150,7 @@ impl PveStorageContentPanel {
             .class(pwt::css::FlexFit)
             .with_child(search)
             .with_child(self.view_list(ctx, &data))
-            .with_optional_child(self.content_dialog.clone())
+            .with_optional_child(self.config_dialog.clone())
             .into()
     }
 }
@@ -161,8 +165,9 @@ impl Component for PveStorageContentPanel {
             data: None,
             load_guard: None,
             remove_guard: None,
+            extract_config_guard: None,
             filter: String::new(),
-            content_dialog: None,
+            config_dialog: None,
         }
     }
 
@@ -204,7 +209,14 @@ impl Component for PveStorageContentPanel {
                 let controller = ctx.link().page_controller().unwrap();
                 let volid = item.volid.clone();
                 let content = VolumeActionDialog::new(item.clone())
-                    .on_remove(ctx.link().callback(move |_| Msg::Remove(volid.clone())));
+                    .on_remove(ctx.link().callback({
+                        let volid = volid.clone();
+                        move |_| Msg::Remove(volid.clone())
+                    }))
+                    .on_show_config(
+                        ctx.link()
+                            .callback(move |_| Msg::ExtractConfig(volid.clone())),
+                    );
                 controller.show_modal_bottom_sheet(content);
             }
             Msg::Remove(volid) => {
@@ -230,6 +242,40 @@ impl Component for PveStorageContentPanel {
                         .show_snackbar(SnackBar::new().message(format!("Remove failed: {err}")));
                 }
             },
+            Msg::ExtractConfig(volid) => {
+                let param = json!({"volume": volid });
+                let url = format!(
+                    "/nodes/{}/vzdump/extractconfig",
+                    percent_encode_component(&props.node)
+                );
+                let link = ctx.link().clone();
+                self.extract_config_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result = http_get(url, Some(param.clone())).await;
+                    link.send_message(Msg::ExtractConfigResult(result));
+                }));
+            }
+            Msg::ExtractConfigResult(result) => match result {
+                Ok(config) => {
+                    let content = Dialog::new(tr!("Configuration"))
+                        .on_close(ctx.link().callback(|_| Msg::CloseConfigDialog))
+                        .with_child(
+                            Container::new()
+                                .class(pwt::css::FlexFit)
+                                .class("pwt-white-space-pre")
+                                .padding(2)
+                                .with_child(config),
+                        );
+                    self.config_dialog = Some(content.into());
+                }
+                Err(err) => {
+                    ctx.link().show_snackbar(
+                        SnackBar::new().message(format!("Extract config failed: {err}")),
+                    );
+                }
+            },
+            Msg::CloseConfigDialog => {
+                self.config_dialog = None;
+            }
         }
         true
     }
