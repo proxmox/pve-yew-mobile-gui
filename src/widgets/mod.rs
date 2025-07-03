@@ -135,6 +135,7 @@ pub fn standard_list_tile(
                 column.add_child(
                     Container::new()
                         .class("pwt-font-size-title-medium")
+                        .style("overflow-wrap", "anywhere")
                         .key("title")
                         .with_child(title),
                 );
@@ -144,6 +145,7 @@ pub fn standard_list_tile(
                 column.add_child(
                     Container::new()
                         .class("pwt-font-size-title-small")
+                        .style("overflow-wrap", "anywhere")
                         .key("subtitle")
                         .with_child(subtitle),
                 );
