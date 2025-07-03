@@ -174,11 +174,12 @@ impl PvePageResources {
     fn create_storage_list_item(&self, ctx: &Context<Self>, item: &ClusterResource) -> ListTile {
         let nodename = item.node.clone().unwrap();
         let name = item.storage.clone().unwrap();
+        let plugin_type = item.plugintype.clone().unwrap();
 
         let mut tile = icon_list_tile(
             Fa::new("database")
                 .class((item.status.as_deref() == Some("available")).then(|| "pwt-color-primary")),
-            format!("{} {}", item.storage.clone().unwrap(), name,),
+            format!("{} ({})", name, plugin_type),
             item.node.clone(),
             item.status.clone().map(|s| s.to_html()),
         )
