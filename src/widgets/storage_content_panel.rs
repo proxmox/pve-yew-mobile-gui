@@ -10,14 +10,16 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
+use pwt::touch::{MaterialAppScopeExt, SnackBar, SnackBarContextExt};
 use pwt::widget::{Column, Container, Fa, List, ListTile, Progress, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
-use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{http_delete_get, http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::StorageContent;
 
-use crate::widgets::{icon_list_tile, show_volume_actions};
+use crate::widgets::icon_list_tile;
+use crate::widgets::VolumeActionDialog;
 use crate::StorageEntry;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -63,12 +65,15 @@ pub enum Msg {
     LoadResult(Result<Vec<StorageEntry>, Error>),
     SetFilter(String),
     ShowContentDialog(StorageEntry),
+    Remove(String),
+    RemoveResult(Result<String, Error>),
 }
 
 pub struct PveStorageContentPanel {
     filter: String,
     data: Option<Result<Vec<StorageEntry>, String>>,
     load_guard: Option<AsyncAbortGuard>,
+    remove_guard: Option<AsyncAbortGuard>,
     content_dialog: Option<Html>,
 }
 
@@ -155,6 +160,7 @@ impl Component for PveStorageContentPanel {
         Self {
             data: None,
             load_guard: None,
+            remove_guard: None,
             filter: String::new(),
             content_dialog: None,
         }
@@ -195,13 +201,35 @@ impl Component for PveStorageContentPanel {
                 self.data = Some(result.map_err(|err| err.to_string()));
             }
             Msg::ShowContentDialog(item) => {
-                show_volume_actions(
-                    ctx.link().clone(),
-                    props.node.clone(),
-                    props.storage.clone(),
-                    item.clone(),
-                );
+                let controller = ctx.link().page_controller().unwrap();
+                let volid = item.volid.clone();
+                let content = VolumeActionDialog::new(item.clone())
+                    .on_remove(ctx.link().callback(move |_| Msg::Remove(volid.clone())));
+                controller.show_modal_bottom_sheet(content);
             }
+            Msg::Remove(volid) => {
+                let link = ctx.link().clone();
+                let url = format!(
+                    "/nodes/{}/storage/{}/content/{}",
+                    percent_encode_component(&props.node),
+                    percent_encode_component(&props.storage),
+                    percent_encode_component(&volid)
+                );
+                self.remove_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result = http_delete_get(&url, None).await;
+                    link.send_message(Msg::RemoveResult(result));
+                }));
+            }
+            Msg::RemoveResult(result) => match result {
+                Ok(_upid) => {
+                    // TODO: check/track upid status?
+                    ctx.link().send_message(Msg::Load);
+                }
+                Err(err) => {
+                    ctx.link()
+                        .show_snackbar(SnackBar::new().message(format!("Remove failed: {err}")));
+                }
+            },
         }
         true
     }

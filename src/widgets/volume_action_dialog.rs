@@ -1,131 +1,65 @@
 use std::rc::Rc;
 
 use proxmox_human_byte::HumanByte;
-use proxmox_yew_comp::{default_confirm_remove_message, ConfirmButton};
+use yew::html::IntoEventCallback;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::{MaterialAppScopeExt, SideDialog};
+use pwt::touch::MaterialAppScopeExt;
 use pwt::widget::{Button, Column, Container, Row};
+
+use pwt_macros::builder;
+
+use proxmox_yew_comp::ConfirmButton;
 
 use crate::StorageEntry;
 
-pub fn show_volume_actions<COMP: Component>(
-    scope: yew::html::Scope<COMP>,
-    node: impl Into<AttrValue>,
-    storage: impl Into<AttrValue>,
-    item: StorageEntry,
-) {
-    let controller = scope.page_controller().unwrap();
-
-    log::info!("SHOW ACTIONS");
-    controller.show_side_dialog(
-        SideDialog::new()
-            .location(pwt::touch::SideDialogLocation::Bottom)
-            .with_child(VolumeActionDialog::new(node, storage, item)),
-    );
-}
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct VolumeActionDialog {
-    storage: AttrValue,
-    node: AttrValue,
     item: StorageEntry,
+
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
+    /// Called when the task is opened
+    pub on_remove: Option<Callback<()>>,
+
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
+    /// Called when the task is opened
+    pub on_show_config: Option<Callback<()>>,
 }
 
 impl VolumeActionDialog {
-    pub fn new(
-        node: impl Into<AttrValue>,
-        storage: impl Into<AttrValue>,
-        item: StorageEntry,
-    ) -> Self {
-        yew::props!(Self {
-            node: node.into(),
-            storage: storage.into(),
-            item,
-        })
+    pub fn new(item: StorageEntry) -> Self {
+        yew::props!(Self { item })
     }
-}
-
-pub enum Msg {
-    Remove,
-    Cancel,
 }
 
 pub struct PveVolumeActionDialog {}
 
-impl PveVolumeActionDialog {
-    fn show_safe_remove_dialog(link: yew::html::Scope<Self>, volid: &str) {
-        let content = Column::new()
-            .class(pwt::css::FlexFit)
-            .class(pwt::css::AlignItems::Center)
-            .padding(2)
-            .gap(2)
-            .with_child(
-                Container::new()
-                    .class("pwt-font-size-title-large")
-                    .with_child(tr!("Attention")),
-            )
-            .with_child(
-                Container::new()
-                    .class("pwt-font-size-title-medium")
-                    .with_child(default_confirm_remove_message(Some(volid))),
-            )
-            .with_child(
-                Row::new()
-                    .with_flex_spacer()
-                    .with_child(
-                        Button::new(tr!("Cancel"))
-                            .class("pwt-button-text")
-                            .on_activate(link.callback(|_| Msg::Cancel)),
-                    )
-                    .with_child(
-                        Button::new(tr!("Confirm"))
-                            .class("pwt-button-text")
-                            .on_activate(link.callback(|_| Msg::Remove)),
-                    ),
-            );
-
-        let controller = link.page_controller().unwrap();
-
-        controller.show_side_dialog(
-            SideDialog::new()
-                .location(pwt::touch::SideDialogLocation::Bottom)
-                .with_child(content),
-        );
-    }
-}
-
 impl Component for PveVolumeActionDialog {
-    type Message = Msg;
+    type Message = ();
     type Properties = VolumeActionDialog;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {}
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg {
-            Msg::Cancel => {
-                log::info!("CLOSE");
-                let controller = ctx.link().page_controller().unwrap();
-                controller.close_side_dialog();
-            }
-            Msg::Remove => {
-                log::info!("REMOVE");
-                let controller = ctx.link().page_controller().unwrap();
-                controller.close_side_dialog();
-            }
-        }
-        true
-    }
-
-    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
-        log::info!("ACVTION CHANGED");
-        true
-    }
-
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
+
+        let controller = ctx.link().page_controller().unwrap();
+
+        let wrap_callback = |cb: Option<Callback<_>>| {
+            let controller = controller.clone();
+            Callback::from(move |()| {
+                controller.close_side_dialog();
+                if let Some(cb) = &cb {
+                    cb.emit(())
+                };
+            })
+        };
 
         Column::new()
             .padding(2)
@@ -151,22 +85,28 @@ impl Component for PveVolumeActionDialog {
                             ),
                     ),
             )
+            /* fixme: implement restore?
             .with_child(
                 Button::new(tr!("Restore"))
                     .icon_class("fa fa-undo")
                     .class("pwt-button-outline")
                     .disabled(true), // fixme
             )
+            */
             .with_child(
                 ConfirmButton::remove_entry(props.item.volid.clone())
                     .icon_class("fa fa-trash-o")
                     .class("pwt-button-outline")
-                    .on_activate(ctx.link().callback(|_| Msg::Remove)),
+                    .on_activate(wrap_callback(props.on_remove.clone())),
             )
             .with_child(
                 Button::new(tr!("Show Configuration"))
                     .icon_class("fa fa-list-alt")
-                    .class("pwt-button-outline"),
+                    .class("pwt-button-outline")
+                    .on_activate({
+                        let cb = wrap_callback(props.on_show_config.clone());
+                        move |_| cb.emit(())
+                    }),
             )
             .into()
     }

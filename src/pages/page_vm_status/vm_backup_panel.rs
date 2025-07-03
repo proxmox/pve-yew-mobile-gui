@@ -124,7 +124,7 @@ impl PveVmBackupPanel {
             .location(pwt::touch::SideDialogLocation::Bottom)
             .with_child(
                 LogView::new(url)
-                    .max_height(400)
+                    .height(400)
                     .padding(2)
                     .class(pwt::css::FlexFit)
                     .active(true),

@@ -15,7 +15,7 @@ mod main_navigation;
 pub use main_navigation::{MainNavigation, MainNavigationSelection};
 
 mod volume_action_dialog;
-pub use volume_action_dialog::show_volume_actions;
+pub use volume_action_dialog::VolumeActionDialog;
 
 use pwt::prelude::*;
 use pwt::widget::{Card, Column, Container, Fa, FieldLabel, ListTile, Progress, Row};
