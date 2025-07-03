@@ -61,7 +61,7 @@ impl Component for PveVolumeActionDialog {
             })
         };
 
-        Column::new()
+        let mut column = Column::new()
             .padding(2)
             .gap(2)
             .class(pwt::css::FlexFit)
@@ -98,8 +98,10 @@ impl Component for PveVolumeActionDialog {
                     .icon_class("fa fa-trash-o")
                     .class("pwt-button-outline")
                     .on_activate(wrap_callback(props.on_remove.clone())),
-            )
-            .with_child(
+            );
+
+        if props.item.content == "backup" {
+            column.add_child(
                 Button::new(tr!("Show Configuration"))
                     .icon_class("fa fa-list-alt")
                     .class("pwt-button-outline")
@@ -107,8 +109,10 @@ impl Component for PveVolumeActionDialog {
                         let cb = wrap_callback(props.on_show_config.clone());
                         move |_| cb.emit(())
                     }),
-            )
-            .into()
+            );
+        }
+
+        column.into()
     }
 }
 
