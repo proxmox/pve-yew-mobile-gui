@@ -17,12 +17,12 @@ use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 use crate::widgets::icon_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct VmHardwarePanel {
+pub struct QemuHardwarePanel {
     vmid: u32,
     node: AttrValue,
 }
 
-impl VmHardwarePanel {
+impl QemuHardwarePanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -52,13 +52,13 @@ pub enum Msg {
     LoadResult(Result<QemuConfig, Error>),
 }
 
-pub struct PveVmHardwarePanel {
+pub struct PveQemuHardwarePanel {
     data: Option<Result<QemuConfig, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
 }
 
-impl PveVmHardwarePanel {
+impl PveQemuHardwarePanel {
     fn view_list(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
         list.push(icon_list_tile(
@@ -141,9 +141,9 @@ impl PveVmHardwarePanel {
     }
 }
 
-impl Component for PveVmHardwarePanel {
+impl Component for PveQemuHardwarePanel {
     type Message = Msg;
-    type Properties = VmHardwarePanel;
+    type Properties = QemuHardwarePanel;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -196,9 +196,9 @@ impl Component for PveVmHardwarePanel {
     }
 }
 
-impl From<VmHardwarePanel> for VNode {
-    fn from(props: VmHardwarePanel) -> Self {
-        let comp = VComp::new::<PveVmHardwarePanel>(Rc::new(props), None);
+impl From<QemuHardwarePanel> for VNode {
+    fn from(props: QemuHardwarePanel) -> Self {
+        let comp = VComp::new::<PveQemuHardwarePanel>(Rc::new(props), None);
         VNode::from(comp)
     }
 }

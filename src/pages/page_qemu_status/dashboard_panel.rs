@@ -19,15 +19,15 @@ use pve_api_types::{IsRunning, QemuStatus};
 
 use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile, TasksListButton};
 
-use super::VmHardwarePanel;
+use super::QemuHardwarePanel;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct VmDashboardPanel {
+pub struct QemuDashboardPanel {
     vmid: u32,
     node: AttrValue,
 }
 
-impl VmDashboardPanel {
+impl QemuDashboardPanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -36,7 +36,7 @@ impl VmDashboardPanel {
     }
 }
 
-pub struct PveVmDashboardPanel {
+pub struct PveQemuDashboardPanel {
     data: Option<Result<QemuStatus, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
@@ -68,7 +68,7 @@ fn large_fa_icon(name: &str, running: bool) -> Fa {
         .class(running.then(|| "pwt-color-primary"))
 }
 
-impl PveVmDashboardPanel {
+impl PveQemuDashboardPanel {
     fn vm_command(&mut self, ctx: &Context<Self>, cmd: &str) {
         let props = ctx.props();
         let url = get_status_url(&props.node, props.vmid, cmd);
@@ -193,9 +193,9 @@ impl PveVmDashboardPanel {
     }
 }
 
-impl Component for PveVmDashboardPanel {
+impl Component for PveQemuDashboardPanel {
     type Message = Msg;
-    type Properties = VmDashboardPanel;
+    type Properties = QemuDashboardPanel;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -257,7 +257,7 @@ impl Component for PveVmDashboardPanel {
                 .with_child(self.view_status(ctx, data))
                 .with_child(self.view_actions(ctx, data))
                 .with_child(self.task_button(ctx))
-                .with_child(VmHardwarePanel::new(props.node.clone(), props.vmid))
+                .with_child(QemuHardwarePanel::new(props.node.clone(), props.vmid))
                 .into(),
             Some(Err(err)) => pwt::widget::error_message(err).into(),
             None => Progress::new().class("pwt-delay-visibility").into(),
@@ -265,9 +265,9 @@ impl Component for PveVmDashboardPanel {
     }
 }
 
-impl Into<VNode> for VmDashboardPanel {
+impl Into<VNode> for QemuDashboardPanel {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PveVmDashboardPanel>(Rc::new(self), None);
+        let comp = VComp::new::<PveQemuDashboardPanel>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

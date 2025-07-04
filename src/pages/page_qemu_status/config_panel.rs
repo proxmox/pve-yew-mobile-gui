@@ -21,12 +21,12 @@ use pve_api_types::QemuConfig;
 use crate::widgets::form_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct VmConfigPanel {
+pub struct QemuConfigPanel {
     vmid: u32,
     node: AttrValue,
 }
 
-impl VmConfigPanel {
+impl QemuConfigPanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -50,7 +50,7 @@ pub enum Msg {
     StoreResult(Result<(), Error>),
 }
 
-pub struct PveVmConfigPanel {
+pub struct PveQemuConfigPanel {
     data: Option<Result<QemuConfig, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
@@ -58,7 +58,7 @@ pub struct PveVmConfigPanel {
     form_context: FormContext,
 }
 
-impl PveVmConfigPanel {
+impl PveQemuConfigPanel {
     fn changeable_config_bool(
         &self,
         ctx: &Context<Self>,
@@ -203,9 +203,9 @@ impl PveVmConfigPanel {
     }
 }
 
-impl Component for PveVmConfigPanel {
+impl Component for PveQemuConfigPanel {
     type Message = Msg;
-    type Properties = VmConfigPanel;
+    type Properties = QemuConfigPanel;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -273,9 +273,9 @@ impl Component for PveVmConfigPanel {
     }
 }
 
-impl From<VmConfigPanel> for VNode {
-    fn from(props: VmConfigPanel) -> Self {
-        let comp = VComp::new::<PveVmConfigPanel>(Rc::new(props), None);
+impl From<QemuConfigPanel> for VNode {
+    fn from(props: QemuConfigPanel) -> Self {
+        let comp = VComp::new::<PveQemuConfigPanel>(Rc::new(props), None);
         VNode::from(comp)
     }
 }

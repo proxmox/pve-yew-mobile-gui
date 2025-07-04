@@ -1,11 +1,11 @@
-mod vm_hardware_panel;
-pub use vm_hardware_panel::VmHardwarePanel;
+mod hardware_panel;
+pub use hardware_panel::QemuHardwarePanel;
 
-mod vm_config_panel;
-pub use vm_config_panel::VmConfigPanel;
+mod config_panel;
+pub use config_panel::QemuConfigPanel;
 
 mod dashboard_panel;
-pub use dashboard_panel::VmDashboardPanel;
+pub use dashboard_panel::QemuDashboardPanel;
 
 use std::rc::Rc;
 
@@ -82,7 +82,7 @@ impl Component for PvePageQemuStatus {
         let (active_tab, content): (_, Html) = match *self.view_state {
             ViewState::Dashboard => (
                 "dashboard",
-                VmDashboardPanel::new(props.node.clone(), props.vmid).into(),
+                QemuDashboardPanel::new(props.node.clone(), props.vmid).into(),
             ),
             ViewState::Backup => (
                 "backup",
@@ -90,7 +90,7 @@ impl Component for PvePageQemuStatus {
             ),
             ViewState::Options => (
                 "options",
-                VmConfigPanel::new(props.node.clone(), props.vmid).into(),
+                QemuConfigPanel::new(props.node.clone(), props.vmid).into(),
             ),
         };
 
