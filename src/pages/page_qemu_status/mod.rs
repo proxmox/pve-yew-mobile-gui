@@ -22,12 +22,12 @@ use pwt::widget::{Column, TabBar, TabBarItem};
 use crate::widgets::{GuestBackupPanel, TopNavBar};
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct PageVmStatus {
+pub struct PageQemuStatus {
     vmid: u32,
     node: AttrValue,
 }
 
-impl PageVmStatus {
+impl PageQemuStatus {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -44,7 +44,7 @@ pub enum ViewState {
     Backup,
 }
 
-pub struct PvePageVmStatus {
+pub struct PvePageQemuStatus {
     view_state: PersistentState<ViewState>,
 }
 
@@ -52,9 +52,9 @@ pub enum Msg {
     SetViewState(ViewState),
 }
 
-impl Component for PvePageVmStatus {
+impl Component for PvePageQemuStatus {
     type Message = Msg;
-    type Properties = PageVmStatus;
+    type Properties = PageQemuStatus;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -135,9 +135,9 @@ impl Component for PvePageVmStatus {
     }
 }
 
-impl Into<VNode> for PageVmStatus {
+impl Into<VNode> for PageQemuStatus {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PvePageVmStatus>(Rc::new(self), None);
+        let comp = VComp::new::<PvePageQemuStatus>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

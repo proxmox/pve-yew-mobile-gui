@@ -4,8 +4,8 @@ pub use page_dashboard::PageDashboard;
 mod page_resources;
 pub use page_resources::{PageResources, ResourceFilter};
 
-mod page_vm_status;
-pub use page_vm_status::PageVmStatus;
+mod page_qemu_status;
+pub use page_qemu_status::PageQemuStatus;
 
 mod page_lxc_status;
 pub use page_lxc_status::PageLxcStatus;

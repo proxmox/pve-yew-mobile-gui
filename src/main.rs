@@ -7,7 +7,7 @@ pub use widgets::{MainNavigation, MainNavigationSelection};
 pub mod pages;
 use pages::{
     PageLogin, PageLxcStatus, PageLxcTasks, PageNodeStatus, PageNodeTasks, PageNotFound,
-    PageQemuTasks, PageSettings, PageStorageStatus, PageTaskStatus, PageVmStatus,
+    PageQemuStatus, PageQemuTasks, PageSettings, PageStorageStatus, PageTaskStatus,
 };
 
 use yew_router::scope_ext::RouterScopeExt;
@@ -108,7 +108,7 @@ fn switch_route(route: Route) -> Vec<Html> {
         Route::Settings => (switch_route(Route::Dashboard), PageSettings::new().into()),
         Route::Qemu { vmid, nodename } => (
             switch_route(Route::Resources),
-            PageVmStatus::new(nodename, vmid).into(),
+            PageQemuStatus::new(nodename, vmid).into(),
         ),
         Route::QemuTasks { vmid, nodename } => (
             switch_route(Route::Qemu {
