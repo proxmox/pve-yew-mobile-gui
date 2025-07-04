@@ -63,7 +63,7 @@ impl PveVmHardwarePanel {
         let mut list: Vec<ListTile> = Vec::new();
         list.push(icon_list_tile(
             Fa::new("memory"),
-            data.memory.as_deref().unwrap_or("-").to_string(),
+            data.memory.as_deref().unwrap_or("512").to_string() + " MB",
             tr!("Memory"),
             None,
         ));

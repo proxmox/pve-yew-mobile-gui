@@ -5,9 +5,8 @@ use gloo_timers::callback::Timeout;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Fa, List, ListTile, Progress};
+use pwt::widget::{Column, Fa, List, ListTile, Progress};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -39,11 +38,6 @@ fn get_config_url(node: &str, vmid: u32) -> String {
     )
 }
 
-fn cores_text(config: &LxcConfig) -> String {
-    let cores = config.cores.unwrap_or(1);
-    format!("{cores} cores)")
-}
-
 pub enum Msg {
     Load,
     LoadResult(Result<LxcConfig, Error>),
@@ -56,20 +50,45 @@ pub struct PveContainerResourcesPanel {
 }
 
 impl PveContainerResourcesPanel {
-    fn view_list(&self, _ctx: &Context<Self>, data: &LxcConfig) -> Html {
+    fn resource_info(&self, _ctx: &Context<Self>, data: &LxcConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
         list.push(icon_list_tile(
             Fa::new("memory"),
-            data.memory.unwrap_or(0).to_string(),
+            data.memory.unwrap_or(512).to_string() + " MB",
             tr!("Memory"),
             None,
         ));
         list.push(icon_list_tile(
+            Fa::new("retweet"),
+            data.swap.unwrap_or(0).to_string() + " MB",
+            tr!("Swap"),
+            None,
+        ));
+
+        list.push(icon_list_tile(
             Fa::new("cpu"),
-            cores_text(data),
+            data.cores.unwrap_or(1).to_string(),
             tr!("Cores"),
             None,
         ));
+
+        list.push(icon_list_tile(
+            Fa::new("hdd-o"),
+            data.rootfs.as_deref().unwrap_or("-").to_string(),
+            tr!("Root Filesystem"),
+            None,
+        ));
+
+        crate::widgets::standard_card(tr!("Resources"), None::<&str>)
+            .with_child(
+                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+                    .grid_template_columns("auto 1fr auto"),
+            )
+            .into()
+    }
+
+    fn network_info(&self, _ctx: &Context<Self>, data: &LxcConfig) -> Html {
+        let mut list: Vec<ListTile> = Vec::new();
 
         for (n, net_config) in &data.net {
             list.push(icon_list_tile(
@@ -80,8 +99,38 @@ impl PveContainerResourcesPanel {
             ));
         }
 
-        List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-            .grid_template_columns("auto 1fr auto")
+        crate::widgets::standard_card(tr!("Network"), None::<&str>)
+            .with_child(
+                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+                    .grid_template_columns("auto 1fr auto"),
+            )
+            .into()
+    }
+
+    fn dns_info(&self, _ctx: &Context<Self>, data: &LxcConfig) -> Html {
+        let mut list: Vec<ListTile> = Vec::new();
+
+        list.push(icon_list_tile(
+            Fa::new("globe"),
+            data.searchdomain
+                .clone()
+                .unwrap_or(tr!("Use host settings")),
+            tr!("DNS Domain"),
+            None,
+        ));
+
+        list.push(icon_list_tile(
+            Fa::new("search"),
+            data.nameserver.clone().unwrap_or(tr!("Use host settings")),
+            tr!("Nameserver"),
+            None,
+        ));
+
+        crate::widgets::standard_card(tr!("DNS"), None::<&str>)
+            .with_child(
+                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+                    .grid_template_columns("auto 1fr auto"),
+            )
             .into()
     }
 }
@@ -128,16 +177,16 @@ impl Component for PveContainerResourcesPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let content = match &self.data {
-            Some(Ok(data)) => self.view_list(ctx, data),
+        match &self.data {
+            Some(Ok(data)) => Column::new()
+                .gap(2)
+                .with_child(self.resource_info(ctx, data))
+                .with_child(self.network_info(ctx, data))
+                .with_child(self.dns_info(ctx, data))
+                .into(),
             Some(Err(err)) => pwt::widget::error_message(err).into(),
             None => Progress::new().class("pwt-delay-visibility").into(),
-        };
-
-        crate::widgets::standard_card(tr!("Resources"), None::<&str>)
-            .min_height(200)
-            .with_child(content)
-            .into()
+        }
     }
 }
 
