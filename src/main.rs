@@ -6,8 +6,8 @@ pub use widgets::{MainNavigation, MainNavigationSelection};
 
 pub mod pages;
 use pages::{
-    PageContainerStatus, PageLogin, PageNodeStatus, PageNodeTasks, PageNotFound, PageQemuTasks,
-    PageSettings, PageStorageStatus, PageTaskStatus, PageVmStatus,
+    PageContainerStatus, PageContainerTasks, PageLogin, PageNodeStatus, PageNodeTasks,
+    PageNotFound, PageQemuTasks, PageSettings, PageStorageStatus, PageTaskStatus, PageVmStatus,
 };
 
 use yew_router::scope_ext::RouterScopeExt;
@@ -52,6 +52,16 @@ enum Route {
 
     #[at("/resources/lxc/:nodename/:vmid")]
     Lxc { vmid: u32, nodename: String },
+    #[at("/resources/lxc/:nodename/:vmid/tasks")]
+    ContainerTasks { vmid: u32, nodename: String },
+    #[at("/resources/lxc/:nodename/:vmid/tasks/:upid/:endtime")]
+    ContainerTaskStatus {
+        vmid: u32,
+        nodename: String,
+        upid: String,
+        endtime: i64,
+    },
+
     #[at("/resources/node/:nodename")]
     Node { nodename: String },
     #[at("/resources/node/:nodename/tasks")]
@@ -128,6 +138,31 @@ fn switch_route(route: Route) -> Vec<Html> {
             switch_route(Route::Resources),
             PageContainerStatus::new(nodename, vmid).into(),
         ),
+        Route::ContainerTasks { vmid, nodename } => (
+            switch_route(Route::Lxc {
+                vmid: vmid.clone(),
+                nodename: nodename.clone(),
+            }),
+            PageContainerTasks::new(nodename, vmid).into(),
+        ),
+        Route::ContainerTaskStatus {
+            vmid,
+            nodename,
+            upid,
+            endtime,
+        } => (
+            switch_route(Route::ContainerTasks {
+                vmid: vmid.clone(),
+                nodename: nodename.clone(),
+            }),
+            PageTaskStatus::new(
+                format!("/nodes/{}/tasks", percent_encode_component(&nodename)),
+                upid,
+            )
+            .endtime(endtime)
+            .into(),
+        ),
+
         Route::Node { nodename } => (
             switch_route(Route::Resources),
             PageNodeStatus::new(nodename).into(),

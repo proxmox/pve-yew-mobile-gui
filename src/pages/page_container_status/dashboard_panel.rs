@@ -183,7 +183,7 @@ impl PveContainerDashboardPanel {
                 let node = props.node.clone();
                 let vmid = props.vmid;
                 move |_| {
-                    navigator.push(&crate::Route::QemuTasks {
+                    navigator.push(&crate::Route::ContainerTasks {
                         vmid,
                         nodename: node.to_string(),
                     });

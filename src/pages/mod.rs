@@ -22,6 +22,9 @@ pub use page_login::PageLogin;
 mod page_qemu_tasks;
 pub use page_qemu_tasks::PageQemuTasks;
 
+mod page_container_tasks;
+pub use page_container_tasks::PageContainerTasks;
+
 mod page_node_tasks;
 pub use page_node_tasks::PageNodeTasks;
 
