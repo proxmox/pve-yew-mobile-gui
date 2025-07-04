@@ -18,6 +18,9 @@ pub use dashboard_panel::LxcDashboardPanel;
 mod resources_panel;
 pub use resources_panel::LxcResourcesPanel;
 
+mod config_panel;
+pub use config_panel::LxcConfigPanel;
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageLxcStatus {
     vmid: u32,
@@ -87,8 +90,7 @@ impl Component for PvePageLxcStatus {
             ),
             ViewState::Options => (
                 "options",
-                //LxcConfigPanel::new(props.node.clone(), props.vmid).into(),
-                html! {"OPTIONS"},
+                LxcConfigPanel::new(props.node.clone(), props.vmid).into(),
             ),
         };
 
