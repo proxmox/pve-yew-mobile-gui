@@ -12,17 +12,17 @@ use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
-use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
+use pve_api_types::LxcConfig;
 
 use crate::widgets::icon_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct VmHardwarePanel {
+pub struct ContainerResourcesPanel {
     vmid: u32,
     node: AttrValue,
 }
 
-impl VmHardwarePanel {
+impl ContainerResourcesPanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -33,98 +33,43 @@ impl VmHardwarePanel {
 
 fn get_config_url(node: &str, vmid: u32) -> String {
     format!(
-        "/nodes/{}/qemu/{}/config",
+        "/nodes/{}/lxc/{}/config",
         percent_encode_component(node),
         vmid
     )
 }
 
-fn processor_text(config: &QemuConfig) -> String {
-    let cpu = config.cpu.as_deref().unwrap_or("kvm");
+fn cores_text(config: &LxcConfig) -> String {
     let cores = config.cores.unwrap_or(1);
-    let sockets = config.sockets.unwrap_or(1);
-    let count = sockets * cores;
-    format!("{count} ({sockets} sockets, {cores} cores) [{cpu}]")
+    format!("{cores} cores)")
 }
 
 pub enum Msg {
     Load,
-    LoadResult(Result<QemuConfig, Error>),
+    LoadResult(Result<LxcConfig, Error>),
 }
 
-pub struct PveVmHardwarePanel {
-    data: Option<Result<QemuConfig, String>>,
+pub struct PveContainerResourcesPanel {
+    data: Option<Result<LxcConfig, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
 }
 
-impl PveVmHardwarePanel {
-    fn view_list(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
+impl PveContainerResourcesPanel {
+    fn view_list(&self, _ctx: &Context<Self>, data: &LxcConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
         list.push(icon_list_tile(
             Fa::new("memory"),
-            data.memory.as_deref().unwrap_or("-").to_string(),
+            data.memory.unwrap_or(0).to_string(),
             tr!("Memory"),
             None,
         ));
         list.push(icon_list_tile(
             Fa::new("cpu"),
-            processor_text(data),
-            tr!("Processor"),
+            cores_text(data),
+            tr!("Cores"),
             None,
         ));
-
-        list.push(icon_list_tile(
-            Fa::new("microchip"),
-            data.bios
-                .as_ref()
-                .map(|b| b.to_string())
-                .unwrap_or(format!("{} (SeaBIOS)", tr!("Default)"))),
-            tr!("Bios"),
-            None,
-        ));
-
-        list.push(icon_list_tile(
-            Fa::new("gears"),
-            data.machine
-                .as_ref()
-                .map(|b| b.to_string())
-                .unwrap_or(format!("{} (i440fx)", tr!("Default")))
-                .to_string(),
-            tr!("Machine Type"),
-            None,
-        ));
-
-        for (n, disk_config) in &data.ide {
-            if let Ok(config) = PveQmIde::API_SCHEMA.parse_property_string(disk_config) {
-                if let Ok(config) = serde_json::from_value::<PveQmIde>(config) {
-                    if config.media == Some(PveQmIdeMedia::Cdrom) {
-                        list.push(icon_list_tile(
-                            Fa::new("cdrom"),
-                            disk_config.to_string(),
-                            tr!("CD/DVD Drive") + &format!(" (ide{n})"),
-                            None,
-                        ));
-                    } else {
-                        list.push(icon_list_tile(
-                            Fa::new("hdd-o"),
-                            disk_config.to_string(),
-                            tr!("Hard Disk") + &format!(" (ide{n})"),
-                            None,
-                        ));
-                    }
-                }
-            }
-        }
-
-        for (n, disk_config) in &data.scsi {
-            list.push(icon_list_tile(
-                Fa::new("hdd-o"),
-                disk_config.to_string(),
-                tr!("Hard Disk") + &format!(" (scsi{n})"),
-                None,
-            ));
-        }
 
         for (n, net_config) in &data.net {
             list.push(icon_list_tile(
@@ -141,9 +86,9 @@ impl PveVmHardwarePanel {
     }
 }
 
-impl Component for PveVmHardwarePanel {
+impl Component for PveContainerResourcesPanel {
     type Message = Msg;
-    type Properties = VmHardwarePanel;
+    type Properties = ContainerResourcesPanel;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -189,16 +134,16 @@ impl Component for PveVmHardwarePanel {
             None => Progress::new().class("pwt-delay-visibility").into(),
         };
 
-        crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
+        crate::widgets::standard_card(tr!("Resources"), None::<&str>)
             .min_height(200)
             .with_child(content)
             .into()
     }
 }
 
-impl From<VmHardwarePanel> for VNode {
-    fn from(props: VmHardwarePanel) -> Self {
-        let comp = VComp::new::<PveVmHardwarePanel>(Rc::new(props), None);
+impl From<ContainerResourcesPanel> for VNode {
+    fn from(props: ContainerResourcesPanel) -> Self {
+        let comp = VComp::new::<PveContainerResourcesPanel>(Rc::new(props), None);
         VNode::from(comp)
     }
 }

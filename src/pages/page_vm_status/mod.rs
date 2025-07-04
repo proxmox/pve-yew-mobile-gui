@@ -46,6 +46,7 @@ pub enum ViewState {
     Options,
     Backup,
 }
+
 pub struct PvePageVmStatus {
     view_state: PersistentState<ViewState>,
 }
