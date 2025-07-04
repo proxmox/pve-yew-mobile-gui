@@ -7,9 +7,6 @@ pub use vm_config_panel::VmConfigPanel;
 mod dashboard_panel;
 pub use dashboard_panel::VmDashboardPanel;
 
-mod vm_backup_panel;
-pub use vm_backup_panel::VmBackupPanel;
-
 use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
@@ -22,7 +19,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::widget::{Column, TabBar, TabBarItem};
 
-use crate::widgets::TopNavBar;
+use crate::widgets::{GuestBackupPanel, TopNavBar};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageVmStatus {
@@ -89,7 +86,7 @@ impl Component for PvePageVmStatus {
             ),
             ViewState::Backup => (
                 "backup",
-                VmBackupPanel::new(props.node.clone(), props.vmid).into(),
+                GuestBackupPanel::new(props.node.clone(), props.vmid).into(),
             ),
             ViewState::Options => (
                 "options",

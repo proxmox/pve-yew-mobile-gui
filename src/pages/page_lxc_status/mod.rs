@@ -10,7 +10,7 @@ use pwt::prelude::*;
 use pwt::state::PersistentState;
 use pwt::widget::{Column, TabBar, TabBarItem};
 
-use crate::widgets::TopNavBar;
+use crate::widgets::{GuestBackupPanel, TopNavBar};
 
 mod dashboard_panel;
 pub use dashboard_panel::LxcDashboardPanel;
@@ -83,8 +83,7 @@ impl Component for PvePageLxcStatus {
             ),
             ViewState::Backup => (
                 "backup",
-                //LxcBackupPanel::new(props.node.clone(), props.vmid).into(),
-                html! {"BACKUP"},
+                GuestBackupPanel::new(props.node.clone(), props.vmid).into(),
             ),
             ViewState::Options => (
                 "options",

@@ -20,12 +20,12 @@ use pve_api_types::{StorageContent, StorageInfo};
 use crate::widgets::{label_field, storage_card, StorageContentPanel};
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct VmBackupPanel {
+pub struct GuestBackupPanel {
     vmid: u32,
     node: AttrValue,
 }
 
-impl VmBackupPanel {
+impl GuestBackupPanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -44,7 +44,7 @@ pub enum Msg {
     CloseLogDialog,
 }
 
-pub struct PveVmBackupPanel {
+pub struct PveGuestBackupPanel {
     storage_list: Option<Result<Vec<StorageInfo>, String>>,
     load_storage_guard: Option<AsyncAbortGuard>,
     active_storage: Option<String>,
@@ -55,7 +55,7 @@ pub struct PveVmBackupPanel {
     log_dialog: Option<Html>,
 }
 
-impl PveVmBackupPanel {
+impl PveGuestBackupPanel {
     fn create_backup_panel(&self, ctx: &Context<Self>) -> Html {
         let mode_selector = Combobox::new()
             .name("mode")
@@ -225,9 +225,9 @@ impl PveVmBackupPanel {
     }
 }
 
-impl Component for PveVmBackupPanel {
+impl Component for PveGuestBackupPanel {
     type Message = Msg;
-    type Properties = VmBackupPanel;
+    type Properties = GuestBackupPanel;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::LoadStorage);
@@ -310,9 +310,9 @@ impl Component for PveVmBackupPanel {
     }
 }
 
-impl From<VmBackupPanel> for VNode {
-    fn from(props: VmBackupPanel) -> Self {
-        let comp = VComp::new::<PveVmBackupPanel>(Rc::new(props), None);
+impl From<GuestBackupPanel> for VNode {
+    fn from(props: GuestBackupPanel) -> Self {
+        let comp = VComp::new::<PveGuestBackupPanel>(Rc::new(props), None);
         VNode::from(comp)
     }
 }
