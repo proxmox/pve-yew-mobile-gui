@@ -85,9 +85,10 @@ impl PveLxcConfigPanel {
 
         list.push(self.changeable_config_bool(ctx, tr!("Start on boot"), "onboot", false));
         list.push(self.changeable_config_bool(ctx, tr!("Protection"), "protection", false));
+        list.push(self.changeable_config_bool(ctx, tr!("Console"), "console", true));
 
         list.push(form_list_tile(
-            tr!("Hostname"),
+            tr!("Name"),
             data.hostname
                 .as_ref()
                 .map(String::from)
@@ -110,6 +111,45 @@ impl PveLxcConfigPanel {
                 .as_ref()
                 .map(|d| d.to_string())
                 .unwrap_or(tr!("Other")),
+            None,
+        ));
+
+        list.push(form_list_tile(
+            tr!("Architecture"),
+            data.arch
+                .as_ref()
+                .map(|d| d.to_string())
+                .unwrap_or(String::from("-")),
+            None,
+        ));
+
+        list.push(form_list_tile(
+            tr!("TTY count"),
+            data.tty.unwrap_or(2).to_string(),
+            None,
+        ));
+
+        list.push(form_list_tile(
+            tr!("Console mode"),
+            data.cmode
+                .as_ref()
+                .map(|d| d.to_string())
+                .unwrap_or(String::from("tty")),
+            None,
+        ));
+
+        list.push(form_list_tile(
+            tr!("Unpriviledged"),
+            data.unprivileged.unwrap_or(false).to_string(),
+            None,
+        ));
+
+        list.push(form_list_tile(
+            tr!("Features"),
+            data.features
+                .as_ref()
+                .map(|d| d.to_string())
+                .unwrap_or(tr!("none")),
             None,
         ));
 
