@@ -1,77 +1,132 @@
 use std::rc::Rc;
 
+use pwt::props::StorageLocation;
+use pwt::state::PersistentState;
+use serde::{Deserialize, Serialize};
+
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::widget::{Card, Column};
+use pwt::widget::{Card, Column, TabBar, TabBarItem};
 
 use crate::widgets::TopNavBar;
 
+mod dashboard_panel;
+pub use dashboard_panel::NodeDashboardPanel;
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageNodeStatus {
-    nodename: AttrValue,
+    node: AttrValue,
 }
 
 impl PageNodeStatus {
     pub fn new(nodename: impl Into<AttrValue>) -> Self {
         Self {
-            nodename: nodename.into(),
+            node: nodename.into(),
         }
     }
 }
 
-pub struct PvePageNodeStatus {}
+#[derive(Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub enum ViewState {
+    #[default]
+    Dashboard,
+    Services,
+    Updates,
+}
 
-pub enum Msg {}
+pub enum Msg {
+    SetViewState(ViewState),
+}
 
-impl PvePageNodeStatus {
-    fn task_button(&self, ctx: &Context<Self>) -> Html {
-        Card::new()
-            .padding(2)
-            .class("pwt-d-flex")
-            .class("pwt-interactive")
-            .class(pwt::css::JustifyContent::Center)
-            .with_child("Task List")
-            .onclick({
-                let props = ctx.props();
-                let navigator = ctx.link().navigator().clone().unwrap();
-                let nodename = props.nodename.clone();
-                move |_| {
-                    navigator.push(&crate::Route::NodeTasks {
-                        nodename: nodename.to_string(),
-                    });
-                }
-            })
-            .into()
-    }
+pub struct PvePageNodeStatus {
+    view_state: PersistentState<ViewState>,
 }
 
 impl Component for PvePageNodeStatus {
     type Message = Msg;
     type Properties = PageNodeStatus;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+        let view_state = PersistentState::new(StorageLocation::session(format!(
+            "node-{}-status-tab-bar-state",
+            props.node
+        )));
+
+        Self { view_state }
+    }
+
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::SetViewState(view_state) => {
+                self.view_state.update(view_state);
+            }
+        }
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let content = Column::new()
-            .class(pwt::css::FlexFit)
-            .padding(2)
-            //.with_child(format!("This is the status for node {}", props.nodename))
-            .with_child(self.task_button(ctx));
+        let (active_tab, content): (_, Html) = match *self.view_state {
+            ViewState::Dashboard => (
+                "dashboard",
+                NodeDashboardPanel::new(props.node.clone()).into(),
+            ),
+            ViewState::Services => (
+                "services",
+                //GuestBackupPanel::new(props.node.clone(), props.vmid).into(),
+                html! {"SERVICES"},
+            ),
+            ViewState::Updates => (
+                "updates",
+                //LxcConfigPanel::new(props.node.clone(), props.vmid).into(),
+                html! {"UPDATES"},
+            ),
+        };
+
+        let tab_bar = TabBar::new()
+            .class(pwt::css::JustifyContent::Center)
+            .active(active_tab)
+            .with_item(
+                TabBarItem::new()
+                    .label(tr!("Dashboard"))
+                    .key("dashboard")
+                    .on_activate(
+                        ctx.link()
+                            .callback(|_| Msg::SetViewState(ViewState::Dashboard)),
+                    ),
+            )
+            .with_item(
+                TabBarItem::new()
+                    .label(tr!("Services"))
+                    .key("services")
+                    .on_activate(
+                        ctx.link()
+                            .callback(|_| Msg::SetViewState(ViewState::Services)),
+                    ),
+            )
+            .with_item(
+                TabBarItem::new()
+                    .label(tr!("Updates"))
+                    .key("updates")
+                    .on_activate(
+                        ctx.link()
+                            .callback(|_| Msg::SetViewState(ViewState::Updates)),
+                    ),
+            );
 
         Column::new()
             .class("pwt-fit")
             .with_child(
                 TopNavBar::new()
-                    .title(format!("Node {}", props.nodename))
+                    .title(format!("Node {}", props.node))
                     .back(true),
             )
+            .with_child(tab_bar)
             .with_child(content)
             .into()
     }
