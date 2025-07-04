@@ -7,8 +7,8 @@ pub use page_resources::{PageResources, ResourceFilter};
 mod page_vm_status;
 pub use page_vm_status::PageVmStatus;
 
-mod page_container_status;
-pub use page_container_status::PageContainerStatus;
+mod page_lxc_status;
+pub use page_lxc_status::PageLxcStatus;
 
 mod page_node_status;
 pub use page_node_status::PageNodeStatus;
@@ -22,8 +22,8 @@ pub use page_login::PageLogin;
 mod page_qemu_tasks;
 pub use page_qemu_tasks::PageQemuTasks;
 
-mod page_container_tasks;
-pub use page_container_tasks::PageContainerTasks;
+mod page_lxc_tasks;
+pub use page_lxc_tasks::PageLxcTasks;
 
 mod page_node_tasks;
 pub use page_node_tasks::PageNodeTasks;

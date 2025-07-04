@@ -13,18 +13,18 @@ use pwt::widget::{Column, TabBar, TabBarItem};
 use crate::widgets::TopNavBar;
 
 mod dashboard_panel;
-pub use dashboard_panel::ContainerDashboardPanel;
+pub use dashboard_panel::LxcDashboardPanel;
 
 mod resources_panel;
-pub use resources_panel::ContainerResourcesPanel;
+pub use resources_panel::LxcResourcesPanel;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct PageContainerStatus {
+pub struct PageLxcStatus {
     vmid: u32,
     node: AttrValue,
 }
 
-impl PageContainerStatus {
+impl PageLxcStatus {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -45,13 +45,13 @@ pub enum Msg {
     SetViewState(ViewState),
 }
 
-pub struct PvePageContainerStatus {
+pub struct PvePageLxcStatus {
     view_state: PersistentState<ViewState>,
 }
 
-impl Component for PvePageContainerStatus {
+impl Component for PvePageLxcStatus {
     type Message = Msg;
-    type Properties = PageContainerStatus;
+    type Properties = PageLxcStatus;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -79,16 +79,16 @@ impl Component for PvePageContainerStatus {
         let (active_tab, content): (_, Html) = match *self.view_state {
             ViewState::Dashboard => (
                 "dashboard",
-                ContainerDashboardPanel::new(props.node.clone(), props.vmid).into(),
+                LxcDashboardPanel::new(props.node.clone(), props.vmid).into(),
             ),
             ViewState::Backup => (
                 "backup",
-                //ContainerBackupPanel::new(props.node.clone(), props.vmid).into(),
+                //LxcBackupPanel::new(props.node.clone(), props.vmid).into(),
                 html! {"BACKUP"},
             ),
             ViewState::Options => (
                 "options",
-                //ContainerConfigPanel::new(props.node.clone(), props.vmid).into(),
+                //LxcConfigPanel::new(props.node.clone(), props.vmid).into(),
                 html! {"OPTIONS"},
             ),
         };
@@ -134,9 +134,9 @@ impl Component for PvePageContainerStatus {
     }
 }
 
-impl Into<VNode> for PageContainerStatus {
+impl Into<VNode> for PageLxcStatus {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PvePageContainerStatus>(Rc::new(self), None);
+        let comp = VComp::new::<PvePageLxcStatus>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

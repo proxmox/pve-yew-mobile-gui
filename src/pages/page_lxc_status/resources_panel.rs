@@ -16,12 +16,12 @@ use pve_api_types::LxcConfig;
 use crate::widgets::icon_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct ContainerResourcesPanel {
+pub struct LxcResourcesPanel {
     vmid: u32,
     node: AttrValue,
 }
 
-impl ContainerResourcesPanel {
+impl LxcResourcesPanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -43,13 +43,13 @@ pub enum Msg {
     LoadResult(Result<LxcConfig, Error>),
 }
 
-pub struct PveContainerResourcesPanel {
+pub struct PveLxcResourcesPanel {
     data: Option<Result<LxcConfig, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
 }
 
-impl PveContainerResourcesPanel {
+impl PveLxcResourcesPanel {
     fn resource_info(&self, _ctx: &Context<Self>, data: &LxcConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
         list.push(icon_list_tile(
@@ -135,9 +135,9 @@ impl PveContainerResourcesPanel {
     }
 }
 
-impl Component for PveContainerResourcesPanel {
+impl Component for PveLxcResourcesPanel {
     type Message = Msg;
-    type Properties = ContainerResourcesPanel;
+    type Properties = LxcResourcesPanel;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -190,9 +190,9 @@ impl Component for PveContainerResourcesPanel {
     }
 }
 
-impl From<ContainerResourcesPanel> for VNode {
-    fn from(props: ContainerResourcesPanel) -> Self {
-        let comp = VComp::new::<PveContainerResourcesPanel>(Rc::new(props), None);
+impl From<LxcResourcesPanel> for VNode {
+    fn from(props: LxcResourcesPanel) -> Self {
+        let comp = VComp::new::<PveLxcResourcesPanel>(Rc::new(props), None);
         VNode::from(comp)
     }
 }

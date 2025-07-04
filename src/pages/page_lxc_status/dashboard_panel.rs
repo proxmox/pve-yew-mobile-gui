@@ -19,15 +19,15 @@ use pve_api_types::{IsRunning, LxcStatus};
 
 use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile, TasksListButton};
 
-use super::ContainerResourcesPanel;
+use super::LxcResourcesPanel;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct ContainerDashboardPanel {
+pub struct LxcDashboardPanel {
     vmid: u32,
     node: AttrValue,
 }
 
-impl ContainerDashboardPanel {
+impl LxcDashboardPanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             node: node.into(),
@@ -36,7 +36,7 @@ impl ContainerDashboardPanel {
     }
 }
 
-pub struct PveContainerDashboardPanel {
+pub struct PveLxcDashboardPanel {
     data: Option<Result<LxcStatus, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
@@ -68,7 +68,7 @@ fn large_fa_icon(name: &str, running: bool) -> Fa {
         .class(running.then(|| "pwt-color-primary"))
 }
 
-impl PveContainerDashboardPanel {
+impl PveLxcDashboardPanel {
     fn vm_command(&mut self, ctx: &Context<Self>, cmd: &str) {
         let props = ctx.props();
         let url = get_status_url(&props.node, props.vmid, cmd);
@@ -183,7 +183,7 @@ impl PveContainerDashboardPanel {
                 let node = props.node.clone();
                 let vmid = props.vmid;
                 move |_| {
-                    navigator.push(&crate::Route::ContainerTasks {
+                    navigator.push(&crate::Route::LxcTasks {
                         vmid,
                         nodename: node.to_string(),
                     });
@@ -193,9 +193,9 @@ impl PveContainerDashboardPanel {
     }
 }
 
-impl Component for PveContainerDashboardPanel {
+impl Component for PveLxcDashboardPanel {
     type Message = Msg;
-    type Properties = ContainerDashboardPanel;
+    type Properties = LxcDashboardPanel;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -257,7 +257,7 @@ impl Component for PveContainerDashboardPanel {
                 .with_child(self.view_status(ctx, data))
                 .with_child(self.view_actions(ctx, data))
                 .with_child(self.task_button(ctx))
-                .with_child(ContainerResourcesPanel::new(props.node.clone(), props.vmid))
+                .with_child(LxcResourcesPanel::new(props.node.clone(), props.vmid))
                 .into(),
             Some(Err(err)) => pwt::widget::error_message(err).into(),
             None => Progress::new().class("pwt-delay-visibility").into(),
@@ -265,9 +265,9 @@ impl Component for PveContainerDashboardPanel {
     }
 }
 
-impl Into<VNode> for ContainerDashboardPanel {
+impl Into<VNode> for LxcDashboardPanel {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PveContainerDashboardPanel>(Rc::new(self), None);
+        let comp = VComp::new::<PveLxcDashboardPanel>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

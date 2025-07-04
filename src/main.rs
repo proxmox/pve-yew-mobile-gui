@@ -6,8 +6,8 @@ pub use widgets::{MainNavigation, MainNavigationSelection};
 
 pub mod pages;
 use pages::{
-    PageContainerStatus, PageContainerTasks, PageLogin, PageNodeStatus, PageNodeTasks,
-    PageNotFound, PageQemuTasks, PageSettings, PageStorageStatus, PageTaskStatus, PageVmStatus,
+    PageLogin, PageLxcStatus, PageLxcTasks, PageNodeStatus, PageNodeTasks, PageNotFound,
+    PageQemuTasks, PageSettings, PageStorageStatus, PageTaskStatus, PageVmStatus,
 };
 
 use yew_router::scope_ext::RouterScopeExt;
@@ -53,9 +53,9 @@ enum Route {
     #[at("/resources/lxc/:nodename/:vmid")]
     Lxc { vmid: u32, nodename: String },
     #[at("/resources/lxc/:nodename/:vmid/tasks")]
-    ContainerTasks { vmid: u32, nodename: String },
+    LxcTasks { vmid: u32, nodename: String },
     #[at("/resources/lxc/:nodename/:vmid/tasks/:upid/:endtime")]
-    ContainerTaskStatus {
+    LxcTaskStatus {
         vmid: u32,
         nodename: String,
         upid: String,
@@ -136,22 +136,22 @@ fn switch_route(route: Route) -> Vec<Html> {
         ),
         Route::Lxc { nodename, vmid } => (
             switch_route(Route::Resources),
-            PageContainerStatus::new(nodename, vmid).into(),
+            PageLxcStatus::new(nodename, vmid).into(),
         ),
-        Route::ContainerTasks { vmid, nodename } => (
+        Route::LxcTasks { vmid, nodename } => (
             switch_route(Route::Lxc {
                 vmid: vmid.clone(),
                 nodename: nodename.clone(),
             }),
-            PageContainerTasks::new(nodename, vmid).into(),
+            PageLxcTasks::new(nodename, vmid).into(),
         ),
-        Route::ContainerTaskStatus {
+        Route::LxcTaskStatus {
             vmid,
             nodename,
             upid,
             endtime,
         } => (
-            switch_route(Route::ContainerTasks {
+            switch_route(Route::LxcTasks {
                 vmid: vmid.clone(),
                 nodename: nodename.clone(),
             }),

@@ -15,12 +15,12 @@ use pwt_macros::builder;
 
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
-pub struct PageContainerTasks {
+pub struct PageLxcTasks {
     pub vmid: u32,
     pub nodename: AttrValue,
 }
 
-impl PageContainerTasks {
+impl PageLxcTasks {
     pub fn new(nodename: impl Into<AttrValue>, vmid: u32) -> Self {
         Self {
             nodename: nodename.into(),
@@ -29,13 +29,13 @@ impl PageContainerTasks {
     }
 }
 
-pub struct PvePageContainerTasks {}
+pub struct PvePageLxcTasks {}
 
 pub enum Msg {}
 
-impl Component for PvePageContainerTasks {
+impl Component for PvePageLxcTasks {
     type Message = Msg;
-    type Properties = PageContainerTasks;
+    type Properties = PageLxcTasks;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {}
@@ -65,7 +65,7 @@ impl Component for PvePageContainerTasks {
                 let vmid = props.vmid;
                 let nodename = props.nodename.to_string();
                 move |(upid, endtime): (String, Option<i64>)| {
-                    navigator.push(&crate::Route::ContainerTaskStatus {
+                    navigator.push(&crate::Route::LxcTaskStatus {
                         vmid,
                         nodename: nodename.clone(),
                         upid,
@@ -77,9 +77,9 @@ impl Component for PvePageContainerTasks {
     }
 }
 
-impl Into<VNode> for PageContainerTasks {
+impl Into<VNode> for PageLxcTasks {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PvePageContainerTasks>(Rc::new(self), None);
+        let comp = VComp::new::<PvePageLxcTasks>(Rc::new(self), None);
         VNode::from(comp)
     }
 }
