@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew_router::scope_ext::RouterScopeExt;
+use yew_router::hooks::use_navigator;
 
 use pwt::prelude::*;
 use pwt::widget::Column;
@@ -29,52 +29,39 @@ impl PageQemuTasks {
     }
 }
 
-pub struct PvePageQemuTasks {}
+#[function_component]
+pub fn PvePageQemuTasks(props: &PageQemuTasks) -> Html {
+    let title = format!("VM {}", props.vmid);
 
-pub enum Msg {}
+    let navigator = use_navigator().unwrap();
 
-impl Component for PvePageQemuTasks {
-    type Message = Msg;
-    type Properties = PageQemuTasks;
+    let base_url = format!(
+        "/nodes/{}/tasks?vmid={}",
+        percent_encode_component(&props.nodename),
+        props.vmid,
+    );
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
-        let title = format!("VM {}", props.vmid);
-
-        let base_url = format!(
-            "/nodes/{}/tasks?vmid={}",
-            percent_encode_component(&props.nodename),
-            props.vmid,
-        );
-
-        Column::new()
-            .class("pwt-fit")
-            .with_child(
-                TopNavBar::new()
-                    .title("Task List")
-                    .subtitle(title)
-                    .back(true),
-            )
-            .with_child(TasksPanel::new(base_url.clone()).on_show_task({
-                let navigator = ctx.link().navigator().unwrap();
-                let vmid = props.vmid;
-                let nodename = props.nodename.to_string();
-                move |(upid, endtime): (String, Option<i64>)| {
-                    navigator.push(&crate::Route::QemuTaskStatus {
-                        vmid,
-                        nodename: nodename.clone(),
-                        upid,
-                        endtime: endtime.unwrap_or(0),
-                    });
-                }
-            }))
-            .into()
-    }
+    Column::new()
+        .class("pwt-fit")
+        .with_child(
+            TopNavBar::new()
+                .title("Task List")
+                .subtitle(title)
+                .back(true),
+        )
+        .with_child(TasksPanel::new(base_url.clone()).on_show_task({
+            let vmid = props.vmid;
+            let nodename = props.nodename.to_string();
+            move |(upid, endtime): (String, Option<i64>)| {
+                navigator.push(&crate::Route::QemuTaskStatus {
+                    vmid,
+                    nodename: nodename.clone(),
+                    upid,
+                    endtime: endtime.unwrap_or(0),
+                });
+            }
+        }))
+        .into()
 }
 
 impl Into<VNode> for PageQemuTasks {

@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew_router::scope_ext::RouterScopeExt;
+use yew_router::hooks::use_navigator;
 
 use pwt::prelude::*;
 use pwt::widget::Column;
@@ -27,46 +27,33 @@ impl PageNodeTasks {
     }
 }
 
-pub struct PvePageNodeTasks {}
+#[function_component]
+pub fn PvePageNodeTasks(props: &PageNodeTasks) -> Html {
+    let title = format!("Node {}", props.nodename);
 
-pub enum Msg {}
+    let navigator = use_navigator().unwrap();
 
-impl Component for PvePageNodeTasks {
-    type Message = Msg;
-    type Properties = PageNodeTasks;
+    let base_url = format!("/nodes/{}/tasks", percent_encode_component(&props.nodename));
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
-        let title = format!("Node {}", props.nodename);
-
-        let base_url = format!("/nodes/{}/tasks", percent_encode_component(&props.nodename));
-
-        Column::new()
-            .class("pwt-fit")
-            .with_child(
-                TopNavBar::new()
-                    .title("Task List")
-                    .subtitle(title)
-                    .back(true),
-            )
-            .with_child(TasksPanel::new(base_url.clone()).on_show_task({
-                let navigator = ctx.link().navigator().unwrap();
-                let nodename = props.nodename.to_string();
-                move |(upid, endtime): (String, Option<i64>)| {
-                    navigator.push(&crate::Route::NodeTaskStatus {
-                        nodename: nodename.clone(),
-                        upid,
-                        endtime: endtime.unwrap_or(0),
-                    });
-                }
-            }))
-            .into()
-    }
+    Column::new()
+        .class("pwt-fit")
+        .with_child(
+            TopNavBar::new()
+                .title("Task List")
+                .subtitle(title)
+                .back(true),
+        )
+        .with_child(TasksPanel::new(base_url.clone()).on_show_task({
+            let nodename = props.nodename.to_string();
+            move |(upid, endtime): (String, Option<i64>)| {
+                navigator.push(&crate::Route::NodeTaskStatus {
+                    nodename: nodename.clone(),
+                    upid,
+                    endtime: endtime.unwrap_or(0),
+                });
+            }
+        }))
+        .into()
 }
 
 impl Into<VNode> for PageNodeTasks {
