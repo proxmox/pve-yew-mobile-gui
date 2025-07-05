@@ -91,13 +91,26 @@ impl PveNodeDashboardPanel {
             (data.memory.used as f32) / (data.memory.total as f32)
         };
         tiles.push(
-            icon_list_tile(Fa::new("memory"), "Memory", None::<&str>, None).with_child(
+            icon_list_tile(Fa::new("memory"), tr!("Memory"), None::<&str>, None).with_child(
                 list_tile_usage(
                     HumanByte::new_binary(data.memory.used as f64).to_string(),
                     HumanByte::new_binary(data.memory.total as f64).to_string(),
                     mem_percentage,
                 ),
             ),
+        );
+        let rootfs_percentage = if data.rootfs.total <= 0 {
+            0.0
+        } else {
+            (data.rootfs.used as f32) / (data.rootfs.total as f32)
+        };
+        tiles.push(
+            icon_list_tile(Fa::new("hdd-o"), tr!("Root Filesystem"), None::<&str>, None)
+                .with_child(list_tile_usage(
+                    HumanByte::new_binary(data.rootfs.used as f64).to_string(),
+                    HumanByte::new_binary(data.rootfs.total as f64).to_string(),
+                    rootfs_percentage,
+                )),
         );
 
         let status = List::new(tiles.len() as u64, move |pos| {
