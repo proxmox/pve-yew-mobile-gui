@@ -116,9 +116,11 @@ impl Component for PveNodeUpdatesPanel {
                 let info = self.show_info.as_ref().map(|info| {
                     Dialog::new(tr!("Description"))
                         .with_child(
-                            Container::new()
+                            title_subtitle_column(info.title.clone(), info.version.clone())
                                 .padding(2)
-                                .with_child(info.description.clone()),
+                                .with_child(
+                                    Container::from_tag("p").with_child(info.description.clone()),
+                                ),
                         )
                         .on_close(ctx.link().callback(|_| Msg::ShowInfo(None)))
                 });
