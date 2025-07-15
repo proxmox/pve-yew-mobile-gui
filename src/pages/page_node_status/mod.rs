@@ -6,15 +6,17 @@ use serde::{Deserialize, Serialize};
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::widget::{Card, Column, TabBar, TabBarItem};
+use pwt::widget::{Column, TabBar, TabBarItem};
 
 use crate::widgets::TopNavBar;
 
 mod dashboard_panel;
 pub use dashboard_panel::NodeDashboardPanel;
+
+mod services_panel;
+pub use services_panel::NodeServicesPanel;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageNodeStatus {
@@ -78,8 +80,7 @@ impl Component for PvePageNodeStatus {
             ),
             ViewState::Services => (
                 "services",
-                //GuestBackupPanel::new(props.node.clone(), props.vmid).into(),
-                html! {"SERVICES"},
+                NodeServicesPanel::new(props.node.clone()).into(),
             ),
             ViewState::Updates => (
                 "updates",

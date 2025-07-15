@@ -8,3 +8,14 @@ pub struct StorageEntry {
     pub size: i64,
     pub volid: String,
 }
+
+#[derive(Deserialize, Serialize, PartialEq, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct ServiceStatus {
+    pub state: String,
+    pub active_state: String,
+    pub unit_state: String,
+    pub name: String,
+    pub service: String,
+    pub desc: String,
+}
