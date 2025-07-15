@@ -18,6 +18,9 @@ pub use dashboard_panel::NodeDashboardPanel;
 mod services_panel;
 pub use services_panel::NodeServicesPanel;
 
+mod updates_panel;
+pub use updates_panel::NodeUpdatesPanel;
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageNodeStatus {
     node: AttrValue,
@@ -82,11 +85,7 @@ impl Component for PvePageNodeStatus {
                 "services",
                 NodeServicesPanel::new(props.node.clone()).into(),
             ),
-            ViewState::Updates => (
-                "updates",
-                //LxcConfigPanel::new(props.node.clone(), props.vmid).into(),
-                html! {"UPDATES"},
-            ),
+            ViewState::Updates => ("updates", NodeUpdatesPanel::new(props.node.clone()).into()),
         };
 
         let tab_bar = TabBar::new()
