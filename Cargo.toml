@@ -23,15 +23,15 @@ gloo-timers = "0.3"
 proxmox-schema = "4"
 proxmox-time = "2"
 proxmox-uuid = "1"
-proxmox-human-byte = "0.1.3"
+proxmox-human-byte = "1.0"
 
-pwt = "0.5"
-pwt-macros = "0.3"
+pwt = "0.6"
+pwt-macros = "0.4"
 
-proxmox-yew-comp = "0.4"
+proxmox-yew-comp = "0.5"
 
-proxmox-login = "0.2"
-proxmox-client = "0.5"
+proxmox-login = "1.0"
+proxmox-client = "1.0"
 
 pve-api-types = { path = "proxmox-api-types/pve-api-types"  }
 
@@ -39,3 +39,4 @@ pve-api-types = { path = "proxmox-api-types/pve-api-types"  }
 #proxmox-client = { path = "../proxmox/proxmox-client" }
 proxmox-yew-comp = { path = "../proxmox-yew-comp" }
 pwt = { path = "../proxmox-yew-widget-toolkit" }
+pwt-macros = { path = "../proxmox-yew-widget-toolkit/pwt-macros" }
