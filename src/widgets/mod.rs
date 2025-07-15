@@ -131,30 +131,7 @@ pub fn standard_list_tile(
         //.class("pwt-scheme-surface")
         .border_bottom(true)
         .with_child(leading)
-        .with_child({
-            let mut column = Column::new().gap(1);
-
-            if let Some(title) = title.into_prop_value() {
-                column.add_child(
-                    Container::new()
-                        .class("pwt-font-size-title-medium")
-                        .style("overflow-wrap", "anywhere")
-                        .key("title")
-                        .with_child(title),
-                );
-            }
-
-            if let Some(subtitle) = subtitle.into_prop_value() {
-                column.add_child(
-                    Container::new()
-                        .class("pwt-font-size-title-small")
-                        .style("overflow-wrap", "anywhere")
-                        .key("subtitle")
-                        .with_child(subtitle),
-                );
-            }
-            column
-        })
+        .with_child(title_subtitle_column(title, subtitle))
         .with_optional_child(trailing.into_prop_value())
 }
 
@@ -192,6 +169,35 @@ pub fn list_tile_usage(
         .with_child(progress)
 }
 
+pub fn title_subtitle_column(
+    title: impl IntoPropValue<Option<AttrValue>>,
+    // title: impl Into<AttrValue>,
+    subtitle: impl IntoPropValue<Option<AttrValue>>,
+) -> Column {
+    let mut column = Column::new().gap(1);
+
+    if let Some(title) = title.into_prop_value() {
+        column.add_child(
+            Container::new()
+                .class("pwt-font-size-title-medium")
+                .style("overflow-wrap", "anywhere")
+                .key("title")
+                .with_child(title),
+        );
+    }
+
+    if let Some(subtitle) = subtitle.into_prop_value() {
+        column.add_child(
+            Container::new()
+                .class("pwt-font-size-title-small")
+                .style("overflow-wrap", "anywhere")
+                .key("subtitle")
+                .with_child(subtitle),
+        );
+    }
+    column
+}
+
 pub fn form_list_tile(
     title: impl Into<AttrValue>,
     subtitle: impl IntoPropValue<Option<AttrValue>>,
@@ -203,28 +209,7 @@ pub fn form_list_tile(
         .class("pwt-row-gap-1")
         //.class("pwt-scheme-surface")
         .border_bottom(true)
-        .with_child({
-            let mut column = Column::new().gap(1);
-
-            if let Some(title) = title.into_prop_value() {
-                column.add_child(
-                    Container::new()
-                        .class("pwt-font-size-title-medium")
-                        .key("title")
-                        .with_child(title.into()),
-                );
-            }
-
-            if let Some(subtitle) = subtitle.into_prop_value() {
-                column.add_child(
-                    Container::new()
-                        .class("pwt-font-size-title-small")
-                        .key("subtitle")
-                        .with_child(subtitle),
-                );
-            }
-            column
-        })
+        .with_child(title_subtitle_column(title.into(), subtitle))
         .with_optional_child(trailing.into_prop_value())
 }
 
