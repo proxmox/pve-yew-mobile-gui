@@ -68,7 +68,7 @@ impl PveNodeServicesPanel {
                 return false;
             }
             // TODO: only one NTP provider will be active
-            (s.state != "running" && !(s.unit_state == "masked" || s.unit_state == "not-found"))
+            s.state != "running" && !(s.unit_state == "masked" || s.unit_state == "not-found")
         });
 
         let msg = if all_running {

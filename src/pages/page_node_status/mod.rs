@@ -56,7 +56,7 @@ pub enum Msg {
 
 pub struct PvePageNodeStatus {
     view_state: PersistentState<ViewState>,
-    cluster_status_guard: AsyncAbortGuard,
+    _cluster_status_guard: AsyncAbortGuard,
     cluster_node_status: Option<Vec<ClusterNodeStatus>>,
 }
 
@@ -76,7 +76,7 @@ impl Component for PvePageNodeStatus {
         Self {
             view_state,
             cluster_node_status: None,
-            cluster_status_guard: AsyncAbortGuard::spawn(async move {
+            _cluster_status_guard: AsyncAbortGuard::spawn(async move {
                 let result = http_get("/cluster/status", None).await;
                 link.send_message(Msg::SetNodeStatus(result));
             }),
