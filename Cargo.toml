@@ -37,6 +37,6 @@ pve-api-types = { path = "proxmox-api-types/pve-api-types"  }
 
 [patch.crates-io]
 #proxmox-client = { path = "../proxmox/proxmox-client" }
-proxmox-yew-comp = { path = "../proxmox-yew-comp" }
-pwt = { path = "../proxmox-yew-widget-toolkit" }
-pwt-macros = { path = "../proxmox-yew-widget-toolkit/pwt-macros" }
+#proxmox-yew-comp = { path = "../proxmox-yew-comp" }
+#pwt = { path = "../proxmox-yew-widget-toolkit" }
+#pwt-macros = { path = "../proxmox-yew-widget-toolkit/pwt-macros" }

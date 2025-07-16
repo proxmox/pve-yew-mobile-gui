@@ -81,7 +81,7 @@ install: $(COMPILED_OUTPUT) index.html manifest.json dist/mobile-yew-style.css d
 $(BUILDDIR):
 	rm -rf $@ $@.tmp
 	mkdir -p $@.tmp/ui
-	cp -a debian/ src/ pwt-assets/ assets/ pve.css index.html Makefile Cargo.toml $@.tmp/
+	cp -a debian/ src/ pwt-assets/ images/ pve.css index.html manifest.json Makefile Cargo.toml $@.tmp/
 	cp -a proxmox-api-types $@.tmp/
 	echo "git clone git://git.proxmox.com/git/$(PACKAGE).git\\ngit checkout $$(git rev-parse HEAD)" \
 	    > $@.tmp/debian/SOURCE
