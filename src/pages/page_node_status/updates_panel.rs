@@ -114,7 +114,7 @@ impl Component for PveNodeUpdatesPanel {
         match &self.data {
             Some(Ok(data)) => {
                 let info = self.show_info.as_ref().map(|info| {
-                    Dialog::new(tr!("Description"))
+                    Dialog::new(info.package.clone())
                         .with_child(
                             title_subtitle_column(info.title.clone(), info.version.clone())
                                 .padding(2)
