@@ -51,13 +51,13 @@ pub enum ViewState {
 
 pub enum Msg {
     SetViewState(ViewState),
-    SetNodeStatus(Result<ClusterNodeStatus, Error>),
+    SetNodeStatus(Result<Vec<ClusterNodeStatus>, Error>),
 }
 
 pub struct PvePageNodeStatus {
     view_state: PersistentState<ViewState>,
     cluster_status_guard: AsyncAbortGuard,
-    cluster_node_status: Option<ClusterNodeStatus>,
+    cluster_node_status: Option<Vec<ClusterNodeStatus>>,
 }
 
 impl Component for PvePageNodeStatus {
@@ -104,10 +104,13 @@ impl Component for PvePageNodeStatus {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
+        let node = props.node.clone();
 
         let mut standalone = true;
         if let Some(status) = &self.cluster_node_status {
-            standalone = status.ty == ClusterNodeStatusType::Node;
+            standalone = !status
+                .iter()
+                .any(|info| info.name == node && info.ty == ClusterNodeStatusType::Cluster)
         }
 
         let (active_tab, content): (_, Html) = match *self.view_state {
