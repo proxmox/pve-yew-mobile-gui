@@ -4,21 +4,22 @@ use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 
+use proxmox_yew_comp::ConfirmButton;
 use serde_json::json;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::widget::menu::{Menu, MenuItem, SplitButton};
+use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
 
-use pve_api_types::{IsRunning, NodeStatus};
+use pve_api_types::NodeStatus;
 
-use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile, TasksListButton};
+use crate::widgets::{icon_list_tile, list_tile_usage, TasksListButton};
 
 //use super::NodeResourcesPanel;
 
@@ -38,14 +39,13 @@ pub struct PveNodeDashboardPanel {
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     cmd_guard: Option<AsyncAbortGuard>,
-    running_upid: Option<String>,
 }
 
 pub enum Msg {
     Load,
     LoadResult(Result<NodeStatus, Error>),
-    CommandResult(Result<String, Error>),
-    Restart,
+    CommandResult(Result<(), Error>),
+    Reboot,
     Shutdown,
 }
 
@@ -65,7 +65,7 @@ impl PveNodeDashboardPanel {
         }));
     }
 
-    fn view_status(&self, ctx: &Context<Self>, data: &NodeStatus) -> Html {
+    fn view_status(&self, _ctx: &Context<Self>, data: &NodeStatus) -> Html {
         let mut tiles: Vec<ListTile> = Vec::new();
 
         tiles.push(
@@ -123,16 +123,21 @@ impl PveNodeDashboardPanel {
             .into()
     }
 
-    fn view_actions(&self, ctx: &Context<Self>, data: &NodeStatus) -> Html {
+    fn view_actions(&self, ctx: &Context<Self>, _data: &NodeStatus) -> Html {
+        let props = ctx.props();
         let row = Row::new()
             .padding_y(1)
             .gap(2)
             .class(pwt::css::JustifyContent::SpaceBetween)
             .with_child(
-                Button::new(tr!("Restart")).on_activate(ctx.link().callback(|_| Msg::Restart)),
+                ConfirmButton::new(tr!("Reboot"))
+                    .confirm_message(tr!("Reboot node '{0}'?", props.node))
+                    .on_activate(ctx.link().callback(|_| Msg::Reboot)),
             )
             .with_child(
-                Button::new(tr!("Shutdown")).on_activate(ctx.link().callback(|_| Msg::Shutdown)),
+                ConfirmButton::new(tr!("Shutdown"))
+                    .confirm_message(tr!("Shutdown node '{0}'?", props.node))
+                    .on_activate(ctx.link().callback(|_| Msg::Shutdown)),
             )
             .with_child(Button::new("Console"));
 
@@ -144,7 +149,6 @@ impl PveNodeDashboardPanel {
 
     fn task_button(&self, ctx: &Context<Self>) -> Html {
         TasksListButton::new()
-            .running_upid(self.running_upid.clone())
             .on_show_task_list({
                 let navigator = ctx.link().navigator().clone().unwrap();
                 let props = ctx.props();
@@ -170,7 +174,6 @@ impl Component for PveNodeDashboardPanel {
             reload_timeout: None,
             load_guard: None,
             cmd_guard: None,
-            running_upid: None,
         }
     }
 
@@ -192,27 +195,19 @@ impl Component for PveNodeDashboardPanel {
                     link.send_message(Msg::Load);
                 }));
             }
-            Msg::CommandResult(result) => {
-                match result {
-                    Ok(upid) => {
-                        self.running_upid = Some(upid);
-                    }
-                    Err(err) => {
-                        self.running_upid = None;
-                        log::info!("Command failed: {err}");
-                        //fixme: log error
-                    }
+            Msg::CommandResult(result) => match result {
+                Ok(()) => {}
+                Err(err) => {
+                    let msg = format!("Command failed: {err}");
+                    log::error!("{msg}");
+                    ctx.link().show_snackbar(SnackBar::new().message(msg));
                 }
-            }
-            Msg::Restart => {
-                //fixme: safety query
-                //self.node_command(ctx, "restart");
-                log::info!("RESTART");
+            },
+            Msg::Reboot => {
+                self.node_command(ctx, "reboot");
             }
             Msg::Shutdown => {
-                //fixme: safety query
-                //self.node_command(ctx, "shutdown");
-                log::info!("RESTART");
+                self.node_command(ctx, "shutdown");
             }
         }
         true
