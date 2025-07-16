@@ -16,11 +16,15 @@ use crate::widgets::title_subtitle_column;
 #[derive(Clone, PartialEq, Properties)]
 pub struct NodeServicesPanel {
     node: AttrValue,
+    standalone: bool,
 }
 
 impl NodeServicesPanel {
-    pub fn new(node: impl Into<AttrValue>) -> Self {
-        Self { node: node.into() }
+    pub fn new(node: impl Into<AttrValue>, standalone: bool) -> Self {
+        Self {
+            node: node.into(),
+            standalone,
+        }
     }
 }
 
@@ -53,7 +57,29 @@ fn service_state_icon(s: &ServiceStatus) -> Container {
             .style("text-align", "end")
     }
 }
+
 impl PveNodeServicesPanel {
+    fn view_service_summary(&self, ctx: &Context<Self>, data: &[ServiceStatus]) -> Html {
+        let props = ctx.props();
+        let standalone = props.standalone;
+
+        let all_running = !data.iter().any(|s| {
+            if (s.name == "corosync") && standalone {
+                return false;
+            }
+            // TODO: only one NTP provider will be active
+            (s.state != "running" && !(s.unit_state == "masked" || s.unit_state == "not-found"))
+        });
+
+        let msg = if all_running {
+            tr!("All required services running")
+        } else {
+            tr!("One or more required services not running")
+        };
+
+        title_subtitle_column(msg, None::<&str>).padding(2).into()
+    }
+
     fn view_services(&self, _ctx: &Context<Self>, data: &[ServiceStatus]) -> Html {
         let list: Vec<ListTile> = data
             .iter()
@@ -65,6 +91,7 @@ impl PveNodeServicesPanel {
             .collect();
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+            .class(pwt::css::FlexFit)
             .grid_template_columns("1fr auto")
             .into()
     }
@@ -109,8 +136,7 @@ impl Component for PveNodeServicesPanel {
         match &self.data {
             Some(Ok(data)) => Column::new()
                 .class(pwt::css::FlexFit)
-                .padding(2)
-                .gap(2)
+                .with_child(self.view_service_summary(ctx, data))
                 .with_child(self.view_services(ctx, data))
                 .into(),
             Some(Err(err)) => pwt::widget::error_message(err).into(),

@@ -1,14 +1,21 @@
 use std::rc::Rc;
 
-use pwt::props::StorageLocation;
-use pwt::state::PersistentState;
+use anyhow::Error;
 use serde::{Deserialize, Serialize};
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
+use pwt::props::StorageLocation;
+use pwt::state::PersistentState;
+use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::{Column, TabBar, TabBarItem};
+use pwt::AsyncAbortGuard;
+
+use proxmox_yew_comp::http_get;
+
+use pve_api_types::{ClusterNodeStatus, ClusterNodeStatusType};
 
 use crate::widgets::TopNavBar;
 
@@ -44,10 +51,13 @@ pub enum ViewState {
 
 pub enum Msg {
     SetViewState(ViewState),
+    SetNodeStatus(Result<ClusterNodeStatus, Error>),
 }
 
 pub struct PvePageNodeStatus {
     view_state: PersistentState<ViewState>,
+    cluster_status_guard: AsyncAbortGuard,
+    cluster_node_status: Option<ClusterNodeStatus>,
 }
 
 impl Component for PvePageNodeStatus {
@@ -61,20 +71,44 @@ impl Component for PvePageNodeStatus {
             props.node
         )));
 
-        Self { view_state }
+        let link = ctx.link().clone();
+
+        Self {
+            view_state,
+            cluster_node_status: None,
+            cluster_status_guard: AsyncAbortGuard::spawn(async move {
+                let result = http_get("/cluster/status", None).await;
+                link.send_message(Msg::SetNodeStatus(result));
+            }),
+        }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::SetViewState(view_state) => {
                 self.view_state.update(view_state);
             }
+            Msg::SetNodeStatus(result) => match result {
+                Ok(status) => {
+                    self.cluster_node_status = Some(status);
+                }
+                Err(err) => {
+                    let msg = format!("load cluster node status failed: {err}");
+                    log::error!("{msg}");
+                    ctx.link().show_snackbar(SnackBar::new().message(msg));
+                }
+            },
         }
         true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
+
+        let mut standalone = true;
+        if let Some(status) = &self.cluster_node_status {
+            standalone = status.ty == ClusterNodeStatusType::Node;
+        }
 
         let (active_tab, content): (_, Html) = match *self.view_state {
             ViewState::Dashboard => (
@@ -83,7 +117,7 @@ impl Component for PvePageNodeStatus {
             ),
             ViewState::Services => (
                 "services",
-                NodeServicesPanel::new(props.node.clone()).into(),
+                NodeServicesPanel::new(props.node.clone(), standalone).into(),
             ),
             ViewState::Updates => ("updates", NodeUpdatesPanel::new(props.node.clone()).into()),
         };
