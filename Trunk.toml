@@ -1,14 +1,4 @@
 [[hooks]]
 stage="pre_build"
-command="rust-grass"
-command_arguments= ["pwt-assets/scss/mobile-yew-style.scss", "dist/.stage/mobile-yew-style.css"]
-
-[[hooks]]
-stage="pre_build"
-command="rust-grass"
-command_arguments= ["pwt-assets/scss/crisp-yew-style.scss", "dist/.stage/crisp-yew-style.css"]
-
-[[hooks]]
-stage="post_build"
-command="cp"
-command_arguments= ["manifest.json", "dist/.stage/manifest.json"]
+command="make"
+command_arguments= ["DESTDIR=dist/.stage", "UIDIR=/pve2/yew-mobile", "install-assets"]

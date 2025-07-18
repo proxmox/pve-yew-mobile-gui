@@ -1,0 +1,60 @@
+<!--- Index template for pveproxy server -->
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <title>[% nodename %] - Proxmox Virtual Environment</title>
+
+  <link rel="manifest" href="/pve2/yew-mobile/manifest.json" />
+
+  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/font-awesome.css" />
+  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/pve.css" />
+
+  <style>
+    /* Avoid flickering (default background in firefox is always white)*/
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #333;
+      }
+    }
+
+    @media (prefers-color-scheme: light) {
+      body {
+        background: #fff;
+      }
+    }
+  </style>
+  <script type="text/javascript">
+    Proxmox = {
+	    Setup: { auth_cookie_name: 'PVEAuthCookie' },
+	    defaultLang: '[% lang %]',
+	    NodeName: '[% nodename %]',
+	    UserName: '[% username %]',
+	    CSRFPreventionToken: '[% token %]',
+	    ConsentText: '[% consenttext %]'
+    };
+  </script>
+  
+  <link rel="preload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+  <link rel="modulepreload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js">
+
+</head>
+
+<body>
+  <script type="module">
+    import init from '/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js';
+    const decompressedResponse = new Response(
+      await fetch('/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm').then(res => res.body)
+    );
+    // set correct type to allow using faster WebAssembly.instantiateStreaming
+    decompressedResponse.headers.set("Content-Type", "application/wasm");
+    init(decompressedResponse);
+  </script>
+</body>
+
+</html>

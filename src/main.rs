@@ -291,7 +291,7 @@ impl Component for PveMobileApp {
             }
         };
 
-        MaterialApp::new(render).into()
+        MaterialApp::new(render).theme_dir_prefix("/pve2/yew-mobile/css/".into()).into()
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {

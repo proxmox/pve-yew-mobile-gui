@@ -23,7 +23,7 @@
             "label": "Dashboard view displaying key metrics"
         }
     ],
-    "start_url": ".",
+    "start_url": "/",
     "display": "standalone",
     "prefer_related_applications": false,
     "theme_color": "#000000",

@@ -12,16 +12,16 @@
 }
 
 .fa-cpu::before {
-    background-image: url(./images/icon-cpu.svg);
+    background-image: url(../images/icon-cpu.svg);
 }
 
 .fa-memory::before {
-    background-image: url(./images/icon-memory.svg);
+    background-image: url(../images/icon-memory.svg);
 
 }
 
 .fa-cdrom::before {
-    background-image: url(./images/icon-cd-drive.svg);
+    background-image: url(../images/icon-cd-drive.svg);
 }
 
 .fa-2x.fa-memory::before,
