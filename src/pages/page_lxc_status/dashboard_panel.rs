@@ -13,7 +13,7 @@ use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
 use pwt::AsyncAbortGuard;
 
-use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{XTermJs, ConsoleType, http_get, http_post, percent_encoding::percent_encode_component};
 
 use pve_api_types::{IsRunning, LxcStatus};
 
@@ -143,6 +143,10 @@ impl PveLxcDashboardPanel {
     }
 
     fn view_actions(&self, ctx: &Context<Self>, data: &LxcStatus) -> Html {
+        let props = ctx.props();
+        let vmid = props.vmid;
+        let node_name = props.node.clone();
+
         let running = data.status == IsRunning::Running;
 
         let menu = Menu::new().with_item(
@@ -166,7 +170,9 @@ impl PveLxcDashboardPanel {
                     .on_activate(ctx.link().callback(|_| Msg::Start)),
             )
             .with_child(shutdown)
-            .with_child(Button::new("Console").disabled(!running));
+            .with_child(Button::new("Console").icon_class("fa fa-terminal").on_activate(move |_| {
+                XTermJs::open_xterm_js_viewer(ConsoleType::LXC(vmid.into()), &node_name, true);
+            }));
 
         MiniScroll::new(row)
             .scroll_mode(MiniScrollMode::Native)

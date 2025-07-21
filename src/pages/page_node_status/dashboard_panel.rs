@@ -4,7 +4,7 @@ use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 
-use proxmox_yew_comp::ConfirmButton;
+use proxmox_yew_comp::{ConfirmButton, ConsoleType};
 use serde_json::json;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -15,7 +15,7 @@ use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
 use pwt::AsyncAbortGuard;
 
-use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component, XTermJs};
 
 use pve_api_types::NodeStatus;
 
@@ -125,6 +125,8 @@ impl PveNodeDashboardPanel {
 
     fn view_actions(&self, ctx: &Context<Self>, _data: &NodeStatus) -> Html {
         let props = ctx.props();
+        let node_name = props.node.clone();
+
         let row = Row::new()
             .padding_y(1)
             .gap(2)
@@ -139,7 +141,9 @@ impl PveNodeDashboardPanel {
                     .confirm_message(tr!("Shutdown node '{0}'?", props.node))
                     .on_activate(ctx.link().callback(|_| Msg::Shutdown)),
             )
-            .with_child(Button::new("Console"));
+            .with_child(Button::new("Console").icon_class("fa fa-terminal").on_activate(move |_| {
+                XTermJs::open_xterm_js_viewer(ConsoleType::LoginShell, &node_name, true);
+            }));
 
         MiniScroll::new(row)
             .scroll_mode(MiniScrollMode::Native)
