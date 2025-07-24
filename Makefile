@@ -52,7 +52,7 @@ dist/mobile-yew-style.css: pwt-assets/scss/mobile-yew-style.scss
 dist/crisp-yew-style.css: pwt-assets/scss/crisp-yew-style.scss
 	rust-grass $< $@
 
-install-assets: index.html.tpl manifest.json dist/mobile-yew-style.css dist/crisp-yew-style.css
+install-assets: index.html.tpl.in manifest.json dist/mobile-yew-style.css dist/crisp-yew-style.css
 	install -dm0755 $(DESTDIR)$(UIDIR)
 	install -dm0755 $(DESTDIR)$(UIDIR)/js
 
@@ -74,7 +74,7 @@ install-assets: index.html.tpl manifest.json dist/mobile-yew-style.css dist/cris
 	install -m0644 pwt-assets/assets/fonts/RobotoFlexVariableFont.woff2 $(DESTDIR)$(UIDIR)/fonts
 	install -m0644 pwt-assets/assets/fonts/fontawesome-webfont.woff2 $(DESTDIR)$(UIDIR)/fonts
 
-	install -m0644 index.html.tpl $(DESTDIR)$(UIDIR)
+	sed -e "s/__GUI_VERSION__/v$(DEB_VERSION_UPSTREAM)/g" index.html.tpl.in > $(DESTDIR)$(UIDIR)/index.html.tpl
 	install -m0644 manifest.json $(DESTDIR)$(UIDIR)
 	install -m0644 pve.css $(DESTDIR)$(UIDIR)/css
 	install -m0644 dist/mobile-yew-style.css $(DESTDIR)$(UIDIR)/css
@@ -88,8 +88,7 @@ install: $(COMPILED_OUTPUT) install-assets
 $(BUILDDIR):
 	rm -rf $@ $@.tmp
 	mkdir -p $@.tmp/ui
-	cp -a debian/ src/ pwt-assets/ images/ pve.css index.html manifest.json Makefile Cargo.toml $@.tmp/
-	sed -e "s/__GUI_VERSION__/v$(DEB_VERSION_UPSTREAM)/g" index.html.tpl.in > $@.tmp/index.html.tpl
+	cp -a debian/ src/ pwt-assets/ images/ pve.css index.html manifest.json index.html.tpl.in Makefile Cargo.toml $@.tmp/
 	cp -a proxmox-api-types $@.tmp/
 	echo "git clone git://git.proxmox.com/git/$(PACKAGE).git\\ngit checkout $$(git rev-parse HEAD)" \
 	    > $@.tmp/debian/SOURCE
