@@ -105,7 +105,7 @@ fn switch_route(route: Route) -> Vec<Html> {
             MainNavigation::new(MainNavigationSelection::Resources).into(),
         ),
 
-        Route::Settings => (switch_route(Route::Dashboard), PageSettings::new().into()),
+        Route::Settings => (switch_route(Route::Configuration), PageSettings::new().into()),
         Route::Qemu { vmid, nodename } => (
             switch_route(Route::Resources),
             PageQemuStatus::new(nodename, vmid).into(),

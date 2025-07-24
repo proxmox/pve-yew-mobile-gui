@@ -78,7 +78,6 @@ impl Component for PveMainNavigation {
                     }
                 })
                 .label("Resources"),
-                /*
             TabBarItem::new()
                 .key("configuration")
                 .icon_class("fa fa-cogs")
@@ -89,7 +88,6 @@ impl Component for PveMainNavigation {
                     }
                 })
                 .label("Configuration"),
-                */
         ];
 
         let navigation = NavigationBar::new(nav_items).active(Key::from(active_nav));

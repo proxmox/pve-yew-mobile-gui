@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::{Column, Fa, List};
@@ -11,6 +12,7 @@ use crate::widgets::TopNavBar;
 pub struct PageConfiguration {}
 
 use crate::widgets::icon_list_tile;
+use crate::Route;
 
 impl PageConfiguration {
     pub fn new() -> Self {
@@ -19,7 +21,11 @@ impl PageConfiguration {
 }
 pub struct PvePageConfiguration {}
 
-static CONFIGS: &[(&'static str, &'static str, fn() -> Html)] = &[
+static CONFIGS: &[(&'static str, &'static str, &'static Route)] = &[
+    ("asterisk", "Settings", &Route::Settings),
+    //("unlock", "Permissions", &Route::Settings),
+
+    /*
     ("server", "Cluster", || {
         html! {}
     }),
@@ -35,10 +41,7 @@ static CONFIGS: &[(&'static str, &'static str, fn() -> Html)] = &[
     ("retweet", "Replication", || {
         html! {}
     }),
-    ("unlock", "Permissions", || {
-        html! {}
-    }),
-    ("heartbeat", "High Availability", || {
+     ("heartbeat", "High Availability", || {
         html! {}
     }),
     ("certificate", "ACME", || {
@@ -53,11 +56,13 @@ static CONFIGS: &[(&'static str, &'static str, fn() -> Html)] = &[
     ("comments-o", "Support", || {
         html! {}
     }),
+    */
 ];
 
 impl PvePageConfiguration {
-    fn create_menu(&self, _ctx: &Context<Self>) -> Html {
-        List::new(CONFIGS.len() as u64, |pos| {
+    fn create_menu(&self, ctx: &Context<Self>) -> Html {
+        let navigator = ctx.link().navigator().unwrap();
+        List::new(CONFIGS.len() as u64, move |pos| {
             let item = CONFIGS[pos as usize];
 
             icon_list_tile(
@@ -67,7 +72,10 @@ impl PvePageConfiguration {
                 None,
             )
             .interactive(true)
-            // fixme: add onclick handler
+            .onclick({
+                let navigator = navigator.clone();
+                move |_| navigator.push(item.2)
+            })
             .into()
         })
         .grid_template_columns("auto 1fr")
