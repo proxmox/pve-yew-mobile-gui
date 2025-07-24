@@ -12,8 +12,8 @@
 
   <link rel="manifest" href="/pve2/yew-mobile/manifest.json" />
 
-  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/font-awesome.css" />
-  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/pve.css" />
+  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/font-awesome.css?[% version %]" />
+  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/pve.css?[% version %]" />
 
   <style>
     /* Avoid flickering (default background in firefox is always white)*/
@@ -36,20 +36,20 @@
 	    NodeName: '[% nodename %]',
 	    UserName: '[% username %]',
 	    CSRFPreventionToken: '[% token %]',
-	    ConsentText: '[% consenttext %]'
+	    ConsentText: '[% consenttext %]',
     };
   </script>
   
-  <link rel="preload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-  <link rel="modulepreload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js">
+  <link rel="preload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm?[% version %]" as="fetch" type="application/wasm" crossorigin="">
+  <link rel="modulepreload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js?[% version %]">
 
 </head>
 
 <body>
   <script type="module">
-    import init from '/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js';
+    import init from '/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js?[% version %]';
     const decompressedResponse = new Response(
-      await fetch('/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm').then(res => res.body)
+      await fetch('/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm?[% version %]').then(res => res.body)
     );
     // set correct type to allow using faster WebAssembly.instantiateStreaming
     decompressedResponse.headers.set("Content-Type", "application/wasm");
