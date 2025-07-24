@@ -14,14 +14,12 @@ use yew_router::scope_ext::RouterScopeExt;
 use yew_router::Routable;
 
 use pwt::prelude::*;
-use pwt::state::LanguageInfo;
 use pwt::touch::MaterialApp;
 
 use proxmox_login::Authentication;
 
 use proxmox_yew_comp::{
-    authentication_from_cookie, http_set_auth, percent_encoding::percent_encode_component,
-    register_auth_observer, AuthObserver,
+    authentication_from_cookie, available_language_list, http_set_auth, percent_encoding::percent_encode_component, register_auth_observer, AuthObserver
 };
 
 pub enum Msg {
@@ -328,10 +326,6 @@ fn main() {
 
     pwt::state::set_available_themes(&["Mobile", "Crisp"]);
 
-    pwt::state::set_available_languages(vec![LanguageInfo::new(
-        "en",
-        "English",
-        gettext_noop("English"),
-    )]);
+    pwt::state::set_available_languages(available_language_list());
     yew::Renderer::<PveMobileApp>::new().render();
 }
