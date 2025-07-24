@@ -1,3 +1,13 @@
+pve-yew-mobile-gui (0.3.0) trixie; urgency=medium
+
+  * re-add configuration nav menu
+
+  * add versions to ui file hrefs
+
+  * add all supported languages to the language selector
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 24 Jul 2025 10:04:50 +0200
+
 pve-yew-mobile-gui (0.2.0) trixie; urgency=medium
 
   * disable configuration menu (not implemented)
