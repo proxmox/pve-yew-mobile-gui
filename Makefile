@@ -79,6 +79,8 @@ install-assets: index.html.tpl.in manifest.json dist/mobile-yew-style.css dist/c
 	install -m0644 pve.css $(DESTDIR)$(UIDIR)/css
 	install -m0644 dist/mobile-yew-style.css $(DESTDIR)$(UIDIR)/css
 	install -m0644 dist/crisp-yew-style.css $(DESTDIR)$(UIDIR)/css
+	# install translation catalogs
+	install -m0644 /usr/share/pve-yew-mobile-i18n/pve-yew-mobile-catalog-*.mo   $(DESTDIR)$(UIDIR)
 
 install: $(COMPILED_OUTPUT) install-assets
 	install -m0644 dist/pve-yew-mobile-gui_bundle.js $(DESTDIR)$(UIDIR)/js
