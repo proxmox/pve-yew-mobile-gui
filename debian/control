@@ -41,6 +41,7 @@ Build-Depends: cargo:native,
                proxmox-wasm-builder,
                rust-grass,
                rust-llvm,
+	       pve-yew-mobile-i18n,
 Maintainer: Proxmox Support Team <support@proxmox.com>
 Standards-Version: 4.6.1
 Vcs-Git: git://git.proxmox.com/git/pve-yew-mobile-gui.git
