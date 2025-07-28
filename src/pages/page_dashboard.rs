@@ -9,13 +9,13 @@ use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::widget::{AlertDialog, Card, Column, Fa, List, ListTile};
+use pwt::widget::{Card, Column, Fa, List, ListTile};
 
 use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
 };
 
-use proxmox_yew_comp::http_get;
+use proxmox_yew_comp::{http_get, SubscriptionAlert};
 
 use crate::pages::ResourceFilter;
 use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
@@ -34,7 +34,7 @@ impl PageDashboard {
 pub struct PvePageDashboard {
     nodes: Result<Vec<ClusterNodeIndexResponse>, String>,
     resources: Result<Vec<ClusterResource>, String>,
-    subscription_ok: bool,
+    subscription_error: Option<String>, // None == Ok
     show_subscription_alert: bool,
 }
 pub enum Msg {
@@ -59,7 +59,7 @@ impl PvePageDashboard {
     }
 
     fn create_subscription_card(&self, ctx: &Context<Self>) -> Option<Html> {
-        if !self.subscription_ok {
+        if self.subscription_error.is_some() {
             Some(
                 Card::new()
                     .padding(2)
@@ -261,7 +261,7 @@ impl PvePageDashboard {
                 tiles.push(
                     icon_list_tile(
                         Fa::new("desktop"),
-                        "Virtual Machines",
+                        tr!("Virtual Machines"),
                         format!("{vm_count} ({vm_online_count} online)"),
                         None,
                     )
@@ -282,7 +282,7 @@ impl PvePageDashboard {
                 tiles.push(
                     icon_list_tile(
                         Fa::new("cube"),
-                        "LXC Container",
+                        tr!("LXC Container"),
                         format!("{ct_count} ({ct_online_count} online)"),
                         None,
                     )
@@ -303,7 +303,7 @@ impl PvePageDashboard {
                 tiles.push(
                     icon_list_tile(
                         Fa::new("database"),
-                        "Storage",
+                        tr!("Storage"),
                         format!("{storage_count} ({storage_online_count} online)"),
                         None,
                     )
@@ -343,26 +343,6 @@ impl PvePageDashboard {
             })
             .into()
     }
-
-    fn create_subscription_alert(&self, ctx: &Context<Self>) -> AlertDialog {
-        let link = "https://www.proxmox.com/proxmox-ve/pricing";
-
-        let msg = Column::new()
-            .gap(1)
-            .with_child(html! {<p>{tr!("One or more nodes do not have a valid subscription.")}</p>})
-            .with_child(html! {<p>{tr!(r#"
-                The Proxmox team works very hard to make sure you are running the best
-                software and getting stable updates and security enhancements,
-                as well as quick enterprise support."#)
-            }</p>})
-            .with_child(
-                html! {<p><a href={link}>{tr!("Please consider to buy a subscription.")}</a></p>},
-            );
-
-        AlertDialog::new(msg)
-            .title("Subscription")
-            .on_close(ctx.link().callback(|_| Msg::ConfirmSubscription))
-    }
 }
 
 impl Component for PvePageDashboard {
@@ -374,7 +354,7 @@ impl Component for PvePageDashboard {
             nodes: Err(format!("no data loaded")),
             resources: Err(format!("no data loaded")),
             show_subscription_alert: false,
-            subscription_ok: true, // assume ok by default
+            subscription_error: None, // assume ok by default
         };
         me.load(ctx);
         me
@@ -389,15 +369,46 @@ impl Component for PvePageDashboard {
                 self.nodes = result.map_err(|err| err.to_string());
 
                 if let Ok(nodes) = &self.nodes {
-                    self.subscription_ok = nodes.iter().fold(true, |mut acc, item| {
-                        if item.level.as_deref().unwrap_or("").is_empty() {
-                            acc = false;
+                    let mut level = None;
+                    let mut mixed = false;
+
+                    for item in nodes.iter() {
+                        if item.status == ClusterNodeIndexResponseStatus::Offline {
+                            continue;
                         }
-                        acc
-                    });
+                        let node_level = item.level.as_deref().unwrap_or("");
+                        if node_level.is_empty() {
+                            // no subscription beats all, set it and break the loop
+                            level = None;
+                            mixed = false;
+                            break;
+                        }
+                        if level.is_none() {
+                            level = Some(node_level);
+                        } else if level != Some(node_level) {
+                            mixed = true;
+                        }
+                    }
+
+                    let single_node = nodes.len() == 1;
+
+                    if level.is_some() {
+                        if mixed {
+                            self.subscription_error = Some(String::from("notsame"));
+                        } else {
+                            self.subscription_error = None;
+                        }
+                    } else {
+                        self.subscription_error = Some(String::from(if single_node {
+                            "notfound"
+                        } else {
+                            "notall"
+                        }));
+                    }
 
                     if !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed) {
-                        SUBSCRIPTION_CONFIRMED.store(self.subscription_ok, Ordering::Relaxed);
+                        SUBSCRIPTION_CONFIRMED
+                            .store(self.subscription_error.is_none(), Ordering::Relaxed);
                     }
                 }
             }
@@ -406,7 +417,7 @@ impl Component for PvePageDashboard {
                 SUBSCRIPTION_CONFIRMED.store(true, Ordering::Relaxed);
             }
             Msg::ShowSubscriptionAlert => {
-                if !self.subscription_ok {
+                if self.subscription_error.is_some() {
                     self.show_subscription_alert = true;
                 }
             }
@@ -437,9 +448,15 @@ impl Component for PvePageDashboard {
             );
         */
 
-        let alert = (self.show_subscription_alert
-            || !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed))
-        .then(|| self.create_subscription_alert(ctx));
+        let mut alert = None;
+        if let Some(status) = &self.subscription_error {
+            if self.show_subscription_alert || !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed) {
+                alert = Some(
+                    SubscriptionAlert::new(status.clone())
+                        .on_close(ctx.link().callback(|_| Msg::ConfirmSubscription)),
+                );
+            }
+        }
 
         Column::new()
             .class("pwt-fit")
