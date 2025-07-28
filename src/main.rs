@@ -19,7 +19,8 @@ use pwt::touch::MaterialApp;
 use proxmox_login::Authentication;
 
 use proxmox_yew_comp::{
-    authentication_from_cookie, available_language_list, http_set_auth, percent_encoding::percent_encode_component, register_auth_observer, AuthObserver
+    authentication_from_cookie, available_language_list, http_set_auth,
+    percent_encoding::percent_encode_component, register_auth_observer, AuthObserver,
 };
 
 pub enum Msg {
@@ -103,7 +104,10 @@ fn switch_route(route: Route) -> Vec<Html> {
             MainNavigation::new(MainNavigationSelection::Resources).into(),
         ),
 
-        Route::Settings => (switch_route(Route::Configuration), PageSettings::new().into()),
+        Route::Settings => (
+            switch_route(Route::Configuration),
+            PageSettings::new().into(),
+        ),
         Route::Qemu { vmid, nodename } => (
             switch_route(Route::Resources),
             PageQemuStatus::new(nodename, vmid).into(),
@@ -289,9 +293,12 @@ impl Component for PveMobileApp {
             }
         };
 
-        MaterialApp::new(render).theme_dir_prefix("/pve2/yew-mobile/css/".into()).catalog_url_builder(|lang: &String| {
-            format!("/pve2/yew-mobile/pve-yew-mobile-catalog-{lang}.mo")
-        }).into()
+        MaterialApp::new(render)
+            .theme_dir_prefix("/pve2/yew-mobile/css/".into())
+            .catalog_url_builder(|lang: &String| {
+                format!("/pve2/yew-mobile/pve-yew-mobile-catalog-{lang}.mo")
+            })
+            .into()
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {

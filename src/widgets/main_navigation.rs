@@ -64,7 +64,7 @@ impl Component for PveMainNavigation {
                         navigator.push(&crate::Route::Dashboard);
                     }
                 })
-                .label("Dashboard"),
+                .label(tr!("Dashboard")),
             TabBarItem::new()
                 .key("resources")
                 .icon_class("fa fa-book")
@@ -77,7 +77,7 @@ impl Component for PveMainNavigation {
                         // navigator.push(&crate::Route::Resources);
                     }
                 })
-                .label("Resources"),
+                .label(tr!("Resources")),
             TabBarItem::new()
                 .key("configuration")
                 .icon_class("fa fa-cogs")
@@ -87,7 +87,7 @@ impl Component for PveMainNavigation {
                         navigator.push(&crate::Route::Configuration);
                     }
                 })
-                .label("Configuration"),
+                .label(tr!("Configuration")),
         ];
 
         let navigation = NavigationBar::new(nav_items).active(Key::from(active_nav));
