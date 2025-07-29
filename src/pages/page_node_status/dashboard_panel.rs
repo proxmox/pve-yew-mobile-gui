@@ -141,9 +141,13 @@ impl PveNodeDashboardPanel {
                     .confirm_message(tr!("Shutdown node '{0}'?", props.node))
                     .on_activate(ctx.link().callback(|_| Msg::Shutdown)),
             )
-            .with_child(Button::new("Console").icon_class("fa fa-terminal").on_activate(move |_| {
-                XTermJs::open_xterm_js_viewer(ConsoleType::LoginShell, &node_name, true);
-            }));
+            .with_child(
+                Button::new("Console")
+                    .icon_class("fa fa-terminal")
+                    .on_activate(move |_| {
+                        XTermJs::open_xterm_js_viewer(ConsoleType::LoginShell, &node_name, true);
+                    }),
+            );
 
         MiniScroll::new(row)
             .scroll_mode(MiniScrollMode::Native)

@@ -13,7 +13,9 @@ use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
 use pwt::AsyncAbortGuard;
 
-use proxmox_yew_comp::{XTermJs, ConsoleType, http_get, http_post, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{
+    http_get, http_post, percent_encoding::percent_encode_component, ConsoleType, XTermJs,
+};
 
 use pve_api_types::{IsRunning, QemuStatus};
 
@@ -170,9 +172,17 @@ impl PveQemuDashboardPanel {
                     .on_activate(ctx.link().callback(|_| Msg::Start)),
             )
             .with_child(shutdown)
-            .with_child(Button::new("Console").icon_class("fa fa-terminal").on_activate(move |_| {
-                XTermJs::open_xterm_js_viewer(ConsoleType::KVM(vmid.into()), &node_name, true);
-            }));
+            .with_child(
+                Button::new("Console")
+                    .icon_class("fa fa-terminal")
+                    .on_activate(move |_| {
+                        XTermJs::open_xterm_js_viewer(
+                            ConsoleType::KVM(vmid.into()),
+                            &node_name,
+                            true,
+                        );
+                    }),
+            );
 
         MiniScroll::new(row)
             .scroll_mode(MiniScrollMode::Native)
