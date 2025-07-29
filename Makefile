@@ -7,7 +7,6 @@ BUILDDIR ?= $(PACKAGE)-$(DEB_VERSION_UPSTREAM)
 ORIG_SRC_TAR=$(PACKAGE)_$(DEB_VERSION_UPSTREAM).orig.tar.gz
 
 DEB=$(PACKAGE)_$(DEB_VERSION)_$(DEB_HOST_ARCH).deb
-DBG_DEB=$(PACKAGE)-dbgsym_$(DEB_VERSION)_$(DEB_HOST_ARCH).deb
 DSC=$(PACKAGE)_$(DEB_VERSION).dsc
 
 # TODO: adapt for yew ui
@@ -101,7 +100,6 @@ $(ORIG_SRC_TAR): $(BUILDDIR)
 
 .PHONY: deb
 deb: $(DEB)
-$(DBG_DEB): $(DEB)
 $(DEB): $(BUILDDIR)
 	cd $(BUILDDIR); dpkg-buildpackage -b -uc -us
 	lintian $(DEB)
@@ -122,8 +120,8 @@ sbuild: $(DSC)
 
 .PHONY: upload
 upload: UPLOAD_DIST ?= $(DEB_DISTRIBUTION)
-upload: $(DEB) $(DBG_DEB)
-	tar cf - $(DEB) $(DBG_DEB) |ssh -X repoman@repo.proxmox.com -- upload --product pve --dist $(UPLOAD_DIST) --arch $(DEB_HOST_ARCH)
+upload: $(DEB)
+	tar cf - $(DEB) |ssh -X repoman@repo.proxmox.com -- upload --product pve --dist $(UPLOAD_DIST) --arch $(DEB_HOST_ARCH)
 
 .PHONY: clean distclean
 distclean: clean
