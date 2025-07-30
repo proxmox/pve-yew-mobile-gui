@@ -1,3 +1,14 @@
+pve-yew-mobile-gui (0.5.1) trixie; urgency=medium
+
+  * do not re-ship translations but depend on the package to make updates
+    easier.
+
+  * rework package file locations to avoid introducing cruft already.
+
+  * index.tpl: depend only on template-toolkit variables provided by pveproxy
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 31 Jul 2025 01:00:02 +0200
+
 pve-yew-mobile-gui (0.5.0) trixie; urgency=medium
 
   * lxc: add reboot command, confirm stop/shutdown/reboot actions
