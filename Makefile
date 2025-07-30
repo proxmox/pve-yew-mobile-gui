@@ -19,7 +19,7 @@ endif
 
 DESTDIR =
 PREFIX = /usr
-UIDIR = $(PREFIX)/share/javascript/pve-yew-mobile-gui
+UIDIR = $(PREFIX)/share/pve-yew-mobile-gui
 
 COMPILED_OUTPUT := \
 	dist/pve-yew-mobile-gui_bundle.js \
