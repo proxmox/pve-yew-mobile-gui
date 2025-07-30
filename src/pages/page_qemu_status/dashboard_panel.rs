@@ -4,15 +4,19 @@ use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 
+use serde_json::{json, Value};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
-use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
+use pwt::widget::{
+    Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
+};
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::utils::lookup_task_description;
 use proxmox_yew_comp::{
     http_get, http_post, percent_encoding::percent_encode_component, ConsoleType, XTermJs,
 };
@@ -44,15 +48,26 @@ pub struct PveQemuDashboardPanel {
     load_guard: Option<AsyncAbortGuard>,
     cmd_guard: Option<AsyncAbortGuard>,
     running_upid: Option<String>,
+    confirm_vm_command: Option<(String, String, Option<Value>)>,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum ConfirmableCommands {
+    Pause,
+    Reboot,
+    Reset,
+    Suspend,
+    Stop,
+    Shutdown,
 }
 
 pub enum Msg {
     Load,
     LoadResult(Result<QemuStatus, Error>),
     CommandResult(Result<String, Error>),
-    Start,
-    Stop,
-    Shutdown,
+    Confirm(ConfirmableCommands),
+    CloseDialog,
+    VmCommand((String, Option<Value>)),
 }
 
 fn get_status_url(node: &str, vmid: u32, cmd: &str) -> String {
@@ -70,15 +85,55 @@ fn large_fa_icon(name: &str, running: bool) -> Fa {
         .class(running.then(|| "pwt-color-primary"))
 }
 
+fn format_guest_task_confirmation(
+    command: ConfirmableCommands,
+    vmid: u32,
+    guest_name: Option<&str>,
+) -> String {
+    let task_type = match command {
+        ConfirmableCommands::Pause => "qmpause",
+        ConfirmableCommands::Suspend => "qmsuspend",
+        ConfirmableCommands::Reset => "qmreset",
+        ConfirmableCommands::Reboot => "qmreboot",
+        ConfirmableCommands::Shutdown => "qmshutdown",
+        ConfirmableCommands::Stop => "qmstop",
+    };
+    let vm_name_or_id = match guest_name {
+        Some(name) => name.to_string(),
+        None => vmid.to_string(),
+    };
+    lookup_task_description(task_type, Some(&vm_name_or_id)).unwrap()
+}
+
 impl PveQemuDashboardPanel {
-    fn vm_command(&mut self, ctx: &Context<Self>, cmd: &str) {
+    fn vm_command(&mut self, ctx: &Context<Self>, cmd: &str, param: Option<Value>) {
         let props = ctx.props();
         let url = get_status_url(&props.node, props.vmid, cmd);
         let link = ctx.link().clone();
         self.cmd_guard = Some(AsyncAbortGuard::spawn(async move {
-            let result = http_post(&url, None).await;
+            let result = http_post(&url, param.clone()).await;
             link.send_message(Msg::CommandResult(result));
         }));
+    }
+
+    fn confirmed_vm_command(&mut self, ctx: &Context<Self>, command: ConfirmableCommands) {
+        let props = ctx.props();
+        let guest_name = match &self.data {
+            Some(Ok(data)) => data.name.as_deref(),
+            _ => None,
+        };
+        let confirm_msg = format_guest_task_confirmation(command, props.vmid, guest_name);
+
+        let (command_str, param) = match command {
+            ConfirmableCommands::Pause => ("suspend", None),
+            ConfirmableCommands::Suspend => ("suspend", Some(json!({ "todisk": true }))),
+            ConfirmableCommands::Reset => ("reset", None),
+            ConfirmableCommands::Reboot => ("reboot", None),
+            ConfirmableCommands::Shutdown => ("shutdown", None),
+            ConfirmableCommands::Stop => ("stop", None),
+        };
+
+        self.confirm_vm_command = Some((command_str.into(), confirm_msg, param));
     }
 
     fn view_status(&self, ctx: &Context<Self>, data: &QemuStatus) -> Html {
@@ -92,7 +147,12 @@ impl PveQemuDashboardPanel {
             format!("{} {}", data.vmid, data.name.as_deref().unwrap_or("")),
             &props.node,
             Some(vm_icon.clone().into()),
-            Some(data.status.to_string().into()),
+            Some(
+                data.qmpstatus
+                    .clone()
+                    .unwrap_or(data.status.to_string())
+                    .into(),
+            ),
         ));
 
         if let Some(Ok(data)) = &self.data {
@@ -149,31 +209,71 @@ impl PveQemuDashboardPanel {
         let vmid = props.vmid;
         let node_name = props.node.clone();
 
-        let running = data.status == IsRunning::Running;
+        let qmpstatus = data.qmpstatus.as_deref().unwrap_or("");
+        let running = (data.status == IsRunning::Running);
 
-        let menu = Menu::new().with_item(
-            MenuItem::new("Stop")
-                .disabled(!running)
-                .on_select(ctx.link().callback(|_| Msg::Stop)),
-        );
+        let menu = Menu::new()
+            .with_item(
+                MenuItem::new(tr!("Reboot")).disabled(!running).on_select(
+                    ctx.link()
+                        .callback(|_| Msg::Confirm(ConfirmableCommands::Reboot)),
+                ),
+            )
+            .with_item(
+                MenuItem::new(tr!("Pause")).disabled(!running).on_select(
+                    ctx.link()
+                        .callback(|_| Msg::Confirm(ConfirmableCommands::Pause)),
+                ),
+            )
+            .with_item(
+                MenuItem::new(tr!("Hibernate"))
+                    .disabled(!running)
+                    .on_select(
+                        ctx.link()
+                            .callback(|_| Msg::Confirm(ConfirmableCommands::Suspend)),
+                    ),
+            )
+            .with_item(
+                MenuItem::new(tr!("Stop")).disabled(!running).on_select(
+                    ctx.link()
+                        .callback(|_| Msg::Confirm(ConfirmableCommands::Stop)),
+                ),
+            )
+            .with_item(
+                MenuItem::new(tr!("Reset")).disabled(!running).on_select(
+                    ctx.link()
+                        .callback(|_| Msg::Confirm(ConfirmableCommands::Reset)),
+                ),
+            );
 
-        let shutdown = SplitButton::new("Shutdown")
+        let shutdown = SplitButton::new(tr!("Shutdown"))
             .disabled(!running)
             .menu(menu)
-            .on_activate(ctx.link().callback(|_| Msg::Shutdown));
+            .on_activate(
+                ctx.link()
+                    .callback(|_| Msg::Confirm(ConfirmableCommands::Shutdown)),
+            );
+
+        let resume = ["prelaunch", "paused", "suspended"].contains(&qmpstatus);
 
         let row = Row::new()
             .padding_y(1)
             .gap(2)
             .class(pwt::css::JustifyContent::SpaceBetween)
-            .with_child(
-                Button::new("Start")
-                    .disabled(running)
-                    .on_activate(ctx.link().callback(|_| Msg::Start)),
-            )
+            .with_child(if resume {
+                Button::new(tr!("Resume")).on_activate(
+                    ctx.link()
+                        .callback(|_| Msg::VmCommand(("resume".into(), None))),
+                )
+            } else {
+                Button::new(tr!("Start")).disabled(running).on_activate(
+                    ctx.link()
+                        .callback(|_| Msg::VmCommand(("start".into(), None))),
+                )
+            })
             .with_child(shutdown)
             .with_child(
-                Button::new("Console")
+                Button::new(tr!("Console"))
                     .icon_class("fa fa-terminal")
                     .on_activate(move |_| {
                         XTermJs::open_xterm_js_viewer(
@@ -221,12 +321,16 @@ impl Component for PveQemuDashboardPanel {
             load_guard: None,
             cmd_guard: None,
             running_upid: None,
+            confirm_vm_command: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::CloseDialog => {
+                self.confirm_vm_command = None;
+            }
             Msg::Load => {
                 let link = ctx.link().clone();
                 let url = get_status_url(&props.node, props.vmid, "current");
@@ -242,9 +346,10 @@ impl Component for PveQemuDashboardPanel {
                     link.send_message(Msg::Load);
                 }));
             }
+            Msg::VmCommand((ref command_str, ref param)) => {
+                self.vm_command(ctx, command_str, param.clone())
+            }
             Msg::CommandResult(result) => {
-                log::info!("Result {:?}", result);
-
                 match result {
                     Ok(upid) => {
                         self.running_upid = Some(upid);
@@ -256,25 +361,43 @@ impl Component for PveQemuDashboardPanel {
                     }
                 }
             }
-            Msg::Start => self.vm_command(ctx, "start"),
-            Msg::Stop => self.vm_command(ctx, "stop"),
-            Msg::Shutdown => self.vm_command(ctx, "shutdown"),
+            Msg::Confirm(command) => self.confirmed_vm_command(ctx, command),
         }
         true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
+
         match &self.data {
-            Some(Ok(data)) => Column::new()
-                .class(pwt::css::FlexFit)
-                .padding(2)
-                .gap(2)
-                .with_child(self.view_status(ctx, data))
-                .with_child(self.view_actions(ctx, data))
-                .with_child(self.task_button(ctx))
-                .with_child(QemuHardwarePanel::new(props.node.clone(), props.vmid))
-                .into(),
+            Some(Ok(data)) => {
+                let confirm_dialog =
+                    self.confirm_vm_command
+                        .as_ref()
+                        .map(|(command, confirm_msg, param)| {
+                            ConfirmDialog::default()
+                                .confirm_message(confirm_msg)
+                                .on_close(ctx.link().callback(|_| Msg::CloseDialog))
+                                .on_confirm({
+                                    let command = command.clone();
+                                    let param = param.clone();
+                                    ctx.link().callback(move |_| {
+                                        Msg::VmCommand((command.clone(), param.clone()))
+                                    })
+                                })
+                        });
+
+                Column::new()
+                    .class(pwt::css::FlexFit)
+                    .padding(2)
+                    .gap(2)
+                    .with_child(self.view_status(ctx, data))
+                    .with_child(self.view_actions(ctx, data))
+                    .with_child(self.task_button(ctx))
+                    .with_child(QemuHardwarePanel::new(props.node.clone(), props.vmid))
+                    .with_optional_child(confirm_dialog)
+                    .into()
+            }
             Some(Err(err)) => pwt::widget::error_message(err).into(),
             None => Progress::new().class("pwt-delay-visibility").into(),
         }
