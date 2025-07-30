@@ -142,9 +142,9 @@ impl Component for PveTopNavBar {
                 .into()
         } else {
             let src = if self.dark_mode {
-                "/pve2/yew-mobile/images/proxmox_logo_icon_black.png"
+                "/yew-mobile/images/proxmox_logo_icon_black.png"
             } else {
-                "/pve2/yew-mobile/images/proxmox_logo_icon_white.png"
+                "/yew-mobile/images/proxmox_logo_icon_white.png"
             };
             html! { <img class="pwt-navbar-brand" {src} alt="Proxmox logo"/> }
         };

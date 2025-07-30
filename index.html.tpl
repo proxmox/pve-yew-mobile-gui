@@ -1,7 +1,7 @@
 <!--- Index template for pveproxy server -->
 [%
     USE date;
-    base_path = yew_mobile_base_path or '/pve2/yew-mobile';
+    base_path = yew_mobile_base_path or '/yew-mobile';
     ui_version = yew_mobile_mtime or date.now;
     i18n_version = i18n_yew_mobile_mtime or date.now;
 %]

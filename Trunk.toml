@@ -1,4 +1,4 @@
 [[hooks]]
 stage="pre_build"
 command="make"
-command_arguments= ["DESTDIR=dist/.stage", "UIDIR=/pve2/yew-mobile", "install-assets"]
+command_arguments= ["DESTDIR=dist/.stage", "UIDIR=/yew-mobile", "install-assets"]
