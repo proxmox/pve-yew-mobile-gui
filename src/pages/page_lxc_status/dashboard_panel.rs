@@ -9,10 +9,14 @@ use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
+use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
-use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
+use pwt::widget::{
+    Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
+};
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::utils::lookup_task_description;
 use proxmox_yew_comp::{
     http_get, http_post, percent_encoding::percent_encode_component, ConsoleType, XTermJs,
 };
@@ -44,15 +48,23 @@ pub struct PveLxcDashboardPanel {
     load_guard: Option<AsyncAbortGuard>,
     cmd_guard: Option<AsyncAbortGuard>,
     running_upid: Option<String>,
+    confirm_lxc_command: Option<(String, String)>,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum ConfirmableCommands {
+    Reboot,
+    Stop,
+    Shutdown,
 }
 
 pub enum Msg {
     Load,
     LoadResult(Result<LxcStatus, Error>),
     CommandResult(Result<String, Error>),
-    Start,
-    Stop,
-    Shutdown,
+    LxcCommand(String),
+    Confirm(ConfirmableCommands),
+    CloseDialog,
 }
 
 fn get_status_url(node: &str, vmid: u32, cmd: &str) -> String {
@@ -70,8 +82,25 @@ fn large_fa_icon(name: &str, running: bool) -> Fa {
         .class(running.then(|| "pwt-color-primary"))
 }
 
+fn format_guest_task_confirmation(
+    command: ConfirmableCommands,
+    vmid: u32,
+    guest_name: Option<&str>,
+) -> String {
+    let task_type = match command {
+        ConfirmableCommands::Reboot => "vzreboot",
+        ConfirmableCommands::Shutdown => "vzshutdown",
+        ConfirmableCommands::Stop => "vzstop",
+    };
+    let lxc_name_or_id = match guest_name {
+        Some(name) => name.to_string(),
+        None => vmid.to_string(),
+    };
+    lookup_task_description(task_type, Some(&lxc_name_or_id)).unwrap()
+}
+
 impl PveLxcDashboardPanel {
-    fn vm_command(&mut self, ctx: &Context<Self>, cmd: &str) {
+    fn lxc_command(&mut self, ctx: &Context<Self>, cmd: &str) {
         let props = ctx.props();
         let url = get_status_url(&props.node, props.vmid, cmd);
         let link = ctx.link().clone();
@@ -79,6 +108,23 @@ impl PveLxcDashboardPanel {
             let result = http_post(&url, None).await;
             link.send_message(Msg::CommandResult(result));
         }));
+    }
+
+    fn confirmed_lxc_command(&mut self, ctx: &Context<Self>, command: ConfirmableCommands) {
+        let props = ctx.props();
+        let guest_name = match &self.data {
+            Some(Ok(data)) => data.name.as_deref(),
+            _ => None,
+        };
+        let confirm_msg = format_guest_task_confirmation(command, props.vmid, guest_name);
+
+        let command_str = match command {
+            ConfirmableCommands::Reboot => "reboot",
+            ConfirmableCommands::Shutdown => "shutdown",
+            ConfirmableCommands::Stop => "stop",
+        };
+
+        self.confirm_lxc_command = Some((command_str.into(), confirm_msg));
     }
 
     fn view_status(&self, ctx: &Context<Self>, data: &LxcStatus) -> Html {
@@ -151,29 +197,40 @@ impl PveLxcDashboardPanel {
 
         let running = data.status == IsRunning::Running;
 
-        let menu = Menu::new().with_item(
-            MenuItem::new("Stop")
-                .disabled(!running)
-                .on_select(ctx.link().callback(|_| Msg::Stop)),
-        );
+        let menu = Menu::new()
+            .with_item(
+                MenuItem::new(tr!("Reboot")).disabled(!running).on_select(
+                    ctx.link()
+                        .callback(|_| Msg::Confirm(ConfirmableCommands::Reboot)),
+                ),
+            )
+            .with_item(
+                MenuItem::new(tr!("Stop")).disabled(!running).on_select(
+                    ctx.link()
+                        .callback(|_| Msg::Confirm(ConfirmableCommands::Stop)),
+                ),
+            );
 
-        let shutdown = SplitButton::new("Shutdown")
+        let shutdown = SplitButton::new(tr!("Shutdown"))
             .disabled(!running)
             .menu(menu)
-            .on_activate(ctx.link().callback(|_| Msg::Shutdown));
+            .on_activate(
+                ctx.link()
+                    .callback(|_| Msg::Confirm(ConfirmableCommands::Shutdown)),
+            );
 
         let row = Row::new()
             .padding_y(1)
             .gap(2)
             .class(pwt::css::JustifyContent::SpaceBetween)
             .with_child(
-                Button::new("Start")
+                Button::new(tr!("Start"))
                     .disabled(running)
-                    .on_activate(ctx.link().callback(|_| Msg::Start)),
+                    .on_activate(ctx.link().callback(|_| Msg::LxcCommand("start".into()))),
             )
             .with_child(shutdown)
             .with_child(
-                Button::new("Console")
+                Button::new(tr!("Console"))
                     .icon_class("fa fa-terminal")
                     .on_activate(move |_| {
                         XTermJs::open_xterm_js_viewer(
@@ -221,6 +278,7 @@ impl Component for PveLxcDashboardPanel {
             load_guard: None,
             cmd_guard: None,
             running_upid: None,
+            confirm_lxc_command: None,
         }
     }
 
@@ -242,23 +300,21 @@ impl Component for PveLxcDashboardPanel {
                     link.send_message(Msg::Load);
                 }));
             }
-            Msg::CommandResult(result) => {
-                log::info!("Result {:?}", result);
-
-                match result {
-                    Ok(upid) => {
-                        self.running_upid = Some(upid);
-                    }
-                    Err(err) => {
-                        self.running_upid = None;
-                        log::info!("Command failed: {err}");
-                        //fixme: log error
-                    }
+            Msg::CommandResult(result) => match result {
+                Ok(upid) => {
+                    self.running_upid = Some(upid);
                 }
-            }
-            Msg::Start => self.vm_command(ctx, "start"),
-            Msg::Stop => self.vm_command(ctx, "stop"),
-            Msg::Shutdown => self.vm_command(ctx, "shutdown"),
+                Err(err) => {
+                    self.running_upid = None;
+                    let message = format!("Command failed: {err}");
+                    ctx.link()
+                        .show_snackbar(SnackBar::new().message(message.clone()));
+                    log::error!("{}", message);
+                }
+            },
+            Msg::Confirm(command) => self.confirmed_lxc_command(ctx, command),
+            Msg::LxcCommand(command) => self.lxc_command(ctx, &command),
+            Msg::CloseDialog => self.confirm_lxc_command = None,
         }
         true
     }
@@ -266,15 +322,32 @@ impl Component for PveLxcDashboardPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         match &self.data {
-            Some(Ok(data)) => Column::new()
-                .class(pwt::css::FlexFit)
-                .padding(2)
-                .gap(2)
-                .with_child(self.view_status(ctx, data))
-                .with_child(self.view_actions(ctx, data))
-                .with_child(self.task_button(ctx))
-                .with_child(LxcResourcesPanel::new(props.node.clone(), props.vmid))
-                .into(),
+            Some(Ok(data)) => {
+                let confirm_dialog =
+                    self.confirm_lxc_command
+                        .as_ref()
+                        .map(|(command, confirm_msg)| {
+                            ConfirmDialog::default()
+                                .confirm_message(confirm_msg)
+                                .on_close(ctx.link().callback(|_| Msg::CloseDialog))
+                                .on_confirm({
+                                    let command = command.clone();
+                                    ctx.link()
+                                        .callback(move |_| Msg::LxcCommand(command.clone()))
+                                })
+                        });
+
+                Column::new()
+                    .class(pwt::css::FlexFit)
+                    .padding(2)
+                    .gap(2)
+                    .with_child(self.view_status(ctx, data))
+                    .with_child(self.view_actions(ctx, data))
+                    .with_child(self.task_button(ctx))
+                    .with_child(LxcResourcesPanel::new(props.node.clone(), props.vmid))
+                    .with_optional_child(confirm_dialog)
+                    .into()
+            }
             Some(Err(err)) => pwt::widget::error_message(err).into(),
             None => Progress::new().class("pwt-delay-visibility").into(),
         }
