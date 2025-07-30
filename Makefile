@@ -1,7 +1,6 @@
 include /usr/share/dpkg/default.mk
 
 PACKAGE=pve-yew-mobile-gui
-CRATENAME=pve-yew-mobile-gui
 
 BUILDDIR ?= $(PACKAGE)-$(DEB_VERSION_UPSTREAM)
 ORIG_SRC_TAR=$(PACKAGE)_$(DEB_VERSION_UPSTREAM).orig.tar.gz
