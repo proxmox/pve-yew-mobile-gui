@@ -1,5 +1,10 @@
 <!--- Index template for pveproxy server -->
-
+[%
+    USE date;
+    base_path = yew_mobile_base_path or '/pve2/yew-mobile';
+    ui_version = yew_mobile_mtime or date.now;
+    i18n_version = i18n_yew_mobile_mtime or date.now;
+%]
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,10 +13,10 @@
 
   <title>[% nodename %] - Proxmox Virtual Environment</title>
 
-  <link rel="manifest" href="/pve2/yew-mobile/manifest.json" />
+  <link rel="manifest" href="[% base_path %]/manifest.json" />
 
-  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/font-awesome.css?__GUI_VERSION__" />
-  <link rel="stylesheet" type="text/css" href="/pve2/yew-mobile/css/pve.css?__GUI_VERSION__" />
+  <link rel="stylesheet" type="text/css" href="[% base_path %]/css/font-awesome.css?v=[% ui_version %]" />
+  <link rel="stylesheet" type="text/css" href="[% base_path %]/css/pve.css?v=[% ui_version %]" />
 
   <style>
     /* Avoid flickering (default background in firefox is always white)*/
@@ -23,6 +28,7 @@
     }
   </style>
   <script type="text/javascript">
+    // remove below, it's unused?
     Proxmox = {
         Setup: { auth_cookie_name: 'PVEAuthCookie' },
         defaultLang: '[% lang %]',
@@ -30,19 +36,21 @@
         UserName: '[% username %]',
         CSRFPreventionToken: '[% token %]',
         ConsentText: '[% consenttext %]',
+        i18nVersion: [% i18n_version %],
+        baseBath: [% base_path %],
     };
   </script>
-  
-  <link rel="preload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm?__GUI_VERSION__" as="fetch" type="application/wasm" crossorigin="">
-  <link rel="modulepreload" href="/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js?__GUI_VERSION__">
+
+  <link rel="preload" href="[% base_path %]/js/pve-yew-mobile-gui_bg.wasm?v=[% ui_version %]" as="fetch" type="application/wasm" crossorigin="">
+  <link rel="modulepreload" href="[% base_path %]/js/pve-yew-mobile-gui_bundle.js?v=[% ui_version %]">
 
 </head>
 
 <body>
   <script type="module">
-    import init from '/pve2/yew-mobile/js/pve-yew-mobile-gui_bundle.js?__GUI_VERSION__';
+    import init from "[% base_path %]/js/pve-yew-mobile-gui_bundle.js?v=[% ui_version %]";
     const decompressedResponse = new Response(
-      await fetch('/pve2/yew-mobile/js/pve-yew-mobile-gui_bg.wasm?__GUI_VERSION__').then(res => res.body)
+      await fetch('[% base_path %]/js/pve-yew-mobile-gui_bg.wasm?v=[% ui_version %]').then(res => res.body)
     );
     // set correct type to allow using faster WebAssembly.instantiateStreaming
     decompressedResponse.headers.set("Content-Type", "application/wasm");

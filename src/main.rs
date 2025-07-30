@@ -296,6 +296,7 @@ impl Component for PveMobileApp {
         MaterialApp::new(render)
             .theme_dir_prefix("/pve2/yew-mobile/css/".into())
             .catalog_url_builder(|lang: &String| {
+                // TODO: include ?v={i18n_version} available from index.tpl
                 format!("/yew-mobile/i18n/pve-yew-mobile-catalog-{lang}.mo")
             })
             .into()
