@@ -10,6 +10,7 @@ use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
+use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
     Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
@@ -210,7 +211,7 @@ impl PveQemuDashboardPanel {
         let node_name = props.node.clone();
 
         let qmpstatus = data.qmpstatus.as_deref().unwrap_or("");
-        let running = (data.status == IsRunning::Running);
+        let running = data.status == IsRunning::Running;
 
         let menu = Menu::new()
             .with_item(
@@ -349,18 +350,18 @@ impl Component for PveQemuDashboardPanel {
             Msg::VmCommand((ref command_str, ref param)) => {
                 self.vm_command(ctx, command_str, param.clone())
             }
-            Msg::CommandResult(result) => {
-                match result {
-                    Ok(upid) => {
-                        self.running_upid = Some(upid);
-                    }
-                    Err(err) => {
-                        self.running_upid = None;
-                        log::info!("Command failed: {err}");
-                        //fixme: log error
-                    }
+            Msg::CommandResult(result) => match result {
+                Ok(upid) => {
+                    self.running_upid = Some(upid);
                 }
-            }
+                Err(err) => {
+                    self.running_upid = None;
+                    let message = format!("Command failed: {err}");
+                    ctx.link()
+                        .show_snackbar(SnackBar::new().message(message.clone()));
+                    log::error!("{}", message);
+                }
+            },
             Msg::Confirm(command) => self.confirmed_vm_command(ctx, command),
         }
         true
