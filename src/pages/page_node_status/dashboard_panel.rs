@@ -142,7 +142,7 @@ impl PveNodeDashboardPanel {
                     .on_activate(ctx.link().callback(|_| Msg::Shutdown)),
             )
             .with_child(
-                Button::new("Console")
+                Button::new(tr!("Console"))
                     .icon_class("fa fa-terminal")
                     .on_activate(move |_| {
                         XTermJs::open_xterm_js_viewer(ConsoleType::LoginShell, &node_name, true);

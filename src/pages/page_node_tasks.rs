@@ -29,7 +29,7 @@ impl PageNodeTasks {
 
 #[function_component]
 pub fn PvePageNodeTasks(props: &PageNodeTasks) -> Html {
-    let title = format!("Node {}", props.nodename);
+    let title = tr!("Node '{0}'", props.nodename);
 
     let navigator = use_navigator().unwrap();
 
