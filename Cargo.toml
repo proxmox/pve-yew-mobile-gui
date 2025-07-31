@@ -19,6 +19,7 @@ wasm-bindgen-futures = "0.4"
 url = "2.1"
 percent-encoding = "2.1"
 gloo-timers = "0.3"
+gloo-utils = "0.2"
 
 proxmox-schema = "4"
 proxmox-time = "2"

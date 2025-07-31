@@ -10,6 +10,10 @@ use pages::{
     PageQemuStatus, PageQemuTasks, PageSettings, PageStorageStatus, PageTaskStatus,
 };
 
+use gloo_utils::format::JsValueSerdeExt;
+use serde::Deserialize;
+use wasm_bindgen::JsValue;
+
 use yew_router::scope_ext::RouterScopeExt;
 use yew_router::Routable;
 
@@ -257,9 +261,21 @@ fn switch(context: &MaterialAppRouteContext, full_path: &str) -> Vec<Html> {
 }
     */
 
+// Note: The server provides this data with index.html.tpl
+#[derive(Deserialize)]
+#[allow(non_snake_case)]
+pub struct ServerConfig {
+    pub defaultLang: String,
+    pub NodeName: String,
+    pub ConsentText: String,
+    pub i18nVersion: String,
+    pub uiVersion: String,
+}
+
 struct PveMobileApp {
     _auth_observer: AuthObserver,
     login_info: Option<Authentication>,
+    server_config: Option<ServerConfig>,
 }
 
 impl Component for PveMobileApp {
@@ -267,6 +283,15 @@ impl Component for PveMobileApp {
     type Properties = ();
 
     fn create(ctx: &Context<Self>) -> Self {
+        let mut server_config = None;
+        if let Some(window) = web_sys::window() {
+            if let Ok(value) = js_sys::Reflect::get(&window, &JsValue::from_str("Proxmox")) {
+                if let Ok(config) = JsValueSerdeExt::into_serde::<ServerConfig>(&value) {
+                    server_config = Some(config);
+                }
+            }
+        }
+
         // set auth info from cookie
         let login_info = authentication_from_cookie(&proxmox_yew_comp::ExistingProduct::PVE);
         if let Some(login_info) = &login_info {
@@ -278,6 +303,7 @@ impl Component for PveMobileApp {
         Self {
             login_info,
             _auth_observer,
+            server_config,
         }
     }
 
@@ -293,11 +319,16 @@ impl Component for PveMobileApp {
             }
         };
 
+        let i18n_version = self.server_config.as_ref().map(|c| c.i18nVersion.clone());
         MaterialApp::new(render)
             .theme_dir_prefix("/yew-mobile/css/".into())
-            .catalog_url_builder(|lang: &String| {
-                // TODO: include ?v={i18n_version} available from index.tpl
-                format!("/yew-mobile/i18n/pve-yew-mobile-catalog-{lang}.mo")
+            .catalog_url_builder(move |lang: &String| {
+                let url = format!("/yew-mobile/i18n/pve-yew-mobile-catalog-{lang}.mo");
+                if let Some(version) = &i18n_version {
+                    format!("{url}?v{version}")
+                } else {
+                    url
+                }
             })
             .into()
     }
