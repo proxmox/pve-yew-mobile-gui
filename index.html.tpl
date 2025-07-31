@@ -28,7 +28,6 @@
     }
   </style>
   <script type="text/javascript">
-    // remove below, it's unused?
     Proxmox = {
         Setup: { auth_cookie_name: 'PVEAuthCookie' },
         defaultLang: '[% lang %]',
@@ -36,8 +35,9 @@
         UserName: '[% username %]',
         CSRFPreventionToken: '[% token %]',
         ConsentText: '[% consenttext %]',
-        i18nVersion: [% i18n_version %],
-        baseBath: [% base_path %],
+        i18nVersion: '[% i18n_version %]',
+        uiVersion: '[% ui_version %]',
+        baseBath: '[% base_path %]',
     };
   </script>
 
