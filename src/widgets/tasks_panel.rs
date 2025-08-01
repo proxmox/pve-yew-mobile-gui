@@ -153,7 +153,7 @@ impl Component for PveTasksPanel {
         match &self.data {
             Some(Ok(data)) if data.is_empty() => Container::new()
                 .padding(2)
-                .with_child(tr!("List contains no data"))
+                .with_child(tr!("List is empty."))
                 .into(),
             Some(Ok(data)) => self.view_task_list(ctx, data.clone()),
             Some(Err(err)) => pwt::widget::error_message(err).into(),

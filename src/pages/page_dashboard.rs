@@ -351,8 +351,8 @@ impl Component for PvePageDashboard {
 
     fn create(ctx: &Context<Self>) -> Self {
         let me = Self {
-            nodes: Err(format!("no data loaded")),
-            resources: Err(format!("no data loaded")),
+            nodes: Err(tr!("no data loaded")),
+            resources: Err(tr!("no data loaded")),
             show_subscription_alert: false,
             subscription_error: None, // assume ok by default
         };

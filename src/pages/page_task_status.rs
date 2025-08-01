@@ -1,9 +1,8 @@
 use std::rc::Rc;
 
-use anyhow::{format_err, Error};
-
+use anyhow::Error;
 use gloo_timers::callback::Timeout;
-use proxmox_yew_comp::LogView;
+
 use pwt::widget::menu::MenuItem;
 use yew::html::IntoPropValue;
 use yew::prelude::*;
@@ -16,6 +15,7 @@ use pve_api_types::{IsRunning, TaskStatus};
 
 use proxmox_yew_comp::percent_encoding::percent_encode_component;
 use proxmox_yew_comp::utils::format_upid;
+use proxmox_yew_comp::LogView;
 
 use crate::widgets::TopNavBar;
 
@@ -51,7 +51,7 @@ pub enum ViewState {
 pub struct PvePageTaskStatus {
     active: bool,
     view_state: ViewState,
-    status: Result<TaskStatus, Error>,
+    status: Result<TaskStatus, String>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     stop_task_guard: Option<AsyncAbortGuard>,
@@ -176,7 +176,7 @@ impl Component for PvePageTaskStatus {
         Self {
             active,
             view_state: ViewState::Output,
-            status: Err(format_err!("no data loaded")),
+            status: Err(tr!("no data loaded")),
             load_guard: None,
             reload_timeout: None,
             stop_task_guard: None,
@@ -209,7 +209,7 @@ impl Component for PvePageTaskStatus {
                     Ok(status) => status.status == IsRunning::Running,
                     Err(_) => true,
                 };
-                self.status = result;
+                self.status = result.map_err(|err| err.to_string());
                 if self.active {
                     self.reload_timeout = Some(Timeout::new(1_000, move || {
                         link.send_message(Msg::Load);

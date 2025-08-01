@@ -361,7 +361,7 @@ impl Component for PvePageResources {
         }
 
         Self {
-            data: Err(format!("no data loaded")),
+            data: Err(tr!("no data loaded")),
             filter,
             show_filter_dialog: false,
             reload_timeout: None,
