@@ -1,4 +1,4 @@
-pve-yew-mobile-gui (0.5.1) trixie; urgency=medium
+pve-yew-mobile-gui (0.6.0) trixie; urgency=medium
 
   * do not re-ship translations but depend on the package to make updates
     easier.
