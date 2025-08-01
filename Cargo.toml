@@ -26,10 +26,10 @@ proxmox-time = "2"
 proxmox-uuid = "1"
 proxmox-human-byte = "1.0"
 
-pwt = "0.6"
+pwt = "0.6.3"
 pwt-macros = "0.4"
 
-proxmox-yew-comp = "0.5"
+proxmox-yew-comp = "0.5.4"
 
 proxmox-login = "1.0"
 proxmox-client = "1.0"
