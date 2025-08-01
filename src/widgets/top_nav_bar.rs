@@ -136,8 +136,19 @@ impl Component for PveTopNavBar {
                 .class("pwt-font-size-headline-small")
                 .class("pwt-scheme-neutral")
                 .on_activate({
+                    let window = gloo_utils::window();
+                    let length = match window.history() {
+                        Ok(history) => history.length().unwrap_or(0),
+                        Err(_) => 0,
+                    };
                     let navigator = ctx.link().navigator().clone().unwrap();
-                    move |_| navigator.back()
+                    move |_| {
+                        if length > 1 {
+                            navigator.back();
+                        } else {
+                            navigator.replace(&crate::Route::Dashboard);
+                        }
+                    }
                 })
                 .into()
         } else {
