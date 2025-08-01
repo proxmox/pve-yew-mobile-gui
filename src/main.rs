@@ -31,8 +31,9 @@ pub fn show_failed_command_error<T: Component>(
     link: &yew::html::Scope<T>,
     msg: impl std::fmt::Display,
 ) {
+    let msg = msg.to_string();
     log::error!("Command failed: {msg}");
-    link.show_snackbar(SnackBar::new().message(tr!("Command failed") + ": " + msg)));
+    link.show_snackbar(SnackBar::new().message(tr!("Command failed") + ": " + &msg));
 }
 
 pub enum Msg {
