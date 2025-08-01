@@ -9,7 +9,6 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 use pwt::props::StorageLocation;
 use pwt::state::PersistentState;
-use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::{Column, TabBar, TabBarItem};
 use pwt::AsyncAbortGuard;
 
@@ -92,11 +91,7 @@ impl Component for PvePageNodeStatus {
                 Ok(status) => {
                     self.cluster_node_status = Some(status);
                 }
-                Err(err) => {
-                    let msg = format!("load cluster node status failed: {err}");
-                    log::error!("{msg}");
-                    ctx.link().show_snackbar(SnackBar::new().message(msg));
-                }
+                Err(err) => crate::show_failed_command_error(ctx.link(), err),
             },
         }
         true

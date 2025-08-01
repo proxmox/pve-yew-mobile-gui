@@ -44,7 +44,11 @@ fn processor_text(config: &QemuConfig) -> String {
     let cores = config.cores.unwrap_or(1);
     let sockets = config.sockets.unwrap_or(1);
     let count = sockets * cores;
-    format!("{count} ({sockets} sockets, {cores} cores) [{cpu}]")
+    format!(
+        "{count} ({}, {}) [{cpu}]",
+        tr!("1 Core" | "{n} Cores" % cores),
+        tr!("1 Socket" | "{n} Sockets" % sockets)
+    )
 }
 
 pub enum Msg {

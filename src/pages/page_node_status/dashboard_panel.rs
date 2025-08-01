@@ -11,7 +11,6 @@ use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
 use pwt::AsyncAbortGuard;
 
@@ -207,11 +206,7 @@ impl Component for PveNodeDashboardPanel {
             }
             Msg::CommandResult(result) => match result {
                 Ok(()) => {}
-                Err(err) => {
-                    let msg = format!("Command failed: {err}");
-                    log::error!("{msg}");
-                    ctx.link().show_snackbar(SnackBar::new().message(msg));
-                }
+                Err(err) => crate::show_failed_command_error(ctx.link(), err),
             },
             Msg::Reboot => {
                 self.node_command(ctx, "reboot");

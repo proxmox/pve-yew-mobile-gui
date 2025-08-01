@@ -10,7 +10,6 @@ use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
     Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
@@ -166,7 +165,7 @@ impl PveQemuDashboardPanel {
                     };
 
                     tiles.push(
-                        icon_list_tile(Fa::new("cpu"), "CPU", None::<&str>, None).with_child(
+                        icon_list_tile(Fa::new("cpu"), tr!("CPU"), None::<&str>, None).with_child(
                             list_tile_usage(
                                 format!("{:.2}", cpu),
                                 maxcpu.to_string(),
@@ -183,13 +182,12 @@ impl PveQemuDashboardPanel {
                         (mem as f32) / (maxmem as f32)
                     };
                     tiles.push(
-                        icon_list_tile(Fa::new("memory"), "Memory", None::<&str>, None).with_child(
-                            list_tile_usage(
+                        icon_list_tile(Fa::new("memory"), tr!("Memory"), None::<&str>, None)
+                            .with_child(list_tile_usage(
                                 HumanByte::new_binary(mem as f64).to_string(),
                                 HumanByte::new_binary(maxmem as f64).to_string(),
                                 mem_percentage,
-                            ),
-                        ),
+                            )),
                     );
                 }
             }
@@ -356,10 +354,7 @@ impl Component for PveQemuDashboardPanel {
                 }
                 Err(err) => {
                     self.running_upid = None;
-                    let message = format!("Command failed: {err}");
-                    ctx.link()
-                        .show_snackbar(SnackBar::new().message(message.clone()));
-                    log::error!("{}", message);
+                    crate::show_failed_command_error(ctx.link(), err);
                 }
             },
             Msg::Confirm(command) => self.confirmed_vm_command(ctx, command),

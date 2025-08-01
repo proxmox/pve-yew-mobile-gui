@@ -99,7 +99,7 @@ impl Component for PvePageQemuStatus {
             .active(active_tab)
             .with_item(
                 TabBarItem::new()
-                    .label("Dashboard")
+                    .label(tr!("Dashboard"))
                     .key("dashboard")
                     .on_activate(
                         ctx.link()
@@ -108,7 +108,7 @@ impl Component for PvePageQemuStatus {
             )
             .with_item(
                 TabBarItem::new()
-                    .label("Options")
+                    .label(tr!("Options"))
                     .key("options")
                     .on_activate(
                         ctx.link()
@@ -116,10 +116,13 @@ impl Component for PvePageQemuStatus {
                     ),
             )
             .with_item(
-                TabBarItem::new().label("Backup").key("backup").on_activate(
-                    ctx.link()
-                        .callback(|_| Msg::SetViewState(ViewState::Backup)),
-                ),
+                TabBarItem::new()
+                    .label(tr!("Backup"))
+                    .key("backup")
+                    .on_activate(
+                        ctx.link()
+                            .callback(|_| Msg::SetViewState(ViewState::Backup)),
+                    ),
             );
 
         Column::new()

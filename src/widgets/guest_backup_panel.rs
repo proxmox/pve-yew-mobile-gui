@@ -9,7 +9,6 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::{Column, MiniScroll, Progress, Row};
 use pwt::AsyncAbortGuard;
 
@@ -193,7 +192,7 @@ impl PveGuestBackupPanel {
         let fab = self.active_storage.is_some().then(|| {
             Fab::new("fa fa-floppy-o")
                 .size(FabSize::Small)
-                .text("Backup now")
+                .text(tr!("Backup now"))
                 .class("pwt-position-absolute")
                 .style("right", "var(--pwt-spacer-2)")
                 .style("bottom", "var(--pwt-spacer-2)")
@@ -268,10 +267,7 @@ impl Component for PveGuestBackupPanel {
                 Ok(upid) => {
                     self.log_dialog = Some(self.create_log_view(ctx, &upid));
                 }
-                Err(err) => {
-                    ctx.link()
-                        .show_snackbar(SnackBar::new().message(format!("Backup failed: {err}")));
-                }
+                Err(err) => crate::show_failed_command_error(ctx.link(), err),
             },
             Msg::CloseLogDialog => {
                 self.log_dialog = None;

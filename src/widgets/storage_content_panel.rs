@@ -10,7 +10,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::{MaterialAppScopeExt, SnackBar, SnackBarContextExt};
+use pwt::touch::MaterialAppScopeExt;
 use pwt::widget::{Column, Container, Dialog, Fa, List, ListTile, Progress, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
@@ -237,10 +237,7 @@ impl Component for PveStorageContentPanel {
                     // TODO: check/track upid status?
                     ctx.link().send_message(Msg::Load);
                 }
-                Err(err) => {
-                    ctx.link()
-                        .show_snackbar(SnackBar::new().message(format!("Remove failed: {err}")));
-                }
+                Err(err) => crate::show_failed_command_error(ctx.link(), err),
             },
             Msg::ExtractConfig(volid) => {
                 let param = json!({"volume": volid });
@@ -267,11 +264,7 @@ impl Component for PveStorageContentPanel {
                         );
                     self.config_dialog = Some(content.into());
                 }
-                Err(err) => {
-                    ctx.link().show_snackbar(
-                        SnackBar::new().message(format!("Extract config failed: {err}")),
-                    );
-                }
+                Err(err) => crate::show_failed_command_error(ctx.link(), err),
             },
             Msg::CloseConfigDialog => {
                 self.config_dialog = None;

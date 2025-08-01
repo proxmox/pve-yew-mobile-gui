@@ -18,7 +18,7 @@ use yew_router::scope_ext::RouterScopeExt;
 use yew_router::Routable;
 
 use pwt::prelude::*;
-use pwt::touch::MaterialApp;
+use pwt::touch::{MaterialApp, SnackBar, SnackBarContextExt};
 
 use proxmox_login::Authentication;
 
@@ -26,6 +26,14 @@ use proxmox_yew_comp::{
     authentication_from_cookie, available_language_list, http_set_auth,
     percent_encoding::percent_encode_component, register_auth_observer, AuthObserver,
 };
+
+pub fn show_failed_command_error<T: Component>(
+    link: &yew::html::Scope<T>,
+    msg: impl std::fmt::Display,
+) {
+    log::error!("Command failed: {msg}");
+    link.show_snackbar(SnackBar::new().message(tr!("Command failed: {}", msg)));
+}
 
 pub enum Msg {
     Login(Authentication),

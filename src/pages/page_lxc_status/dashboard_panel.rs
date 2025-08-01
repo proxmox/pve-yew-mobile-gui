@@ -9,7 +9,6 @@ use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
     Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
@@ -306,10 +305,7 @@ impl Component for PveLxcDashboardPanel {
                 }
                 Err(err) => {
                     self.running_upid = None;
-                    let message = format!("Command failed: {err}");
-                    ctx.link()
-                        .show_snackbar(SnackBar::new().message(message.clone()));
-                    log::error!("{}", message);
+                    crate::show_failed_command_error(ctx.link(), err);
                 }
             },
             Msg::Confirm(command) => self.confirmed_lxc_command(ctx, command),

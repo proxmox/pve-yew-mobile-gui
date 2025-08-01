@@ -8,7 +8,6 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::form::{Checkbox, Form, FormContext};
 use pwt::widget::{List, ListTile, Progress};
 
@@ -218,8 +217,7 @@ impl Component for PveLxcConfigPanel {
                     ctx.link().send_message(Msg::Load);
                 }
                 if let Err(err) = result {
-                    ctx.link()
-                        .show_snackbar(SnackBar::new().message(format!("Update failed: {err}")));
+                    crate::show_failed_command_error(ctx.link(), err);
                 }
             }
         }
