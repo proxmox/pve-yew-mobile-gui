@@ -1,3 +1,13 @@
-target
-dist
+**/*.rs.bk
+*.build
+*.buildinfo
+*.changes
+*.deb
+*.dsc
+*.tar.?z
+*~
+.create-shell-completions
+/target
 Cargo.lock
+dist
+pve-yew-mobile-gui-[0-9].*/
