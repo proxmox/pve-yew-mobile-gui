@@ -106,12 +106,16 @@ impl Component for PveTopNavBar {
 
         let menu = Menu::new()
             .items(props.menu_items.clone())
-            .with_item(MenuItem::new("Setting").icon_class("fa fa-cog").on_select({
-                let navigator = ctx.link().navigator().clone().unwrap();
-                move |_| navigator.push(&crate::Route::Settings)
-            }))
             .with_item(
-                MenuItem::new("Logout")
+                MenuItem::new(tr!("Settings"))
+                    .icon_class("fa fa-cog")
+                    .on_select({
+                        let navigator = ctx.link().navigator().clone().unwrap();
+                        move |_| navigator.push(&crate::Route::Settings)
+                    }),
+            )
+            .with_item(
+                MenuItem::new(tr!("Logout"))
                     .icon_class("fa fa-sign-out")
                     .on_select(ctx.link().callback(|_| Msg::Logout)),
             );
