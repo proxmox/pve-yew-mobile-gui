@@ -72,15 +72,17 @@ impl PveNodeDashboardPanel {
             icon_list_tile(
                 Fa::new("cpu"),
                 format!(
-                    "CPU ({} Cores, {} Sockets)",
-                    data.cpuinfo.cores, data.cpuinfo.sockets
+                    "{} ({}, {})",
+                    tr!("CPU"),
+                    tr!("1 Core" | "{n} Cores" % data.cpuinfo.cores),
+                    tr!("1 Socket" | "{n} Sockets" % data.cpuinfo.sockets)
                 ),
                 data.cpuinfo.model.clone(),
                 None,
             )
             .with_child(list_tile_usage(
                 format!("{:.2}", data.cpu * 100.0) + "%",
-                format!("% of {} threads", data.cpuinfo.cpus), // fixme
+                tr!("% of one threads" | "% of {n} threads" % data.cpuinfo.cpus),
                 data.cpu as f32,
             )),
         );
