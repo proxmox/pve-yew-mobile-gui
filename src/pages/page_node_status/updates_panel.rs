@@ -40,7 +40,7 @@ pub struct PveNodeUpdatesPanel {
 }
 
 impl PveNodeUpdatesPanel {
-    fn view_services(&self, ctx: &Context<Self>, data: &[APTUpdateInfo]) -> Html {
+    fn view_updates(&self, ctx: &Context<Self>, data: &[APTUpdateInfo]) -> Html {
         let list: Vec<ListTile> = data
             .iter()
             .map(|s| {
@@ -112,7 +112,7 @@ impl Component for PveNodeUpdatesPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         match &self.data {
-            Some(Ok(data)) => {
+            Some(Ok(data)) if !data.is_empty() => {
                 let info = self.show_info.as_ref().map(|info| {
                     Dialog::new(info.package.clone())
                         .with_child(
@@ -127,10 +127,14 @@ impl Component for PveNodeUpdatesPanel {
 
                 Column::new()
                     .class(pwt::css::FlexFit)
-                    .with_child(self.view_services(ctx, data))
+                    .with_child(self.view_updates(ctx, data))
                     .with_optional_child(info)
                     .into()
             }
+            Some(Ok(_data)) => Container::new()
+                .padding(2)
+                .with_child(tr!("List is empty."))
+                .into(),
             Some(Err(err)) => pwt::widget::error_message(err).into(),
             None => Progress::new().class("pwt-delay-visibility").into(),
         }
