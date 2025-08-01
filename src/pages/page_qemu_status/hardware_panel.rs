@@ -83,7 +83,7 @@ impl PveQemuHardwarePanel {
             data.bios
                 .as_ref()
                 .map(|b| b.to_string())
-                .unwrap_or(format!("{} (SeaBIOS)", tr!("Default)"))),
+                .unwrap_or(format!("{} (SeaBIOS)", tr!("Default"))),
             tr!("Bios"),
             None,
         ));
