@@ -32,7 +32,7 @@ pub fn show_failed_command_error<T: Component>(
     msg: impl std::fmt::Display,
 ) {
     log::error!("Command failed: {msg}");
-    link.show_snackbar(SnackBar::new().message(tr!("Command failed: {}", msg)));
+    link.show_snackbar(SnackBar::new().message(tr!("Command failed") + ": " + msg)));
 }
 
 pub enum Msg {
