@@ -32,7 +32,9 @@ impl PageDashboard {
 }
 
 pub struct PvePageDashboard {
+    nodes_loading: bool,
     nodes: Result<Vec<ClusterNodeIndexResponse>, String>,
+    resources_loading: bool,
     resources: Result<Vec<ClusterResource>, String>,
     subscription_error: Option<String>, // None == Ok
     show_subscription_alert: bool,
@@ -94,6 +96,8 @@ impl PvePageDashboard {
                 (storage_used_size as f32) / (storage_total_size as f32)
             };
         }
+
+        let loading = self.resources_loading || self.nodes_loading;
 
         let mut node_count = 0;
         let content: Html = match &self.nodes {
@@ -158,6 +162,7 @@ impl PvePageDashboard {
                     .grid_template_columns("auto 1fr")
                     .into()
             }
+            Err(_) if loading => html! {},
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
 
@@ -165,6 +170,7 @@ impl PvePageDashboard {
             tr!("Analytics"),
             format!("Usage across all ({node_count}) online nodes."),
         )
+        .with_optional_child(loading.then(|| pwt::widget::Progress::new()))
         .with_child(content)
         .into()
     }
@@ -205,10 +211,12 @@ impl PvePageDashboard {
                 .grid_template_columns("auto 1fr auto")
                 .into()
             }
+            Err(_) if self.nodes_loading => html! {},
             Err(err) => pwt::widget::error_message(err).into(),
         };
 
         crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
+            .with_optional_child(self.nodes_loading.then(|| pwt::widget::Progress::new()))
             .with_child(content)
             .class("pwt-interactive")
             .onclick(Callback::from({
@@ -324,11 +332,13 @@ impl PvePageDashboard {
                     .grid_template_columns("auto 1fr auto")
                     .into()
             }
+            Err(_) if self.resources_loading => html! {},
             Err(err) => pwt::widget::error_message(err).padding(2).into(),
         };
 
         crate::widgets::standard_card(tr!("Resources"), None::<&str>)
             .class("pwt-interactive")
+            .with_optional_child(self.resources_loading.then(|| pwt::widget::Progress::new()))
             .with_child(content)
             .onclick({
                 let navigator = ctx.link().navigator().clone().unwrap();
@@ -351,7 +361,9 @@ impl Component for PvePageDashboard {
 
     fn create(ctx: &Context<Self>) -> Self {
         let me = Self {
+            nodes_loading: true,
             nodes: Err(tr!("no data loaded")),
+            resources_loading: true,
             resources: Err(tr!("no data loaded")),
             show_subscription_alert: false,
             subscription_error: None, // assume ok by default
@@ -363,9 +375,11 @@ impl Component for PvePageDashboard {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ResourcesLoadResult(result) => {
+                self.resources_loading = false;
                 self.resources = result.map_err(|err| err.to_string());
             }
             Msg::NodeLoadResult(result) => {
+                self.nodes_loading = false;
                 self.nodes = result.map_err(|err| err.to_string());
 
                 if let Ok(nodes) = &self.nodes {
