@@ -443,11 +443,8 @@ impl Component for PvePageResources {
         Column::new()
             .class("pwt-fit")
             .with_child(self.create_top_bar(ctx))
-            .with_child(
-                pwt::widget::Mask::new(content)
-                    .class(pwt::css::Flex::Fill)
-                    .visible(self.loading),
-            )
+            .with_optional_child(self.loading.then(|| pwt::widget::Progress::new()))
+            .with_child(content)
             .into()
     }
 }
