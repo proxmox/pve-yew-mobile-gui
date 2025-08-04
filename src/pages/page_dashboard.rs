@@ -170,7 +170,9 @@ impl PvePageDashboard {
             tr!("Analytics"),
             format!("Usage across all ({node_count}) online nodes."),
         )
-        .with_optional_child(loading.then(|| pwt::widget::Progress::new()))
+        .with_optional_child(
+            loading.then(|| pwt::widget::Progress::new().class("pwt-delay-visibility")),
+        )
         .with_child(content)
         .into()
     }
@@ -216,7 +218,10 @@ impl PvePageDashboard {
         };
 
         crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
-            .with_optional_child(self.nodes_loading.then(|| pwt::widget::Progress::new()))
+            .with_optional_child(
+                self.nodes_loading
+                    .then(|| pwt::widget::Progress::new().class("pwt-delay-visibility")),
+            )
             .with_child(content)
             .class("pwt-interactive")
             .onclick(Callback::from({
@@ -338,7 +343,10 @@ impl PvePageDashboard {
 
         crate::widgets::standard_card(tr!("Resources"), None::<&str>)
             .class("pwt-interactive")
-            .with_optional_child(self.resources_loading.then(|| pwt::widget::Progress::new()))
+            .with_optional_child(
+                self.resources_loading
+                    .then(|| pwt::widget::Progress::new().class("pwt-delay-visibility")),
+            )
             .with_child(content)
             .onclick({
                 let navigator = ctx.link().navigator().clone().unwrap();
