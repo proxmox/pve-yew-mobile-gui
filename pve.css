@@ -53,5 +53,5 @@
 
 .pwt-delay-visibility {
     opacity: 0;
-    animation: delay-visibility 2s ease-in-out 250ms forwards;
+    animation: delay-visibility 1s ease-in-out 250ms forwards;
 }
