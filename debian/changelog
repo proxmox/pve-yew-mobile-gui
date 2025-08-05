@@ -1,3 +1,9 @@
+pve-yew-mobile-gui (0.6.2) unstable; urgency=medium
+
+  * add version to theme url css files
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 05 Aug 2025 10:28:49 +0200
+
 pve-yew-mobile-gui (0.6.1) trixie; urgency=medium
 
   * add loading indicator for the dashboard cards and the resource page
