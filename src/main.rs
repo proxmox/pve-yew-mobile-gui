@@ -328,15 +328,27 @@ impl Component for PveMobileApp {
             }
         };
 
-        let i18n_version = self.server_config.as_ref().map(|c| c.i18nVersion.clone());
         MaterialApp::new(render)
-            .theme_dir_prefix("/yew-mobile/css/".into())
-            .catalog_url_builder(move |lang: &String| {
-                let url = format!("/yew-mobile/i18n/pve-yew-mobile-catalog-{lang}.mo");
-                if let Some(version) = &i18n_version {
-                    format!("{url}?v{version}")
-                } else {
-                    url
+            .theme_url_builder({
+                let ui_version = self.server_config.as_ref().map(|c| c.uiVersion.clone());
+                move |theme: &String| {
+                    let url = format!("/yew-mobile/css/{}-yew-style.css", theme.to_lowercase());
+                    if let Some(version) = &ui_version {
+                        format!("{url}?v{version}")
+                    } else {
+                        url
+                    }
+                }
+            })
+            .catalog_url_builder({
+                let i18n_version = self.server_config.as_ref().map(|c| c.i18nVersion.clone());
+                move |lang: &String| {
+                    let url = format!("/yew-mobile/i18n/pve-yew-mobile-catalog-{lang}.mo");
+                    if let Some(version) = &i18n_version {
+                        format!("{url}?v{version}")
+                    } else {
+                        url
+                    }
                 }
             })
             .into()
