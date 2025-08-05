@@ -25,6 +25,7 @@ proxmox-schema = "4"
 proxmox-time = "2"
 proxmox-uuid = "1"
 proxmox-human-byte = "1.0"
+proxmox-base64 = "1"
 
 pwt = "0.6.4"
 pwt-macros = "0.4"

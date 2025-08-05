@@ -276,6 +276,7 @@ fn switch(context: &MaterialAppRouteContext, full_path: &str) -> Vec<Html> {
 pub struct ServerConfig {
     pub defaultLang: String,
     pub NodeName: String,
+    #[serde(deserialize_with = "proxmox_base64::deserialize_string_from_base64")]
     pub ConsentText: String,
     pub i18nVersion: String,
     pub uiVersion: String,
@@ -319,12 +320,16 @@ impl Component for PveMobileApp {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let auth = self.login_info.is_some();
         let link = ctx.link().clone();
+        let consent_text = self.server_config.as_ref().map(|c| c.ConsentText.clone());
 
         let render = move |path: &str| {
             if auth {
                 switch(path)
             } else {
-                return vec![PageLogin::new().on_login(link.callback(Msg::Login)).into()];
+                return vec![PageLogin::new()
+                    .consent_text(consent_text.clone())
+                    .on_login(link.callback(Msg::Login))
+                    .into()];
             }
         };
 
