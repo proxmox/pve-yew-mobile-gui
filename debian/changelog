@@ -1,4 +1,4 @@
-pve-yew-mobile-gui (0.6.2) unstable; urgency=medium
+pve-yew-mobile-gui (0.6.2) trixie; urgency=medium
 
   * add version to theme url css files
 
