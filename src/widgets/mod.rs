@@ -1,5 +1,4 @@
 mod top_nav_bar;
-use pwt::props::PwtSpace;
 pub use top_nav_bar::TopNavBar;
 
 mod tasks_panel;
@@ -21,6 +20,7 @@ mod guest_backup_panel;
 pub use guest_backup_panel::GuestBackupPanel;
 
 use pwt::prelude::*;
+use pwt::props::PwtSpace;
 use pwt::widget::{Card, Column, Container, Fa, FieldLabel, ListTile, Progress, Row};
 
 use proxmox_human_byte::HumanByte;
@@ -218,4 +218,20 @@ pub fn label_field(label: impl Into<AttrValue>, field: impl Into<Html>) -> Html 
         .with_child(FieldLabel::new(label.into()).padding_bottom(PwtSpace::Em(0.3)))
         .with_child(field)
         .into()
+}
+
+/// Render data, error, or progress indicator
+pub fn render_loaded_data<T, E: std::fmt::Display, F: Fn(&T) -> Html>(
+    data: &Option<Result<T, E>>,
+    renderer: F,
+) -> Html {
+    match data {
+        None => pwt::widget::Progress::new()
+            .class("pwt-delay-visibility")
+            .into(),
+        Some(Err(err)) => pwt::widget::error_message(&err.to_string())
+            .padding(2)
+            .into(),
+        Some(Ok(data)) => renderer(&data),
+    }
 }

@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::rc::Rc;
 
@@ -81,11 +82,12 @@ fn filter_match(item: &ClusterResource, filter: &ResourceFilter) -> bool {
     }
 }
 
+thread_local! {
+    static RESOURCES: RefCell<Option<Result<Vec<ClusterResource>, Error>>> = RefCell::new(None);
+}
 pub struct PvePageResources {
-    loading: bool,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
-    data: Result<Vec<ClusterResource>, String>,
     filter: PersistentState<ResourceFilter>,
     show_filter_dialog: bool,
 }
@@ -362,8 +364,6 @@ impl Component for PvePageResources {
         }
 
         Self {
-            loading: true,
-            data: Err(tr!("no data loaded")),
             filter,
             show_filter_dialog: false,
             reload_timeout: None,
@@ -381,10 +381,8 @@ impl Component for PvePageResources {
                     link.send_message(Msg::LoadResult(result));
                 }));
             }
-            Msg::LoadResult(result) => {
-                self.loading = false;
-                self.data = result.map_err(|err| err.to_string());
-                let _ = self.data.as_mut().map(|d| {
+            Msg::LoadResult(mut result) => {
+                let _ = result.as_mut().map(|d| {
                     d.sort_by(|item, other| {
                         let order = type_ordering(item.ty).cmp(&type_ordering(other.ty));
                         if order != Ordering::Equal {
@@ -394,6 +392,8 @@ impl Component for PvePageResources {
                         item.id.cmp(&other.id)
                     })
                 });
+
+                RESOURCES.set(Some(result));
                 let link = ctx.link().clone();
                 self.reload_timeout = Some(Timeout::new(3000, move || {
                     link.send_message(Msg::Load);
@@ -434,19 +434,13 @@ impl Component for PvePageResources {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let content = match &self.data {
-            Err(_) if self.loading => html! {},
-            Err(err) => pwt::widget::error_message(err).padding(2).into(),
-            Ok(data) => self.create_resource_list(ctx, &data),
-        };
+        let content = RESOURCES.with_borrow(|r| {
+            crate::widgets::render_loaded_data(r, |data| self.create_resource_list(ctx, data))
+        });
 
         Column::new()
             .class("pwt-fit")
             .with_child(self.create_top_bar(ctx))
-            .with_optional_child(
-                self.loading
-                    .then(|| pwt::widget::Progress::new().class("pwt-delay-visibility")),
-            )
             .with_child(content)
             .into()
     }
