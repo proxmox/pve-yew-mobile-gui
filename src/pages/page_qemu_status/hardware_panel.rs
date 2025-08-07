@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use proxmox_schema::ApiType;
 use pwt::prelude::*;
-use pwt::widget::{Fa, List, ListTile, Progress};
+use pwt::widget::{Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};

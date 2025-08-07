@@ -12,7 +12,7 @@ use yew_router::scope_ext::RouterScopeExt;
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
-    Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
+    Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row,
 };
 use pwt::AsyncAbortGuard;
 

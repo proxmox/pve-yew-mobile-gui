@@ -11,7 +11,7 @@ use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row};
+use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component, XTermJs};

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 
-use pwt::widget::{Column, Container, List, Progress};
+use pwt::widget::{Column, Container, List};
 use pwt::AsyncAbortGuard;
 use pwt::{prelude::*, widget::ListTile};
 

@@ -9,7 +9,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Form, FormContext};
-use pwt::widget::{List, ListTile, Progress};
+use pwt::widget::{List, ListTile};
 
 use pwt::AsyncAbortGuard;
 
