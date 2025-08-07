@@ -32,10 +32,8 @@ impl PageDashboard {
 }
 
 pub struct PvePageDashboard {
-    nodes_loading: bool,
-    nodes: Result<Vec<ClusterNodeIndexResponse>, String>,
-    resources_loading: bool,
-    resources: Result<Vec<ClusterResource>, String>,
+    nodes: Option<Result<Vec<ClusterNodeIndexResponse>, Error>>,
+    resources: Option<Result<Vec<ClusterResource>, Error>>,
     subscription_error: Option<String>, // None == Ok
     show_subscription_alert: bool,
 }
@@ -78,38 +76,25 @@ impl PvePageDashboard {
     }
 
     fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
-        let mut storage_used_size = 0;
-        let mut storage_total_size = 0;
-        let mut storage_percentage = 0.0;
+        let data = match (&self.nodes, &self.resources) {
+            (Some(Ok(nodes)), Some(Ok(resources))) => Some(Ok((nodes, resources))),
+            (Some(Err(err)), _) | (_, Some(Err(err))) => Some(Err(err)),
+            (None, _) | (_, None) => None,
+        };
 
-        if let Ok(list) = &self.resources {
-            for item in list {
-                if item.ty == ClusterResourceType::Storage {
-                    storage_used_size += item.disk.unwrap_or(0);
-                    storage_total_size += item.maxdisk.unwrap_or(0);
-                }
-            }
+        let node_count = match &self.nodes {
+            Some(Ok(list)) => list.len(),
+            _ => 1,
+        };
 
-            storage_percentage = if storage_total_size == 0 {
-                0.0
-            } else {
-                (storage_used_size as f32) / (storage_total_size as f32)
-            };
-        }
-
-        let loading = self.resources_loading || self.nodes_loading;
-
-        let mut node_count = 0;
-        let content: Html = match &self.nodes {
-            Ok(list) => {
+        let content: Html =
+            crate::widgets::render_loaded_data(&data, |(node_list, resource_list)| {
                 let mut cpu = 0.0;
                 let mut maxcpu = 0;
                 let mut mem = 0.0;
                 let mut maxmem = 0.0;
 
-                node_count = list.len();
-
-                for node in list {
+                for node in node_list.iter() {
                     if let (Some(node_cpu), Some(node_maxcpu)) = (node.cpu, node.maxcpu) {
                         cpu += node_cpu;
                         maxcpu += node_maxcpu;
@@ -149,6 +134,22 @@ impl PvePageDashboard {
                         )),
                 );
 
+                let mut storage_used_size = 0;
+                let mut storage_total_size = 0;
+
+                for item in resource_list.iter() {
+                    if item.ty == ClusterResourceType::Storage {
+                        storage_used_size += item.disk.unwrap_or(0);
+                        storage_total_size += item.maxdisk.unwrap_or(0);
+                    }
+                }
+
+                let storage_percentage = if storage_total_size == 0 {
+                    0.0
+                } else {
+                    (storage_used_size as f32) / (storage_total_size as f32)
+                };
+
                 tiles.push(
                     icon_list_tile(Fa::new("database"), tr!("Storage"), None::<&str>, None)
                         .with_child(list_tile_usage(
@@ -161,67 +162,51 @@ impl PvePageDashboard {
                 List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
                     .grid_template_columns("auto 1fr")
                     .into()
-            }
-            Err(_) if loading => html! {},
-            Err(err) => pwt::widget::error_message(err).padding(2).into(),
-        };
+            });
 
         crate::widgets::standard_card(
             tr!("Analytics"),
             format!("Usage across all ({node_count}) online nodes."),
-        )
-        .with_optional_child(
-            loading.then(|| pwt::widget::Progress::new().class("pwt-delay-visibility")),
         )
         .with_child(content)
         .into()
     }
 
     fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
-        let content: Html = match self.nodes.as_ref() {
-            Ok(nodes) => {
-                let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
-                let navigator = ctx.link().navigator().clone().unwrap();
-                List::new(nodes.len() as u64, move |pos| {
-                    let navigator = navigator.clone();
-                    let item = &nodes[pos as usize];
-                    let nodename = item.node.clone();
-                    let subtitle = match item.level.as_deref() {
-                        Some("") | None => "no subscription",
-                        Some(level) => level,
-                    };
+        let content: Html = crate::widgets::render_loaded_data(&self.nodes, |nodes| {
+            let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
+            let navigator = ctx.link().navigator().clone().unwrap();
+            List::new(nodes.len() as u64, move |pos| {
+                let navigator = navigator.clone();
+                let item = &nodes[pos as usize];
+                let nodename = item.node.clone();
+                let subtitle = match item.level.as_deref() {
+                    Some("") | None => "no subscription",
+                    Some(level) => level,
+                };
 
-                    icon_list_tile(
-                        Fa::new("server").class(
-                            (item.status == ClusterNodeIndexResponseStatus::Online)
-                                .then(|| "pwt-color-primary"),
-                        ),
-                        nodename.clone(),
-                        subtitle.to_string(),
-                        Some(item.status.to_string().into()),
-                    )
-                    .interactive(true)
-                    .onclick(Callback::from(
-                        move |event: web_sys::MouseEvent| {
-                            event.stop_propagation();
-                            navigator.push(&crate::Route::Node {
-                                nodename: nodename.clone(),
-                            });
-                        },
-                    ))
-                })
-                .grid_template_columns("auto 1fr auto")
-                .into()
-            }
-            Err(_) if self.nodes_loading => html! {},
-            Err(err) => pwt::widget::error_message(err).into(),
-        };
+                icon_list_tile(
+                    Fa::new("server").class(
+                        (item.status == ClusterNodeIndexResponseStatus::Online)
+                            .then(|| "pwt-color-primary"),
+                    ),
+                    nodename.clone(),
+                    subtitle.to_string(),
+                    Some(item.status.to_string().into()),
+                )
+                .interactive(true)
+                .onclick(Callback::from(move |event: web_sys::MouseEvent| {
+                    event.stop_propagation();
+                    navigator.push(&crate::Route::Node {
+                        nodename: nodename.clone(),
+                    });
+                }))
+            })
+            .grid_template_columns("auto 1fr auto")
+            .into()
+        });
 
         crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
-            .with_optional_child(
-                self.nodes_loading
-                    .then(|| pwt::widget::Progress::new().class("pwt-delay-visibility")),
-            )
             .with_child(content)
             .class("pwt-interactive")
             .onclick(Callback::from({
@@ -239,114 +224,106 @@ impl PvePageDashboard {
     }
 
     fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
-        let content: Html = match &self.resources {
-            Ok(list) => {
-                let mut vm_count = 0;
-                let mut vm_online_count = 0;
-                let mut ct_count = 0;
-                let mut ct_online_count = 0;
-                let mut storage_count = 0;
-                let mut storage_online_count = 0;
+        let content: Html = crate::widgets::render_loaded_data(&self.resources, |list| {
+            let mut vm_count = 0;
+            let mut vm_online_count = 0;
+            let mut ct_count = 0;
+            let mut ct_online_count = 0;
+            let mut storage_count = 0;
+            let mut storage_online_count = 0;
 
-                for item in list {
-                    if item.ty == ClusterResourceType::Qemu {
-                        vm_count += 1;
-                        if item.status.as_deref() == Some("running") {
-                            vm_online_count += 1;
-                        }
-                    }
-                    if item.ty == ClusterResourceType::Lxc {
-                        ct_count += 1;
-                        if item.status.as_deref() == Some("running") {
-                            ct_online_count += 1;
-                        }
-                    }
-                    if item.ty == ClusterResourceType::Storage {
-                        storage_count += 1;
-                        if item.status.as_deref() == Some("available") {
-                            storage_online_count += 1;
-                        }
+            for item in list {
+                if item.ty == ClusterResourceType::Qemu {
+                    vm_count += 1;
+                    if item.status.as_deref() == Some("running") {
+                        vm_online_count += 1;
                     }
                 }
-
-                let mut tiles: Vec<ListTile> = Vec::new();
-
-                tiles.push(
-                    icon_list_tile(
-                        Fa::new("desktop"),
-                        tr!("Virtual Machines"),
-                        format!("{vm_count} ({vm_online_count} online)"),
-                        None,
-                    )
-                    .onclick({
-                        let navigator = ctx.link().navigator().clone().unwrap();
-                        move |event: MouseEvent| {
-                            event.stop_propagation();
-                            let filter = ResourceFilter {
-                                qemu: true,
-                                ..Default::default()
-                            };
-                            navigator.push_with_state(&crate::Route::Resources, filter);
-                        }
-                    })
-                    .interactive(true),
-                );
-
-                tiles.push(
-                    icon_list_tile(
-                        Fa::new("cube"),
-                        tr!("LXC Container"),
-                        format!("{ct_count} ({ct_online_count} online)"),
-                        None,
-                    )
-                    .onclick({
-                        let navigator = ctx.link().navigator().clone().unwrap();
-                        move |event: MouseEvent| {
-                            event.stop_propagation();
-                            let filter = ResourceFilter {
-                                lxc: true,
-                                ..Default::default()
-                            };
-                            navigator.push_with_state(&crate::Route::Resources, filter);
-                        }
-                    })
-                    .interactive(true),
-                );
-
-                tiles.push(
-                    icon_list_tile(
-                        Fa::new("database"),
-                        tr!("Storage"),
-                        format!("{storage_count} ({storage_online_count} online)"),
-                        None,
-                    )
-                    .onclick({
-                        let navigator = ctx.link().navigator().clone().unwrap();
-                        move |event: MouseEvent| {
-                            event.stop_propagation();
-                            let filter = ResourceFilter {
-                                storage: true,
-                                ..Default::default()
-                            };
-                            navigator.push_with_state(&crate::Route::Resources, filter);
-                        }
-                    })
-                    .interactive(true),
-                );
-                List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
-                    .grid_template_columns("auto 1fr auto")
-                    .into()
+                if item.ty == ClusterResourceType::Lxc {
+                    ct_count += 1;
+                    if item.status.as_deref() == Some("running") {
+                        ct_online_count += 1;
+                    }
+                }
+                if item.ty == ClusterResourceType::Storage {
+                    storage_count += 1;
+                    if item.status.as_deref() == Some("available") {
+                        storage_online_count += 1;
+                    }
+                }
             }
-            Err(_) if self.resources_loading => html! {},
-            Err(err) => pwt::widget::error_message(err).padding(2).into(),
-        };
+
+            let mut tiles: Vec<ListTile> = Vec::new();
+
+            tiles.push(
+                icon_list_tile(
+                    Fa::new("desktop"),
+                    tr!("Virtual Machines"),
+                    format!("{vm_count} ({vm_online_count} online)"),
+                    None,
+                )
+                .onclick({
+                    let navigator = ctx.link().navigator().clone().unwrap();
+                    move |event: MouseEvent| {
+                        event.stop_propagation();
+                        let filter = ResourceFilter {
+                            qemu: true,
+                            ..Default::default()
+                        };
+                        navigator.push_with_state(&crate::Route::Resources, filter);
+                    }
+                })
+                .interactive(true),
+            );
+
+            tiles.push(
+                icon_list_tile(
+                    Fa::new("cube"),
+                    tr!("LXC Container"),
+                    format!("{ct_count} ({ct_online_count} online)"),
+                    None,
+                )
+                .onclick({
+                    let navigator = ctx.link().navigator().clone().unwrap();
+                    move |event: MouseEvent| {
+                        event.stop_propagation();
+                        let filter = ResourceFilter {
+                            lxc: true,
+                            ..Default::default()
+                        };
+                        navigator.push_with_state(&crate::Route::Resources, filter);
+                    }
+                })
+                .interactive(true),
+            );
+
+            tiles.push(
+                icon_list_tile(
+                    Fa::new("database"),
+                    tr!("Storage"),
+                    format!("{storage_count} ({storage_online_count} online)"),
+                    None,
+                )
+                .onclick({
+                    let navigator = ctx.link().navigator().clone().unwrap();
+                    move |event: MouseEvent| {
+                        event.stop_propagation();
+                        let filter = ResourceFilter {
+                            storage: true,
+                            ..Default::default()
+                        };
+                        navigator.push_with_state(&crate::Route::Resources, filter);
+                    }
+                })
+                .interactive(true),
+            );
+            List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
+                .grid_template_columns("auto 1fr auto")
+                .into()
+        });
 
         crate::widgets::standard_card(tr!("Resources"), None::<&str>)
             .class("pwt-interactive")
-            .with_optional_child(
-                self.resources_loading
-                    .then(|| pwt::widget::Progress::new().class("pwt-delay-visibility")),
-            )
             .with_child(content)
             .onclick({
                 let navigator = ctx.link().navigator().clone().unwrap();
@@ -369,10 +346,8 @@ impl Component for PvePageDashboard {
 
     fn create(ctx: &Context<Self>) -> Self {
         let me = Self {
-            nodes_loading: true,
-            nodes: Err(tr!("no data loaded")),
-            resources_loading: true,
-            resources: Err(tr!("no data loaded")),
+            nodes: None,
+            resources: None,
             show_subscription_alert: false,
             subscription_error: None, // assume ok by default
         };
@@ -383,14 +358,12 @@ impl Component for PvePageDashboard {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ResourcesLoadResult(result) => {
-                self.resources_loading = false;
-                self.resources = result.map_err(|err| err.to_string());
+                self.resources = Some(result);
             }
             Msg::NodeLoadResult(result) => {
-                self.nodes_loading = false;
-                self.nodes = result.map_err(|err| err.to_string());
+                self.nodes = Some(result);
 
-                if let Ok(nodes) = &self.nodes {
+                if let Some(Ok(nodes)) = &self.nodes {
                     let mut level = None;
                     let mut mixed = false;
 
