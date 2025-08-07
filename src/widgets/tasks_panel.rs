@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Container, Fa, List, ListTile, Progress};
+use pwt::widget::{Column, Container, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use pwt_macros::builder;
@@ -150,15 +150,16 @@ impl Component for PveTasksPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Some(Ok(data)) if data.is_empty() => Container::new()
-                .padding(2)
-                .with_child(tr!("List is empty."))
-                .into(),
-            Some(Ok(data)) => self.view_task_list(ctx, data.clone()),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+        crate::widgets::render_loaded_data(&self.data, |data| {
+            if data.is_empty() {
+                Container::new()
+                    .padding(2)
+                    .with_child(tr!("List is empty."))
+                    .into()
+            } else {
+                self.view_task_list(ctx, data.clone())
+            }
+        })
     }
 }
 
