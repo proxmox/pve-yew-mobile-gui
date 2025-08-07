@@ -11,7 +11,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::touch::MaterialAppScopeExt;
-use pwt::widget::{Column, Container, Dialog, Fa, List, ListTile, Progress, Row, Trigger};
+use pwt::widget::{Column, Container, Dialog, Fa, List, ListTile, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_delete_get, http_get, percent_encoding::percent_encode_component};
@@ -274,15 +274,16 @@ impl Component for PveStorageContentPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Some(Ok(data)) if !data.is_empty() => self.view_content(ctx, data),
-            Some(Ok(_data)) => Container::new()
-                .padding(2)
-                .with_child(tr!("List is empty."))
-                .into(),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+        crate::widgets::render_loaded_data(&self.data, |data| {
+            if !data.is_empty() {
+                Container::new()
+                    .padding(2)
+                    .with_child(tr!("List is empty."))
+                    .into()
+            } else {
+                self.view_content(ctx, data)
+            }
+        })
     }
 }
 
