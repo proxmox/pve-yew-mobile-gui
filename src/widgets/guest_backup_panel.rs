@@ -9,7 +9,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, MiniScroll, Progress, Row};
+use pwt::widget::{Column, MiniScroll, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -298,11 +298,7 @@ impl Component for PveGuestBackupPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.storage_list {
-            Some(Ok(data)) => self.view_config(ctx, data),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+        crate::widgets::render_loaded_data(&self.storage_list, |data| self.view_config(ctx, data))
     }
 }
 
