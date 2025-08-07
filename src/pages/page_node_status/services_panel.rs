@@ -133,15 +133,13 @@ impl Component for PveNodeServicesPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Some(Ok(data)) => Column::new()
+        crate::widgets::render_loaded_data(&self.data, |data| {
+            Column::new()
                 .class(pwt::css::FlexFit)
                 .with_child(self.view_service_summary(ctx, data))
                 .with_child(self.view_services(ctx, data))
-                .into(),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+                .into()
+        })
     }
 }
 

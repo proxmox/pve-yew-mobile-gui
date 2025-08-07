@@ -111,8 +111,13 @@ impl Component for PveNodeUpdatesPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Some(Ok(data)) if !data.is_empty() => {
+        crate::widgets::render_loaded_data(&self.data, |data| {
+            if data.is_empty() {
+                Container::new()
+                    .padding(2)
+                    .with_child(tr!("List is empty."))
+                    .into()
+            } else {
                 let info = self.show_info.as_ref().map(|info| {
                     Dialog::new(info.package.clone())
                         .with_child(
@@ -131,13 +136,7 @@ impl Component for PveNodeUpdatesPanel {
                     .with_optional_child(info)
                     .into()
             }
-            Some(Ok(_data)) => Container::new()
-                .padding(2)
-                .with_child(tr!("List is empty."))
-                .into(),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+        })
     }
 }
 

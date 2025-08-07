@@ -219,8 +219,8 @@ impl Component for PveNodeDashboardPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Some(Ok(data)) => Column::new()
+        crate::widgets::render_loaded_data(&self.data, |data| {
+            Column::new()
                 .class(pwt::css::FlexFit)
                 .padding(2)
                 .gap(2)
@@ -228,10 +228,8 @@ impl Component for PveNodeDashboardPanel {
                 .with_child(self.view_actions(ctx, data))
                 .with_child(self.task_button(ctx))
                 //.with_child(NodeResourcesPanel::new(props.node.clone(), props.vmid))
-                .into(),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+                .into()
+        })
     }
 }
 
