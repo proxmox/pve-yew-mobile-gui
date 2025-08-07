@@ -5,7 +5,7 @@ use serde_json::Value;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use pwt::widget::{Column, Container, Progress};
+use pwt::widget::{Column, Container};
 use pwt::{prelude::*, AsyncAbortGuard};
 
 use crate::widgets::{storage_card, StorageContentPanel, TopNavBar};
@@ -97,11 +97,9 @@ impl Component for PvePageStorageStatus {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let content: Html = match &self.status {
-            Some(Ok(status)) => self.view_status(ctx, status),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        };
+        let content: Html = crate::widgets::render_loaded_data(&self.status, |status| {
+            self.view_status(ctx, status)
+        });
 
         Column::new()
             .class("pwt-fit")
