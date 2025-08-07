@@ -187,12 +187,8 @@ impl Component for PveQemuHardwarePanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let content = match &self.data {
-            Some(Ok(data)) => self.view_list(ctx, data),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        };
-
+        let content =
+            crate::widgets::render_loaded_data(&self.data, |data| self.view_list(ctx, data));
         crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
             .min_height(200)
             .with_child(content)

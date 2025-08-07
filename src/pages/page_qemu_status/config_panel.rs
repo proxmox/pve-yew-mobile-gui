@@ -263,11 +263,7 @@ impl Component for PveQemuConfigPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Some(Ok(data)) => self.view_config(ctx, data),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+        crate::widgets::render_loaded_data(&self.data, |data| self.view_config(ctx, data))
     }
 }
 
