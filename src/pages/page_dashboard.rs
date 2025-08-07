@@ -1,5 +1,5 @@
+use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Error;
 
@@ -20,8 +20,6 @@ use proxmox_yew_comp::{http_get, SubscriptionAlert};
 use crate::pages::ResourceFilter;
 use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
 
-static SUBSCRIPTION_CONFIRMED: AtomicBool = AtomicBool::new(false);
-
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageDashboard {}
 
@@ -31,10 +29,19 @@ impl PageDashboard {
     }
 }
 
-pub struct PvePageDashboard {
+#[derive(Default)]
+struct CachedData {
     nodes: Option<Result<Vec<ClusterNodeIndexResponse>, Error>>,
     resources: Option<Result<Vec<ClusterResource>, Error>>,
+    subscription_confirmed: bool,
     subscription_error: Option<String>, // None == Ok
+}
+
+thread_local! {
+    static CACHE: RefCell<CachedData> = RefCell::new(CachedData::default());
+}
+
+pub struct PvePageDashboard {
     show_subscription_alert: bool,
 }
 pub enum Msg {
@@ -59,7 +66,7 @@ impl PvePageDashboard {
     }
 
     fn create_subscription_card(&self, ctx: &Context<Self>) -> Option<Html> {
-        if self.subscription_error.is_some() {
+        if CACHE.with_borrow(|cache| cache.subscription_error.is_some()) {
             Some(
                 Card::new()
                     .padding(2)
@@ -76,18 +83,12 @@ impl PvePageDashboard {
     }
 
     fn create_analytics_card(&self, _ctx: &Context<Self>) -> Html {
-        let data = match (&self.nodes, &self.resources) {
-            (Some(Ok(nodes)), Some(Ok(resources))) => Some(Ok((nodes, resources))),
-            (Some(Err(err)), _) | (_, Some(Err(err))) => Some(Err(err)),
-            (None, _) | (_, None) => None,
-        };
-
-        let node_count = match &self.nodes {
-            Some(Ok(list)) => list.len(),
-            _ => 1,
-        };
-
-        let content: Html =
+        let content = CACHE.with_borrow(|cache| {
+            let data = match (&cache.nodes, &cache.resources) {
+                (Some(Ok(nodes)), Some(Ok(resources))) => Some(Ok((nodes, resources))),
+                (Some(Err(err)), _) | (_, Some(Err(err))) => Some(Err(err)),
+                (None, _) | (_, None) => None,
+            };
             crate::widgets::render_loaded_data(&data, |(node_list, resource_list)| {
                 let mut cpu = 0.0;
                 let mut maxcpu = 0;
@@ -162,7 +163,13 @@ impl PvePageDashboard {
                 List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
                     .grid_template_columns("auto 1fr")
                     .into()
-            });
+            })
+        });
+
+        let node_count = CACHE.with_borrow(|cache| match &cache.nodes {
+            Some(Ok(list)) => list.len(),
+            _ => 1,
+        });
 
         crate::widgets::standard_card(
             tr!("Analytics"),
@@ -173,37 +180,41 @@ impl PvePageDashboard {
     }
 
     fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
-        let content: Html = crate::widgets::render_loaded_data(&self.nodes, |nodes| {
-            let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
-            let navigator = ctx.link().navigator().clone().unwrap();
-            List::new(nodes.len() as u64, move |pos| {
-                let navigator = navigator.clone();
-                let item = &nodes[pos as usize];
-                let nodename = item.node.clone();
-                let subtitle = match item.level.as_deref() {
-                    Some("") | None => "no subscription",
-                    Some(level) => level,
-                };
+        let content: Html = CACHE.with_borrow(|cache| {
+            crate::widgets::render_loaded_data(&cache.nodes, |nodes| {
+                let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
+                let navigator = ctx.link().navigator().clone().unwrap();
+                List::new(nodes.len() as u64, move |pos| {
+                    let navigator = navigator.clone();
+                    let item = &nodes[pos as usize];
+                    let nodename = item.node.clone();
+                    let subtitle = match item.level.as_deref() {
+                        Some("") | None => "no subscription",
+                        Some(level) => level,
+                    };
 
-                icon_list_tile(
-                    Fa::new("server").class(
-                        (item.status == ClusterNodeIndexResponseStatus::Online)
-                            .then(|| "pwt-color-primary"),
-                    ),
-                    nodename.clone(),
-                    subtitle.to_string(),
-                    Some(item.status.to_string().into()),
-                )
-                .interactive(true)
-                .onclick(Callback::from(move |event: web_sys::MouseEvent| {
-                    event.stop_propagation();
-                    navigator.push(&crate::Route::Node {
-                        nodename: nodename.clone(),
-                    });
-                }))
+                    icon_list_tile(
+                        Fa::new("server").class(
+                            (item.status == ClusterNodeIndexResponseStatus::Online)
+                                .then(|| "pwt-color-primary"),
+                        ),
+                        nodename.clone(),
+                        subtitle.to_string(),
+                        Some(item.status.to_string().into()),
+                    )
+                    .interactive(true)
+                    .onclick(Callback::from(
+                        move |event: web_sys::MouseEvent| {
+                            event.stop_propagation();
+                            navigator.push(&crate::Route::Node {
+                                nodename: nodename.clone(),
+                            });
+                        },
+                    ))
+                })
+                .grid_template_columns("auto 1fr auto")
+                .into()
             })
-            .grid_template_columns("auto 1fr auto")
-            .into()
         });
 
         crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
@@ -224,102 +235,104 @@ impl PvePageDashboard {
     }
 
     fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
-        let content: Html = crate::widgets::render_loaded_data(&self.resources, |list| {
-            let mut vm_count = 0;
-            let mut vm_online_count = 0;
-            let mut ct_count = 0;
-            let mut ct_online_count = 0;
-            let mut storage_count = 0;
-            let mut storage_online_count = 0;
+        let content: Html = CACHE.with_borrow(|cache| {
+            crate::widgets::render_loaded_data(&cache.resources, |list| {
+                let mut vm_count = 0;
+                let mut vm_online_count = 0;
+                let mut ct_count = 0;
+                let mut ct_online_count = 0;
+                let mut storage_count = 0;
+                let mut storage_online_count = 0;
 
-            for item in list {
-                if item.ty == ClusterResourceType::Qemu {
-                    vm_count += 1;
-                    if item.status.as_deref() == Some("running") {
-                        vm_online_count += 1;
+                for item in list {
+                    if item.ty == ClusterResourceType::Qemu {
+                        vm_count += 1;
+                        if item.status.as_deref() == Some("running") {
+                            vm_online_count += 1;
+                        }
+                    }
+                    if item.ty == ClusterResourceType::Lxc {
+                        ct_count += 1;
+                        if item.status.as_deref() == Some("running") {
+                            ct_online_count += 1;
+                        }
+                    }
+                    if item.ty == ClusterResourceType::Storage {
+                        storage_count += 1;
+                        if item.status.as_deref() == Some("available") {
+                            storage_online_count += 1;
+                        }
                     }
                 }
-                if item.ty == ClusterResourceType::Lxc {
-                    ct_count += 1;
-                    if item.status.as_deref() == Some("running") {
-                        ct_online_count += 1;
-                    }
-                }
-                if item.ty == ClusterResourceType::Storage {
-                    storage_count += 1;
-                    if item.status.as_deref() == Some("available") {
-                        storage_online_count += 1;
-                    }
-                }
-            }
 
-            let mut tiles: Vec<ListTile> = Vec::new();
+                let mut tiles: Vec<ListTile> = Vec::new();
 
-            tiles.push(
-                icon_list_tile(
-                    Fa::new("desktop"),
-                    tr!("Virtual Machines"),
-                    format!("{vm_count} ({vm_online_count} online)"),
-                    None,
-                )
-                .onclick({
-                    let navigator = ctx.link().navigator().clone().unwrap();
-                    move |event: MouseEvent| {
-                        event.stop_propagation();
-                        let filter = ResourceFilter {
-                            qemu: true,
-                            ..Default::default()
-                        };
-                        navigator.push_with_state(&crate::Route::Resources, filter);
-                    }
-                })
-                .interactive(true),
-            );
+                tiles.push(
+                    icon_list_tile(
+                        Fa::new("desktop"),
+                        tr!("Virtual Machines"),
+                        format!("{vm_count} ({vm_online_count} online)"),
+                        None,
+                    )
+                    .onclick({
+                        let navigator = ctx.link().navigator().clone().unwrap();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            let filter = ResourceFilter {
+                                qemu: true,
+                                ..Default::default()
+                            };
+                            navigator.push_with_state(&crate::Route::Resources, filter);
+                        }
+                    })
+                    .interactive(true),
+                );
 
-            tiles.push(
-                icon_list_tile(
-                    Fa::new("cube"),
-                    tr!("LXC Container"),
-                    format!("{ct_count} ({ct_online_count} online)"),
-                    None,
-                )
-                .onclick({
-                    let navigator = ctx.link().navigator().clone().unwrap();
-                    move |event: MouseEvent| {
-                        event.stop_propagation();
-                        let filter = ResourceFilter {
-                            lxc: true,
-                            ..Default::default()
-                        };
-                        navigator.push_with_state(&crate::Route::Resources, filter);
-                    }
-                })
-                .interactive(true),
-            );
+                tiles.push(
+                    icon_list_tile(
+                        Fa::new("cube"),
+                        tr!("LXC Container"),
+                        format!("{ct_count} ({ct_online_count} online)"),
+                        None,
+                    )
+                    .onclick({
+                        let navigator = ctx.link().navigator().clone().unwrap();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            let filter = ResourceFilter {
+                                lxc: true,
+                                ..Default::default()
+                            };
+                            navigator.push_with_state(&crate::Route::Resources, filter);
+                        }
+                    })
+                    .interactive(true),
+                );
 
-            tiles.push(
-                icon_list_tile(
-                    Fa::new("database"),
-                    tr!("Storage"),
-                    format!("{storage_count} ({storage_online_count} online)"),
-                    None,
-                )
-                .onclick({
-                    let navigator = ctx.link().navigator().clone().unwrap();
-                    move |event: MouseEvent| {
-                        event.stop_propagation();
-                        let filter = ResourceFilter {
-                            storage: true,
-                            ..Default::default()
-                        };
-                        navigator.push_with_state(&crate::Route::Resources, filter);
-                    }
-                })
-                .interactive(true),
-            );
-            List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
-                .grid_template_columns("auto 1fr auto")
-                .into()
+                tiles.push(
+                    icon_list_tile(
+                        Fa::new("database"),
+                        tr!("Storage"),
+                        format!("{storage_count} ({storage_online_count} online)"),
+                        None,
+                    )
+                    .onclick({
+                        let navigator = ctx.link().navigator().clone().unwrap();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            let filter = ResourceFilter {
+                                storage: true,
+                                ..Default::default()
+                            };
+                            navigator.push_with_state(&crate::Route::Resources, filter);
+                        }
+                    })
+                    .interactive(true),
+                );
+                List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
+                    .grid_template_columns("auto 1fr auto")
+                    .into()
+            })
         });
 
         crate::widgets::standard_card(tr!("Resources"), None::<&str>)
@@ -346,10 +359,7 @@ impl Component for PvePageDashboard {
 
     fn create(ctx: &Context<Self>) -> Self {
         let me = Self {
-            nodes: None,
-            resources: None,
             show_subscription_alert: false,
-            subscription_error: None, // assume ok by default
         };
         me.load(ctx);
         me
@@ -358,64 +368,67 @@ impl Component for PvePageDashboard {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ResourcesLoadResult(result) => {
-                self.resources = Some(result);
+                CACHE.with_borrow_mut(|cache| cache.resources = Some(result));
             }
             Msg::NodeLoadResult(result) => {
-                self.nodes = Some(result);
+                CACHE.with_borrow_mut(|cache| {
+                    cache.nodes = Some(result);
 
-                if let Some(Ok(nodes)) = &self.nodes {
-                    let mut level = None;
-                    let mut mixed = false;
+                    if let Some(Ok(nodes)) = &cache.nodes {
+                        let mut level = None;
+                        let mut mixed = false;
 
-                    for item in nodes.iter() {
-                        if item.status == ClusterNodeIndexResponseStatus::Offline {
-                            continue;
+                        for item in nodes.iter() {
+                            if item.status == ClusterNodeIndexResponseStatus::Offline {
+                                continue;
+                            }
+                            let node_level = item.level.as_deref().unwrap_or("");
+                            if node_level.is_empty() {
+                                // no subscription beats all, set it and break the loop
+                                level = None;
+                                mixed = false;
+                                break;
+                            }
+                            if level.is_none() {
+                                level = Some(node_level);
+                            } else if level != Some(node_level) {
+                                mixed = true;
+                            }
                         }
-                        let node_level = item.level.as_deref().unwrap_or("");
-                        if node_level.is_empty() {
-                            // no subscription beats all, set it and break the loop
-                            level = None;
-                            mixed = false;
-                            break;
-                        }
-                        if level.is_none() {
-                            level = Some(node_level);
-                        } else if level != Some(node_level) {
-                            mixed = true;
-                        }
-                    }
 
-                    let single_node = nodes.len() == 1;
+                        let single_node = nodes.len() == 1;
 
-                    if level.is_some() {
-                        if mixed {
-                            self.subscription_error = Some(String::from("notsame"));
+                        if level.is_some() {
+                            if mixed {
+                                cache.subscription_error = Some(String::from("notsame"));
+                            } else {
+                                cache.subscription_error = None;
+                            }
                         } else {
-                            self.subscription_error = None;
+                            cache.subscription_error = Some(String::from(if single_node {
+                                "notfound"
+                            } else {
+                                "notall"
+                            }));
                         }
-                    } else {
-                        self.subscription_error = Some(String::from(if single_node {
-                            "notfound"
-                        } else {
-                            "notall"
-                        }));
-                    }
 
-                    if !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed) {
-                        SUBSCRIPTION_CONFIRMED
-                            .store(self.subscription_error.is_none(), Ordering::Relaxed);
+                        if !cache.subscription_confirmed {
+                            cache.subscription_confirmed = cache.subscription_error.is_none();
+                        }
                     }
-                }
+                })
             }
             Msg::ConfirmSubscription => {
                 self.show_subscription_alert = false;
-                SUBSCRIPTION_CONFIRMED.store(true, Ordering::Relaxed);
+                CACHE.with_borrow_mut(|cache| {
+                    cache.subscription_confirmed = true;
+                });
             }
-            Msg::ShowSubscriptionAlert => {
-                if self.subscription_error.is_some() {
+            Msg::ShowSubscriptionAlert => CACHE.with_borrow(|cache| {
+                if cache.subscription_error.is_some() {
                     self.show_subscription_alert = true;
                 }
-            }
+            }),
         }
         true
     }
@@ -443,15 +456,18 @@ impl Component for PvePageDashboard {
             );
         */
 
-        let mut alert = None;
-        if let Some(status) = &self.subscription_error {
-            if self.show_subscription_alert || !SUBSCRIPTION_CONFIRMED.load(Ordering::Relaxed) {
-                alert = Some(
-                    SubscriptionAlert::new(status.clone())
-                        .on_close(ctx.link().callback(|_| Msg::ConfirmSubscription)),
-                );
+        let alert = CACHE.with_borrow(|cache| {
+            let mut alert = None;
+            if let Some(status) = &cache.subscription_error {
+                if self.show_subscription_alert || !cache.subscription_confirmed {
+                    alert = Some(
+                        SubscriptionAlert::new(status.clone())
+                            .on_close(ctx.link().callback(|_| Msg::ConfirmSubscription)),
+                    );
+                }
             }
-        }
+            alert
+        });
 
         Column::new()
             .class("pwt-fit")
