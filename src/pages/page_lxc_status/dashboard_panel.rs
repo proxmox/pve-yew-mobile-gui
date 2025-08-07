@@ -11,7 +11,7 @@ use yew_router::scope_ext::RouterScopeExt;
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
-    Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Progress, Row,
+    Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row,
 };
 use pwt::AsyncAbortGuard;
 
@@ -317,36 +317,32 @@ impl Component for PveLxcDashboardPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        match &self.data {
-            Some(Ok(data)) => {
-                let confirm_dialog =
-                    self.confirm_lxc_command
-                        .as_ref()
-                        .map(|(command, confirm_msg)| {
-                            ConfirmDialog::default()
-                                .confirm_message(confirm_msg)
-                                .on_close(ctx.link().callback(|_| Msg::CloseDialog))
-                                .on_confirm({
-                                    let command = command.clone();
-                                    ctx.link()
-                                        .callback(move |_| Msg::LxcCommand(command.clone()))
-                                })
-                        });
+        crate::widgets::render_loaded_data(&self.data, |data| {
+            let confirm_dialog = self
+                .confirm_lxc_command
+                .as_ref()
+                .map(|(command, confirm_msg)| {
+                    ConfirmDialog::default()
+                        .confirm_message(confirm_msg)
+                        .on_close(ctx.link().callback(|_| Msg::CloseDialog))
+                        .on_confirm({
+                            let command = command.clone();
+                            ctx.link()
+                                .callback(move |_| Msg::LxcCommand(command.clone()))
+                        })
+                });
 
-                Column::new()
-                    .class(pwt::css::FlexFit)
-                    .padding(2)
-                    .gap(2)
-                    .with_child(self.view_status(ctx, data))
-                    .with_child(self.view_actions(ctx, data))
-                    .with_child(self.task_button(ctx))
-                    .with_child(LxcResourcesPanel::new(props.node.clone(), props.vmid))
-                    .with_optional_child(confirm_dialog)
-                    .into()
-            }
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+            Column::new()
+                .class(pwt::css::FlexFit)
+                .padding(2)
+                .gap(2)
+                .with_child(self.view_status(ctx, data))
+                .with_child(self.view_actions(ctx, data))
+                .with_child(self.task_button(ctx))
+                .with_child(LxcResourcesPanel::new(props.node.clone(), props.vmid))
+                .with_optional_child(confirm_dialog)
+                .into()
+        })
     }
 }
 

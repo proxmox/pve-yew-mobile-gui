@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Column, Fa, List, ListTile, Progress};
+use pwt::widget::{Column, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -177,16 +177,14 @@ impl Component for PveLxcResourcesPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        match &self.data {
-            Some(Ok(data)) => Column::new()
+        crate::widgets::render_loaded_data(&self.data, |data| {
+            Column::new()
                 .gap(2)
                 .with_child(self.resource_info(ctx, data))
                 .with_child(self.network_info(ctx, data))
                 .with_child(self.dns_info(ctx, data))
-                .into(),
-            Some(Err(err)) => pwt::widget::error_message(err).into(),
-            None => Progress::new().class("pwt-delay-visibility").into(),
-        }
+                .into()
+        })
     }
 }
 
