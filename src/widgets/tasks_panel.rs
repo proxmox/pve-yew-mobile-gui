@@ -54,23 +54,14 @@ fn task_icon(task: &ListTasksResponse) -> Fa {
         return Fa::new("spinner").pulse();
     }
 
-    if let Some(text) = task.status.as_deref() {
-        if text == "OK" {
-            return Fa::new("info-circle").class(pwt::css::FontColor::Primary);
-        }
-        return Fa::new("exclamation-triangle").class(pwt::css::FontColor::Error);
+    match task.status.as_deref() {
+        Some("OK") => Fa::new("info-circle").class(pwt::css::FontColor::Primary),
+        Some(__) => Fa::new("exclamation-triangle").class(pwt::css::FontColor::Error),
+        _ => Fa::new("question"),
     }
-
-    Fa::new("question")
 }
 
 fn task_info(task: &ListTasksResponse) -> Html {
-    let status = if let Some(endtime) = task.endtime {
-        render_epoch_short(endtime)
-    } else {
-        render_epoch_short(task.starttime)
-    };
-
     Column::new()
         .gap(1)
         .with_child(
@@ -81,7 +72,7 @@ fn task_info(task: &ListTasksResponse) -> Html {
         .with_child(
             Container::new()
                 .class("pwt-font-size-title-small")
-                .with_child(status),
+                .with_child(render_epoch_short(task.endtime.unwrap_or(task.starttime))),
         )
         .into()
 }
@@ -98,16 +89,13 @@ impl PveTasksPanel {
                 .with_child(task_icon(item).margin_end(1).large_2x())
                 .with_child(task_info(item))
                 .with_child(Fa::new("chevron-right"))
-                .onclick({
-                    let on_show_task = on_show_task.clone();
-                    let upid = item.upid.clone();
-                    let endtime = item.endtime;
-                    move |_| {
-                        if let Some(on_show_task) = &on_show_task {
-                            on_show_task.emit((upid.clone(), endtime));
-                        }
-                    }
-                })
+                .onclick(on_show_task.clone().map(|cb| {
+                    cb.reform({
+                        let upid = item.upid.clone();
+                        let endtime = item.endtime;
+                        move |_| (upid.clone(), endtime)
+                    })
+                }))
         })
         .min_row_height(60)
         .separator(true)
@@ -143,7 +131,7 @@ impl Component for PveTasksPanel {
                 }));
             }
             Msg::LoadResult(result) => {
-                self.data = Some(result.map(|l| Rc::new(l)).map_err(|err| err.to_string()));
+                self.data = Some(result.map(Rc::new).map_err(|err| err.to_string()));
             }
         }
         true
@@ -157,7 +145,7 @@ impl Component for PveTasksPanel {
                     .with_child(tr!("List is empty."))
                     .into()
             } else {
-                self.view_task_list(ctx, data.clone())
+                self.view_task_list(ctx, Rc::clone(data))
             }
         })
     }
