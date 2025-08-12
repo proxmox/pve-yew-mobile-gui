@@ -2,14 +2,15 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
-use serde_json::json;
+use pwt::touch::SideDialog;
+use serde_json::Value;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::form::{Checkbox, Form, FormContext};
-use pwt::widget::{List, ListTile};
+use pwt::widget::form::{Checkbox, Form, FormContext, SubmitButton};
+use pwt::widget::{Column, Container, List, ListTile, Row};
 
 use pwt::AsyncAbortGuard;
 
@@ -45,8 +46,10 @@ fn get_config_url(node: &str, vmid: u32) -> String {
 pub enum Msg {
     Load,
     LoadResult(Result<QemuConfig, Error>),
-    StoreBoolConfig(&'static str, bool),
-    StoreResult(Result<(), Error>),
+    EditBool(&'static str, AttrValue, bool),
+    Update(Value),
+    UpdateResult(Result<(), Error>),
+    CloseDialog,
 }
 
 pub struct PveQemuConfigPanel {
@@ -54,7 +57,7 @@ pub struct PveQemuConfigPanel {
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     store_guard: Option<AsyncAbortGuard>,
-    form_context: FormContext,
+    edit_dialog: Option<Html>,
 }
 
 impl PveQemuConfigPanel {
@@ -63,18 +66,18 @@ impl PveQemuConfigPanel {
         ctx: &Context<Self>,
         title: impl Into<AttrValue>,
         name: &'static str,
-        default: bool,
+        value: bool,
     ) -> ListTile {
-        let switch = Checkbox::new()
-            .switch(true)
-            .name(name)
-            .default(default)
-            .on_input(
-                ctx.link()
-                    .callback(move |value| Msg::StoreBoolConfig(name, value)),
-            );
+        let title = title.into();
 
-        form_list_tile(title, None::<&str>, Some(switch.into()))
+        let switch = if value { tr!("Yes") } else { tr!("No") };
+
+        form_list_tile(title.clone(), None::<&str>, Some(switch.into()))
+            .interactive(true)
+            .onclick(
+                ctx.link()
+                    .callback(move |_| Msg::EditBool(name, title.clone(), value)),
+            )
     }
 
     fn view_config(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
@@ -82,23 +85,48 @@ impl PveQemuConfigPanel {
 
         let mut list: Vec<ListTile> = Vec::new();
 
-        list.push(self.changeable_config_bool(ctx, tr!("Start on boot"), "onboot", false));
-        list.push(self.changeable_config_bool(ctx, tr!("Use tablet for pointer"), "tablet", true));
-        list.push(self.changeable_config_bool(ctx, tr!("ACPI support"), "acpi", true));
+        list.push(self.changeable_config_bool(
+            ctx,
+            tr!("Start on boot"),
+            "onboot",
+            data.onboot.unwrap_or(false),
+        ));
+        list.push(self.changeable_config_bool(
+            ctx,
+            tr!("Use tablet for pointer"),
+            "tablet",
+            data.tablet.unwrap_or(true),
+        ));
+        list.push(self.changeable_config_bool(
+            ctx,
+            tr!("ACPI support"),
+            "acpi",
+            data.acpi.unwrap_or(true),
+        ));
         list.push(self.changeable_config_bool(
             ctx,
             tr!("KVM hardware virtualization"),
             "kvm",
             true,
         ));
-        list.push(self.changeable_config_bool(ctx, tr!("Freeze CPU on startup"), "freeze", false));
+        list.push(self.changeable_config_bool(
+            ctx,
+            tr!("Freeze CPU on startup"),
+            "freeze",
+            data.freeze.unwrap_or(false),
+        ));
         list.push(self.changeable_config_bool(
             ctx,
             tr!("Use local time for RTC"),
             "localtime",
-            false,
+            data.localtime.unwrap_or(false),
         ));
-        list.push(self.changeable_config_bool(ctx, tr!("Protection"), "protection", false));
+        list.push(self.changeable_config_bool(
+            ctx,
+            tr!("Protection"),
+            "protection",
+            data.protection.unwrap_or(false),
+        ));
 
         list.push(form_list_tile(
             tr!("Name"),
@@ -190,14 +218,14 @@ impl PveQemuConfigPanel {
             None,
         ));
 
-        Form::new()
+        Container::new()
             .class(pwt::css::FlexFit)
-            .form_context(self.form_context.clone())
             .with_child(
                 List::new(list.len() as u64, move |pos| list[pos as usize].clone())
                     .class(pwt::css::FlexFit)
                     .grid_template_columns("1fr auto"),
             )
+            .with_optional_child(self.edit_dialog.clone())
             .into()
     }
 }
@@ -213,7 +241,7 @@ impl Component for PveQemuConfigPanel {
             reload_timeout: None,
             load_guard: None,
             store_guard: None,
-            form_context: FormContext::new(),
+            edit_dialog: None,
         }
     }
 
@@ -231,32 +259,64 @@ impl Component for PveQemuConfigPanel {
             }
             Msg::LoadResult(result) => {
                 self.data = Some(result.map_err(|err| err.to_string()));
-                if let Some(Ok(data)) = &self.data {
-                    self.form_context
-                        .load_form(serde_json::to_value(data).unwrap());
-                }
                 let link = ctx.link().clone();
                 self.reload_timeout = Some(Timeout::new(3000, move || {
                     link.send_message(Msg::Load);
                 }));
             }
-            Msg::StoreBoolConfig(name, value) => {
-                let link = ctx.link().clone();
-                let url = get_config_url(&props.node, props.vmid);
-                let mut param = json!({});
-                param[name] = value.into();
-                self.store_guard = Some(AsyncAbortGuard::spawn(async move {
-                    let result = http_put(&url, Some(param)).await;
-                    link.send_message(Msg::StoreResult(result));
-                }));
-            }
-            Msg::StoreResult(result) => {
+            Msg::UpdateResult(result) => {
                 if self.reload_timeout.is_some() {
                     ctx.link().send_message(Msg::Load);
                 }
                 if let Err(err) = result {
                     crate::show_failed_command_error(ctx.link(), err);
                 }
+            }
+            Msg::CloseDialog => {
+                self.edit_dialog = None;
+            }
+            Msg::EditBool(name, title, value) => {
+                let input = Checkbox::new().name(name).switch(true).default(value);
+                let panel = Row::new()
+                    .gap(1)
+                    .class("pwt-flex-fill")
+                    .class("pwt-font-size-title-medium")
+                    .with_child(title)
+                    .with_flex_spacer()
+                    .with_child(input);
+
+                let form =
+                    Form::new().class(pwt::css::FlexFit).with_child(
+                        Column::new()
+                            .class(pwt::css::FlexFit)
+                            .padding(2)
+                            .gap(4)
+                            .with_child(panel)
+                            .with_child(Row::new().with_flex_spacer().with_child(
+                                SubmitButton::new().text(tr!("Apply")).on_submit(
+                                    ctx.link().callback(|ctx: FormContext| {
+                                        let value = ctx.get_submit_data();
+                                        Msg::Update(value)
+                                    }),
+                                ),
+                            )),
+                    );
+
+                let dialog = SideDialog::new()
+                    .location(pwt::touch::SideDialogLocation::Bottom)
+                    .on_close(ctx.link().callback(|_| Msg::CloseDialog))
+                    .with_child(form);
+
+                self.edit_dialog = Some(dialog.into());
+            }
+            Msg::Update(value) => {
+                self.edit_dialog = None;
+                let link = ctx.link().clone();
+                let url = get_config_url(&props.node, props.vmid);
+                self.store_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result: Result<(), Error> = http_put(&url, Some(value)).await;
+                    link.send_message(Msg::UpdateResult(result));
+                }));
             }
         }
         true
