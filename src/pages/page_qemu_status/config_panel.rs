@@ -80,6 +80,49 @@ impl PveQemuConfigPanel {
             )
     }
 
+    fn edit_bool_config(
+        &self,
+        ctx: &Context<Self>,
+        name: &str,
+        title: &AttrValue,
+        value: bool,
+    ) -> SideDialog {
+        let input = Checkbox::new()
+            .name(name.to_string())
+            .switch(true)
+            .default(value);
+        let panel = Row::new()
+            .gap(1)
+            .class("pwt-flex-fill")
+            .class("pwt-font-size-title-medium")
+            .with_child(title)
+            .with_flex_spacer()
+            .with_child(input);
+
+        let form = Form::new().class(pwt::css::FlexFit).with_child(
+            Column::new()
+                .class(pwt::css::FlexFit)
+                .padding(2)
+                .gap(4)
+                .with_child(panel)
+                .with_child(
+                    Row::new().with_flex_spacer().with_child(
+                        SubmitButton::new()
+                            .text(tr!("Apply"))
+                            .on_submit(ctx.link().callback(|ctx: FormContext| {
+                                let value = ctx.get_submit_data();
+                                Msg::Update(value)
+                            })),
+                    ),
+                ),
+        );
+
+        SideDialog::new()
+            .location(pwt::touch::SideDialogLocation::Bottom)
+            .on_close(ctx.link().callback(|_| Msg::CloseDialog))
+            .with_child(form)
+    }
+
     fn view_config(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let props = ctx.props();
 
@@ -276,37 +319,7 @@ impl Component for PveQemuConfigPanel {
                 self.edit_dialog = None;
             }
             Msg::EditBool(name, title, value) => {
-                let input = Checkbox::new().name(name).switch(true).default(value);
-                let panel = Row::new()
-                    .gap(1)
-                    .class("pwt-flex-fill")
-                    .class("pwt-font-size-title-medium")
-                    .with_child(title)
-                    .with_flex_spacer()
-                    .with_child(input);
-
-                let form =
-                    Form::new().class(pwt::css::FlexFit).with_child(
-                        Column::new()
-                            .class(pwt::css::FlexFit)
-                            .padding(2)
-                            .gap(4)
-                            .with_child(panel)
-                            .with_child(Row::new().with_flex_spacer().with_child(
-                                SubmitButton::new().text(tr!("Apply")).on_submit(
-                                    ctx.link().callback(|ctx: FormContext| {
-                                        let value = ctx.get_submit_data();
-                                        Msg::Update(value)
-                                    }),
-                                ),
-                            )),
-                    );
-
-                let dialog = SideDialog::new()
-                    .location(pwt::touch::SideDialogLocation::Bottom)
-                    .on_close(ctx.link().callback(|_| Msg::CloseDialog))
-                    .with_child(form);
-
+                let dialog = self.edit_bool_config(ctx, name, &title, value);
                 self.edit_dialog = Some(dialog.into());
             }
             Msg::Update(value) => {
