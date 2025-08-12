@@ -10,7 +10,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Form, FormContext, SubmitButton};
-use pwt::widget::{Column, Container, List, ListTile, Row};
+use pwt::widget::{Column, Container, Fa, List, ListTile, Row};
 
 use pwt::AsyncAbortGuard;
 
@@ -71,6 +71,11 @@ impl PveQemuConfigPanel {
         let title = title.into();
 
         let switch = if value { tr!("Yes") } else { tr!("No") };
+        let switch = Row::new()
+            .class(pwt::css::JustifyContent::End)
+            .gap(2)
+            .with_child(switch)
+            .with_child(Fa::new("pencil"));
 
         form_list_tile(title.clone(), None::<&str>, Some(switch.into()))
             .interactive(true)
