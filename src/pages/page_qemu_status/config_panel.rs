@@ -8,13 +8,17 @@ use serde_json::Value;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use proxmox_schema::{ApiType, ObjectSchemaType, Schema};
+
 use pwt::prelude::*;
-use pwt::widget::form::{Checkbox, Field, Form, FormContext, SubmitButton};
+use pwt::widget::form::{delete_empty_values, Checkbox, Field, Form, FormContext, SubmitButton};
 use pwt::widget::{Column, Container, List, ListTile, Row};
 
 use pwt::AsyncAbortGuard;
 
-use proxmox_yew_comp::{http_get, http_put, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{
+    http_get, http_put, percent_encoding::percent_encode_component, SchemaValidation,
+};
 
 use pve_api_types::QemuConfig;
 
@@ -153,7 +157,27 @@ impl PveQemuConfigPanel {
         title: &AttrValue,
         value: String,
     ) -> SideDialog {
-        let input = Field::new().name(name.to_string()).default(value);
+        let mut input = Field::new()
+            .name(name.to_string())
+            .default(value)
+            .submit_empty(true);
+
+        let allof_schema = QemuConfig::API_SCHEMA.unwrap_all_of_schema();
+
+        for entry in allof_schema.list {
+            if let Schema::Object(object_schema) = entry {
+                if let Ok(ind) = object_schema
+                    .properties
+                    .binary_search_by_key(&name, |(n, _, _)| n)
+                {
+                    let (_name, optional, schema) = object_schema.properties[ind];
+                    input.set_schema(schema);
+                    input.set_required(!optional);
+                    break;
+                }
+            }
+        }
+
         let panel = Column::new()
             .gap(1)
             .class("pwt-flex-fill")
@@ -376,6 +400,7 @@ impl Component for PveQemuConfigPanel {
                 self.edit_dialog = None;
                 let link = ctx.link().clone();
                 let url = get_config_url(&props.node, props.vmid);
+                let value = delete_empty_values(&value, &["name"], false);
                 self.store_guard = Some(AsyncAbortGuard::spawn(async move {
                     let result: Result<(), Error> = http_put(&url, Some(value)).await;
                     link.send_message(Msg::UpdateResult(result));
