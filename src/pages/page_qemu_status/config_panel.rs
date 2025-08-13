@@ -10,7 +10,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Field, Form, FormContext, SubmitButton};
-use pwt::widget::{Column, Container, Fa, List, ListTile, Row};
+use pwt::widget::{Column, Container, List, ListTile, Row};
 
 use pwt::AsyncAbortGuard;
 
@@ -71,14 +71,10 @@ impl PveQemuConfigPanel {
     ) -> ListTile {
         let title = title.into();
 
-        let switch = if value { tr!("Yes") } else { tr!("No") };
-        let switch = Row::new()
-            .class(pwt::css::JustifyContent::End)
-            .gap(2)
-            .with_child(switch)
-            .with_child(Fa::new("pencil"));
-
-        form_list_tile(title.clone(), None::<&str>, Some(switch.into()))
+        let trailing = Container::new()
+            .style("text-align", "end")
+            .with_child(if value { tr!("Yes") } else { tr!("No") });
+        form_list_tile(title.clone(), None::<&str>, Some(trailing.into()))
             .interactive(true)
             .onclick(
                 ctx.link()
@@ -94,16 +90,12 @@ impl PveQemuConfigPanel {
         value: String,
     ) -> ListTile {
         let title = title.into();
-        form_list_tile(
-            title.clone(),
-            Some(value.clone()),
-            Some(Fa::new("pencil").style("text-align", "end").into()),
-        )
-        .interactive(true)
-        .onclick(
-            ctx.link()
-                .callback(move |_| Msg::EditString(name, title.clone(), value.clone())),
-        )
+        form_list_tile(title.clone(), Some(value.clone()), None)
+            .interactive(true)
+            .onclick(
+                ctx.link()
+                    .callback(move |_| Msg::EditString(name, title.clone(), value.clone())),
+            )
     }
 
     fn edit_dialog(&self, ctx: &Context<Self>, input_panel: Html) -> SideDialog {
