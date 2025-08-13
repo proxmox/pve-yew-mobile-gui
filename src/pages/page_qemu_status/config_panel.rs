@@ -9,7 +9,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::form::{Checkbox, Form, FormContext, SubmitButton};
+use pwt::widget::form::{Checkbox, Field, Form, FormContext, SubmitButton};
 use pwt::widget::{Column, Container, Fa, List, ListTile, Row};
 
 use pwt::AsyncAbortGuard;
@@ -47,6 +47,7 @@ pub enum Msg {
     Load,
     LoadResult(Result<QemuConfig, Error>),
     EditBool(&'static str, AttrValue, bool),
+    EditString(&'static str, AttrValue, String),
     Update(Value),
     UpdateResult(Result<(), Error>),
     CloseDialog,
@@ -85,31 +86,33 @@ impl PveQemuConfigPanel {
             )
     }
 
-    fn edit_bool_config(
+    fn changeable_config_string(
         &self,
         ctx: &Context<Self>,
-        name: &str,
-        title: &AttrValue,
-        value: bool,
-    ) -> SideDialog {
-        let input = Checkbox::new()
-            .name(name.to_string())
-            .switch(true)
-            .default(value);
-        let panel = Row::new()
-            .gap(1)
-            .class("pwt-flex-fill")
-            .class("pwt-font-size-title-medium")
-            .with_child(title)
-            .with_flex_spacer()
-            .with_child(input);
+        title: impl Into<AttrValue>,
+        name: &'static str,
+        value: String,
+    ) -> ListTile {
+        let title = title.into();
+        form_list_tile(
+            title.clone(),
+            Some(value.clone()),
+            Some(Fa::new("pencil").style("text-align", "end").into()),
+        )
+        .interactive(true)
+        .onclick(
+            ctx.link()
+                .callback(move |_| Msg::EditString(name, title.clone(), value.clone())),
+        )
+    }
 
+    fn edit_dialog(&self, ctx: &Context<Self>, input_panel: Html) -> SideDialog {
         let form = Form::new().class(pwt::css::FlexFit).with_child(
             Column::new()
                 .class(pwt::css::FlexFit)
                 .padding(2)
                 .gap(4)
-                .with_child(panel)
+                .with_child(input_panel)
                 .with_child(
                     Row::new().with_flex_spacer().with_child(
                         SubmitButton::new()
@@ -126,6 +129,49 @@ impl PveQemuConfigPanel {
             .location(pwt::touch::SideDialogLocation::Bottom)
             .on_close(ctx.link().callback(|_| Msg::CloseDialog))
             .with_child(form)
+    }
+
+    fn edit_bool_config(
+        &self,
+        ctx: &Context<Self>,
+        name: &str,
+        title: &AttrValue,
+        value: bool,
+    ) -> SideDialog {
+        let input = Checkbox::new()
+            .name(name.to_string())
+            .switch(true)
+            .default(value);
+        let panel = Row::new()
+            .gap(1)
+            .class(pwt::css::AlignItems::Center)
+            .class("pwt-flex-fill")
+            .class("pwt-font-size-title-medium")
+            .with_child(title)
+            .with_flex_spacer()
+            .with_child(input);
+
+        self.edit_dialog(ctx, panel.into())
+    }
+
+    fn edit_string_config(
+        &self,
+        ctx: &Context<Self>,
+        name: &str,
+        title: &AttrValue,
+        value: String,
+    ) -> SideDialog {
+        let input = Field::new().name(name.to_string()).default(value);
+        let panel = Column::new()
+            .gap(1)
+            .class("pwt-flex-fill")
+            .class(pwt::css::AlignItems::Start)
+            .class("pwt-font-size-title-medium")
+            .with_child(title)
+            .with_flex_spacer()
+            .with_child(input);
+
+        self.edit_dialog(ctx, panel.into())
     }
 
     fn view_config(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
@@ -176,14 +222,17 @@ impl PveQemuConfigPanel {
             data.protection.unwrap_or(false),
         ));
 
-        list.push(form_list_tile(
-            tr!("Name"),
-            data.name
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(format!("VM {}", props.vmid)),
-            None,
-        ));
+        list.push(
+            self.changeable_config_string(
+                ctx,
+                tr!("Name"),
+                "name",
+                data.name
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(format!("VM {}", props.vmid)),
+            ),
+        );
 
         list.push(form_list_tile(
             tr!("Start/Shutdown order"),
@@ -325,6 +374,10 @@ impl Component for PveQemuConfigPanel {
             }
             Msg::EditBool(name, title, value) => {
                 let dialog = self.edit_bool_config(ctx, name, &title, value);
+                self.edit_dialog = Some(dialog.into());
+            }
+            Msg::EditString(name, title, value) => {
+                let dialog = self.edit_string_config(ctx, name, &title, value);
                 self.edit_dialog = Some(dialog.into());
             }
             Msg::Update(value) => {
