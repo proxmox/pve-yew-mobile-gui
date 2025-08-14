@@ -199,6 +199,35 @@ impl PveQemuConfigPanel {
         Self::edit_dialog(ctx.link(), panel.into())
     }
 
+    fn edit_generic(
+        &self,
+        ctx: &Context<Self>,
+        title: String,
+        value: String,
+        form: Html,
+    ) -> ListTile {
+        form_list_tile(title.clone(), value, None)
+            .interactive(true)
+            .onclick({
+                let link = ctx.link().clone();
+                let form = form.clone();
+                move |_| {
+                    let panel = Column::new()
+                        .gap(1)
+                        .class("pwt-flex-fill")
+                        .class(pwt::css::AlignItems::Start)
+                        .class("pwt-font-size-title-medium")
+                        .with_child(title.clone())
+                        .with_flex_spacer()
+                        .with_child(form.clone());
+
+                    link.send_message(Msg::ShowDialog(
+                        Self::edit_dialog(&link, panel.into()).into(),
+                    ));
+                }
+            })
+    }
+
     fn view_config(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let props = ctx.props();
 
@@ -268,45 +297,25 @@ impl PveQemuConfigPanel {
             None,
         ));
 
-        list.push(
-            form_list_tile(
+        list.push({
+            let value = data.ostype;
+            let value_str = match value {
+                Some(ostype) => QemuConfigOstypeSelector::render_value(&ostype.to_string()),
+                None => String::from("-"),
+            };
+
+            self.edit_generic(
+                ctx,
                 tr!("OS Type"),
-                data.ostype
-                    .as_ref()
-                    .map(|d| QemuConfigOstypeSelector::render_value(&d.to_string()))
-                    .unwrap_or(tr!("Other")),
-                None,
+                value_str,
+                QemuConfigOstypeSelector::new()
+                    .style("width", "100%")
+                    .name("ostype")
+                    .submit_empty(true)
+                    .default(value.map(|ostype| ostype.to_string()))
+                    .into(),
             )
-            .interactive(true)
-            .onclick({
-                let link = ctx.link().clone();
-                let default = data
-                    .ostype
-                    .as_ref()
-                    .map(|d| d.to_string())
-                    .unwrap_or(tr!("other"));
-                move |_| {
-                    let input = QemuConfigOstypeSelector::new()
-                        .style("width", "100%")
-                        .name("ostype")
-                        .submit_empty(true)
-                        .default(default.clone());
-
-                    let panel = Column::new()
-                        .gap(1)
-                        .class("pwt-flex-fill")
-                        .class(pwt::css::AlignItems::Start)
-                        .class("pwt-font-size-title-medium")
-                        .with_child(tr!("OS Type"))
-                        .with_flex_spacer()
-                        .with_child(input);
-
-                    link.send_message(Msg::ShowDialog(
-                        Self::edit_dialog(&link, panel.into()).into(),
-                    ));
-                }
-            }),
-        );
+        });
 
         list.push(form_list_tile(
             tr!("Boot Device"),
