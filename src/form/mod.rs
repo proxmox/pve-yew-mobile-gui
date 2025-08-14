@@ -1,0 +1,2 @@
+mod qemu_config_ostype_selector;
+pub use qemu_config_ostype_selector::QemuConfigOstypeSelector;
