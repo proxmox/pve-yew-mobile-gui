@@ -204,13 +204,13 @@ impl PveQemuConfigPanel {
         ctx: &Context<Self>,
         title: String,
         value: String,
-        form: Html,
+        create_form: impl Fn() -> Html,
     ) -> ListTile {
         form_list_tile(title.clone(), value, None)
             .interactive(true)
             .onclick({
                 let link = ctx.link().clone();
-                let form = form.clone();
+                let form = create_form();
                 move |_| {
                     let panel = Column::new()
                         .gap(1)
@@ -304,17 +304,14 @@ impl PveQemuConfigPanel {
                 None => String::from("-"),
             };
 
-            self.edit_generic(
-                ctx,
-                tr!("OS Type"),
-                value_str,
+            self.edit_generic(ctx, tr!("OS Type"), value_str, || {
                 QemuConfigOstypeSelector::new()
                     .style("width", "100%")
                     .name("ostype")
                     .submit_empty(true)
                     .default(value.map(|ostype| ostype.to_string()))
-                    .into(),
-            )
+                    .into()
+            })
         });
 
         list.push(form_list_tile(
