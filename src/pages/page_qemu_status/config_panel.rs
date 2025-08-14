@@ -52,8 +52,6 @@ fn get_config_url(node: &str, vmid: u32) -> String {
 pub enum Msg {
     Load,
     LoadResult(Result<QemuConfig, Error>),
-    EditBool(&'static str, AttrValue, bool),
-    EditString(&'static str, AttrValue, String),
     Update(Value),
     UpdateResult(Result<(), Error>),
     CloseDialog,
@@ -86,40 +84,34 @@ fn lookup_schema(name: &str) -> Option<(bool, &'static Schema)> {
 }
 
 impl PveQemuConfigPanel {
-    fn changeable_config_bool(
-        &self,
-        ctx: &Context<Self>,
-        title: impl Into<AttrValue>,
-        name: &'static str,
-        value: bool,
-    ) -> ListTile {
-        let title = title.into();
-
+    fn edit_bool(&self, ctx: &Context<Self>, name: &str, title: String, value: bool) -> ListTile {
         let trailing = Container::new()
             .style("text-align", "end")
             .with_child(if value { tr!("Yes") } else { tr!("No") });
+
         form_list_tile(title.clone(), None::<&str>, Some(trailing.into()))
             .interactive(true)
-            .onclick(
-                ctx.link()
-                    .callback(move |_| Msg::EditBool(name, title.clone(), value)),
-            )
-    }
+            .onclick({
+                let link = ctx.link().clone();
+                let input = Checkbox::new()
+                    .name(name.to_string())
+                    .switch(true)
+                    .default(value);
+                move |_| {
+                    let panel = Row::new()
+                        .gap(1)
+                        .class(pwt::css::AlignItems::Center)
+                        .class("pwt-flex-fill")
+                        .class("pwt-font-size-title-medium")
+                        .with_child(&title)
+                        .with_flex_spacer()
+                        .with_child(input.clone());
 
-    fn changeable_config_string(
-        &self,
-        ctx: &Context<Self>,
-        title: impl Into<AttrValue>,
-        name: &'static str,
-        value: String,
-    ) -> ListTile {
-        let title = title.into();
-        form_list_tile(title.clone(), Some(value.clone()), None)
-            .interactive(true)
-            .onclick(
-                ctx.link()
-                    .callback(move |_| Msg::EditString(name, title.clone(), value.clone())),
-            )
+                    link.send_message(Msg::ShowDialog(
+                        Self::edit_dialog(&link, panel.into()).into(),
+                    ));
+                }
+            })
     }
 
     fn edit_dialog(link: &Scope<Self>, input_panel: Html) -> SideDialog {
@@ -147,56 +139,25 @@ impl PveQemuConfigPanel {
             .with_child(form)
     }
 
-    fn edit_bool_config(
+    fn edit_string(
         &self,
         ctx: &Context<Self>,
         name: &str,
-        title: &AttrValue,
-        value: bool,
-    ) -> SideDialog {
-        let input = Checkbox::new()
-            .name(name.to_string())
-            .switch(true)
-            .default(value);
-        let panel = Row::new()
-            .gap(1)
-            .class(pwt::css::AlignItems::Center)
-            .class("pwt-flex-fill")
-            .class("pwt-font-size-title-medium")
-            .with_child(title)
-            .with_flex_spacer()
-            .with_child(input);
-
-        Self::edit_dialog(ctx.link(), panel.into())
-    }
-
-    fn edit_string_config(
-        &self,
-        ctx: &Context<Self>,
-        name: &str,
-        title: &AttrValue,
+        title: String,
         value: String,
-    ) -> SideDialog {
-        let mut input = Field::new()
-            .name(name.to_string())
-            .default(value)
-            .submit_empty(true);
+    ) -> ListTile {
+        self.edit_generic(ctx, title, value.clone(), || {
+            let mut input = Field::new()
+                .name(name.to_string())
+                .default(value.clone())
+                .submit_empty(true);
 
-        if let Some((optional, schema)) = lookup_schema(name) {
-            input.set_schema(schema);
-            input.set_required(!optional);
-        }
-
-        let panel = Column::new()
-            .gap(1)
-            .class("pwt-flex-fill")
-            .class(pwt::css::AlignItems::Start)
-            .class("pwt-font-size-title-medium")
-            .with_child(title)
-            .with_flex_spacer()
-            .with_child(input);
-
-        Self::edit_dialog(ctx.link(), panel.into())
+            if let Some((optional, schema)) = lookup_schema(name) {
+                input.set_schema(schema);
+                input.set_required(!optional);
+            }
+            input.into()
+        })
     }
 
     fn edit_generic(
@@ -233,60 +194,45 @@ impl PveQemuConfigPanel {
 
         let mut list: Vec<ListTile> = Vec::new();
 
-        list.push(self.changeable_config_bool(
+        list.push(self.edit_bool(
             ctx,
-            tr!("Start on boot"),
             "onboot",
+            tr!("Start on boot"),
             data.onboot.unwrap_or(false),
         ));
-        list.push(self.changeable_config_bool(
+        list.push(self.edit_bool(
             ctx,
-            tr!("Use tablet for pointer"),
             "tablet",
+            tr!("Use tablet for pointer"),
             data.tablet.unwrap_or(true),
         ));
-        list.push(self.changeable_config_bool(
+        list.push(self.edit_bool(ctx, "acpi", tr!("ACPI support"), data.acpi.unwrap_or(true)));
+        list.push(self.edit_bool(ctx, "kvm", tr!("KVM hardware virtualization"), true));
+        list.push(self.edit_bool(
             ctx,
-            tr!("ACPI support"),
-            "acpi",
-            data.acpi.unwrap_or(true),
-        ));
-        list.push(self.changeable_config_bool(
-            ctx,
-            tr!("KVM hardware virtualization"),
-            "kvm",
-            true,
-        ));
-        list.push(self.changeable_config_bool(
-            ctx,
-            tr!("Freeze CPU on startup"),
             "freeze",
+            tr!("Freeze CPU on startup"),
             data.freeze.unwrap_or(false),
         ));
-        list.push(self.changeable_config_bool(
+        list.push(self.edit_bool(
             ctx,
-            tr!("Use local time for RTC"),
             "localtime",
+            tr!("Use local time for RTC"),
             data.localtime.unwrap_or(false),
         ));
-        list.push(self.changeable_config_bool(
+        list.push(self.edit_bool(
             ctx,
-            tr!("Protection"),
             "protection",
+            tr!("Protection"),
             data.protection.unwrap_or(false),
         ));
 
-        list.push(
-            self.changeable_config_string(
-                ctx,
-                tr!("Name"),
-                "name",
-                data.name
-                    .as_ref()
-                    .map(String::from)
-                    .unwrap_or(format!("VM {}", props.vmid)),
-            ),
-        );
+        list.push(self.edit_string(
+            ctx,
+            "name",
+            tr!("Name"),
+            data.name.clone().unwrap_or(format!("VM {}", props.vmid)),
+        ));
 
         list.push(form_list_tile(
             tr!("Start/Shutdown order"),
@@ -436,14 +382,6 @@ impl Component for PveQemuConfigPanel {
             }
             Msg::CloseDialog => {
                 self.edit_dialog = None;
-            }
-            Msg::EditBool(name, title, value) => {
-                let dialog = self.edit_bool_config(ctx, name, &title, value);
-                self.edit_dialog = Some(dialog.into());
-            }
-            Msg::EditString(name, title, value) => {
-                let dialog = self.edit_string_config(ctx, name, &title, value);
-                self.edit_dialog = Some(dialog.into());
             }
             Msg::Update(value) => {
                 self.edit_dialog = None;
