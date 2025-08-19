@@ -13,7 +13,7 @@ use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
 use pwt::widget::form::{
-    delete_empty_values, Checkbox, Field, Form, FormContext, Number, SubmitButton,
+    delete_empty_values, Checkbox, Field, Form, FormContext, Number, ResetButton, SubmitButton,
 };
 use pwt::widget::{Column, Container, List, ListTile, Row};
 
@@ -181,7 +181,9 @@ impl PveQemuConfigPanel {
                 .with_child(input_panel)
                 .with_child(
                     Row::new()
+                        .gap(2)
                         .with_flex_spacer()
+                        .with_child(ResetButton::new().class("pwt-button-text"))
                         .with_child(SubmitButton::new().text(tr!("Apply")).on_submit(on_submit)),
                 ),
         );
