@@ -184,7 +184,7 @@ impl PveQemuConfigPanel {
                         .gap(2)
                         .with_flex_spacer()
                         .with_child(ResetButton::new().class("pwt-button-text"))
-                        .with_child(SubmitButton::new().text(tr!("Apply")).on_submit(on_submit)),
+                        .with_child(SubmitButton::new().text(tr!("Update")).on_submit(on_submit)),
                 ),
         );
 
