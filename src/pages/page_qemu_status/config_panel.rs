@@ -3,28 +3,32 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use pwt::touch::SideDialog;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use yew::html::Scope;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use proxmox_schema::{ApiType, Schema};
+use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Checkbox, Field, Form, FormContext, SubmitButton};
+use pwt::widget::form::{
+    delete_empty_values, Checkbox, Field, Form, FormContext, Number, SubmitButton,
+};
 use pwt::widget::{Column, Container, List, ListTile, Row};
 
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{
-    http_get, http_put, percent_encoding::percent_encode_component, SchemaValidation,
+    form::property_string_from_parts, http_get, http_put,
+    percent_encoding::percent_encode_component, SchemaValidation,
 };
 
 use pve_api_types::QemuConfig;
 
 use crate::form::QemuConfigOstypeSelector;
 use crate::widgets::form_list_tile;
+use crate::QemuConfigStartup;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct QemuConfigPanel {
@@ -47,6 +51,30 @@ fn get_config_url(node: &str, vmid: u32) -> String {
         percent_encode_component(node),
         vmid
     )
+}
+// fixme: use proxmox_yew_comp::flatten_property_string instead
+// Split property string into separate parts
+pub fn property_string_values(
+    property: Option<String>,
+    name: &str,
+    schema: &'static Schema,
+) -> Value {
+    let mut data = json!({});
+    if let Some(prop_str) = &property {
+        match schema.parse_property_string(&prop_str) {
+            Ok(value) => {
+                if let Value::Object(map) = value {
+                    for (k, v) in map {
+                        data[format!("_{name}_{k}")] = v;
+                    }
+                }
+            }
+            Err(err) => {
+                log::error!("unable to parse property {name}: {err}");
+            }
+        }
+    }
+    data
 }
 
 pub enum Msg {
@@ -71,17 +99,35 @@ fn lookup_schema(name: &str) -> Option<(bool, &'static Schema)> {
 
     for entry in allof_schema.list {
         if let Schema::Object(object_schema) = entry {
-            if let Ok(ind) = object_schema
-                .properties
-                .binary_search_by_key(&name, |(n, _, _)| n)
-            {
-                let (_name, optional, schema) = object_schema.properties[ind];
+            if let Some((optional, schema)) = lookup_object_property_schema(&object_schema, name) {
                 return Some((optional, schema));
             }
         }
     }
     None
 }
+
+fn lookup_object_property_schema(
+    object_schema: &ObjectSchema,
+    name: &str,
+) -> Option<(bool, &'static Schema)> {
+    if let Ok(ind) = object_schema
+        .properties
+        .binary_search_by_key(&name, |(n, _, _)| n)
+    {
+        let (_name, optional, schema) = object_schema.properties[ind];
+        return Some((optional, schema));
+    }
+    None
+}
+
+/*
+fn unwrap_object_property_schema(object_schema: &ObjectSchema, name: &str) -> &'static Schema {
+    lookup_object_property_schema(object_schema, name)
+        .unwrap()
+        .1
+}
+*/
 
 impl PveQemuConfigPanel {
     fn edit_bool(&self, ctx: &Context<Self>, name: &str, title: String, value: bool) -> ListTile {
@@ -108,13 +154,25 @@ impl PveQemuConfigPanel {
                         .with_child(input.clone());
 
                     link.send_message(Msg::ShowDialog(
-                        Self::edit_dialog(&link, panel.into()).into(),
+                        Self::edit_dialog(&link, panel.into(), None).into(),
                     ));
                 }
             })
     }
 
-    fn edit_dialog(link: &Scope<Self>, input_panel: Html) -> SideDialog {
+    fn edit_dialog(
+        link: &Scope<Self>,
+        input_panel: Html,
+        on_submit: Option<Callback<FormContext>>,
+    ) -> SideDialog {
+        let on_submit = match on_submit {
+            Some(on_submit) => on_submit,
+            None => link.callback(|ctx: FormContext| {
+                let value = ctx.get_submit_data();
+                Msg::Update(value)
+            }),
+        };
+
         let form = Form::new().class(pwt::css::FlexFit).with_child(
             Column::new()
                 .class(pwt::css::FlexFit)
@@ -122,14 +180,9 @@ impl PveQemuConfigPanel {
                 .gap(4)
                 .with_child(input_panel)
                 .with_child(
-                    Row::new().with_flex_spacer().with_child(
-                        SubmitButton::new()
-                            .text(tr!("Apply"))
-                            .on_submit(link.callback(|ctx: FormContext| {
-                                let value = ctx.get_submit_data();
-                                Msg::Update(value)
-                            })),
-                    ),
+                    Row::new()
+                        .with_flex_spacer()
+                        .with_child(SubmitButton::new().text(tr!("Apply")).on_submit(on_submit)),
                 ),
         );
 
@@ -175,15 +228,45 @@ impl PveQemuConfigPanel {
                 move |_| {
                     let panel = Column::new()
                         .gap(1)
-                        .class("pwt-flex-fill")
-                        .class(pwt::css::AlignItems::Start)
+                        .class(pwt::css::Flex::Fill)
+                        .class(pwt::css::AlignItems::Stretch)
                         .class("pwt-font-size-title-medium")
                         .with_child(title.clone())
                         .with_flex_spacer()
                         .with_child(form.clone());
 
                     link.send_message(Msg::ShowDialog(
-                        Self::edit_dialog(&link, panel.into()).into(),
+                        Self::edit_dialog(&link, panel.into(), None).into(),
+                    ));
+                }
+            })
+    }
+
+    fn edit_property_string(
+        &self,
+        ctx: &Context<Self>,
+        title: String,
+        value: String,
+        create_form: impl Fn() -> Html,
+        on_submit: Callback<FormContext>,
+    ) -> ListTile {
+        form_list_tile(title.clone(), value, None)
+            .interactive(true)
+            .onclick({
+                let link = ctx.link().clone();
+                let form = create_form();
+                move |_| {
+                    let panel = Column::new()
+                        .gap(1)
+                        .class(pwt::css::Flex::Fill)
+                        .class(pwt::css::AlignItems::Stretch)
+                        .class("pwt-font-size-title-medium")
+                        .with_child(title.clone())
+                        .with_flex_spacer()
+                        .with_child(form.clone());
+
+                    link.send_message(Msg::ShowDialog(
+                        Self::edit_dialog(&link, panel.into(), Some(on_submit.clone())).into(),
                     ));
                 }
             })
@@ -234,14 +317,65 @@ impl PveQemuConfigPanel {
             data.name.clone().unwrap_or(format!("VM {}", props.vmid)),
         ));
 
-        list.push(form_list_tile(
-            tr!("Start/Shutdown order"),
-            data.startup
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(tr!("Default (any)")),
-            None,
-        ));
+        list.push({
+            let value = data.startup.clone();
+            let data =
+                property_string_values(value.clone(), "startup", &QemuConfigStartup::API_SCHEMA);
+
+            /*
+                        let order_schema = unwrap_object_property_schema(
+                            QemuConfigStartup::API_SCHEMA.unwrap_object_schema(),
+                            "order",
+                        );
+                        let up_schema = unwrap_object_property_schema(
+                            QemuConfigStartup::API_SCHEMA.unwrap_object_schema(),
+                            "up",
+                        );
+                        let down_schema = unwrap_object_property_schema(
+                            QemuConfigStartup::API_SCHEMA.unwrap_object_schema(),
+                            "down",
+                        );
+            */
+
+            self.edit_property_string(
+                ctx,
+                tr!("Start/Shutdown order"),
+                value.unwrap_or(String::from(tr!("Default") + " (" + &tr!("any") + ")")),
+                move || {
+                    Column::new()
+                        .gap(2)
+                        .class(pwt::css::Flex::Fill)
+                        .class(pwt::css::AlignItems::Stretch)
+                        .with_child(crate::widgets::label_field(
+                            tr!("Order"),
+                            Number::<u32>::new()
+                                .name("_startup_order")
+                                .placeholder(tr!("any"))
+                                .default(data["_startup_order"].as_u64().map(|n| n as u32)), //.schema(order_schema),
+                        ))
+                        .with_child(crate::widgets::label_field(
+                            tr!("Startup delay"),
+                            Number::<u32>::new()
+                                .name("_startup_up")
+                                .placeholder(tr!("default"))
+                                .default(data["_startup_up"].as_u64().map(|n| n as u32)), //.schema(up_schema),
+                        ))
+                        .with_child(crate::widgets::label_field(
+                            tr!("Shutdown timeout"),
+                            Number::<u32>::new()
+                                .name("_startup_down")
+                                .placeholder(tr!("default"))
+                                .default(data["_startup_down"].as_i64().map(|n| n as u32)), //.schema(down_schema),
+                        ))
+                        .into()
+                },
+                ctx.link().callback(|ctx: FormContext| {
+                    let mut value = ctx.get_submit_data();
+                    property_string_from_parts::<QemuConfigStartup>(&mut value, "startup", true);
+                    Msg::Update(value)
+                }),
+            )
+        });
 
         list.push({
             let value = data.ostype;
@@ -387,7 +521,7 @@ impl Component for PveQemuConfigPanel {
                 self.edit_dialog = None;
                 let link = ctx.link().clone();
                 let url = get_config_url(&props.node, props.vmid);
-                let value = delete_empty_values(&value, &["name", "ostype"], false);
+                let value = delete_empty_values(&value, &["name", "ostype", "startup"], false);
                 self.store_guard = Some(AsyncAbortGuard::spawn(async move {
                     let result: Result<(), Error> = http_put(&url, Some(value)).await;
                     link.send_message(Msg::UpdateResult(result));
