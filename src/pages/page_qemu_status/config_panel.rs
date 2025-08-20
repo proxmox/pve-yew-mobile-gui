@@ -201,18 +201,24 @@ impl PveQemuConfigPanel {
         title: String,
         value: String,
     ) -> ListTile {
-        self.edit_generic(ctx, title, value.clone(), || {
-            let mut input = Field::new()
-                .name(name.to_string())
-                .default(value.clone())
-                .submit_empty(true);
+        self.edit_generic(
+            ctx,
+            title,
+            value.clone(),
+            || {
+                let mut input = Field::new()
+                    .name(name.to_string())
+                    .default(value.clone())
+                    .submit_empty(true);
 
-            if let Some((optional, schema)) = lookup_schema(name) {
-                input.set_schema(schema);
-                input.set_required(!optional);
-            }
-            input.into()
-        })
+                if let Some((optional, schema)) = lookup_schema(name) {
+                    input.set_schema(schema);
+                    input.set_required(!optional);
+                }
+                input.into()
+            },
+            None,
+        )
     }
 
     fn edit_generic(
@@ -221,6 +227,7 @@ impl PveQemuConfigPanel {
         title: String,
         value: String,
         create_form: impl Fn() -> Html,
+        on_submit: Option<Callback<FormContext>>,
     ) -> ListTile {
         form_list_tile(title.clone(), value, None)
             .interactive(true)
@@ -238,37 +245,7 @@ impl PveQemuConfigPanel {
                         .with_child(form.clone());
 
                     link.send_message(Msg::ShowDialog(
-                        Self::edit_dialog(&link, panel.into(), None).into(),
-                    ));
-                }
-            })
-    }
-
-    fn edit_property_string(
-        &self,
-        ctx: &Context<Self>,
-        title: String,
-        value: String,
-        create_form: impl Fn() -> Html,
-        on_submit: Callback<FormContext>,
-    ) -> ListTile {
-        form_list_tile(title.clone(), value, None)
-            .interactive(true)
-            .onclick({
-                let link = ctx.link().clone();
-                let form = create_form();
-                move |_| {
-                    let panel = Column::new()
-                        .gap(1)
-                        .class(pwt::css::Flex::Fill)
-                        .class(pwt::css::AlignItems::Stretch)
-                        .class("pwt-font-size-title-medium")
-                        .with_child(title.clone())
-                        .with_flex_spacer()
-                        .with_child(form.clone());
-
-                    link.send_message(Msg::ShowDialog(
-                        Self::edit_dialog(&link, panel.into(), Some(on_submit.clone())).into(),
+                        Self::edit_dialog(&link, panel.into(), on_submit.clone()).into(),
                     ));
                 }
             })
@@ -339,7 +316,7 @@ impl PveQemuConfigPanel {
                         );
             */
 
-            self.edit_property_string(
+            self.edit_generic(
                 ctx,
                 tr!("Start/Shutdown order"),
                 value.unwrap_or(String::from(tr!("Default") + " (" + &tr!("any") + ")")),
@@ -371,11 +348,11 @@ impl PveQemuConfigPanel {
                         ))
                         .into()
                 },
-                ctx.link().callback(|ctx: FormContext| {
+                Some(ctx.link().callback(|ctx: FormContext| {
                     let mut value = ctx.get_submit_data();
                     property_string_from_parts::<QemuConfigStartup>(&mut value, "startup", true);
                     Msg::Update(value)
-                }),
+                })),
             )
         });
 
@@ -386,14 +363,20 @@ impl PveQemuConfigPanel {
                 None => String::from("-"),
             };
 
-            self.edit_generic(ctx, tr!("OS Type"), value_str, || {
-                QemuConfigOstypeSelector::new()
-                    .style("width", "100%")
-                    .name("ostype")
-                    .submit_empty(true)
-                    .default(value.map(|ostype| ostype.to_string()))
-                    .into()
-            })
+            self.edit_generic(
+                ctx,
+                tr!("OS Type"),
+                value_str,
+                || {
+                    QemuConfigOstypeSelector::new()
+                        .style("width", "100%")
+                        .name("ostype")
+                        .submit_empty(true)
+                        .default(value.map(|ostype| ostype.to_string()))
+                        .into()
+                },
+                None,
+            )
         });
 
         list.push(form_list_tile(
