@@ -19,6 +19,9 @@ pub use volume_action_dialog::VolumeActionDialog;
 mod guest_backup_panel;
 pub use guest_backup_panel::GuestBackupPanel;
 
+mod config_list;
+pub use config_list::{ConfigList, ConfigTile};
+
 use pwt::prelude::*;
 use pwt::props::PwtSpace;
 use pwt::widget::{Card, Column, Container, Fa, FieldLabel, ListTile, Progress, Row};

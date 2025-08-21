@@ -2,20 +2,17 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
-use pwt::touch::SideDialog;
+use pwt::props::SubmitCallback;
 use serde_json::{json, Value};
 
-use yew::html::Scope;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
-use pwt::widget::form::{
-    delete_empty_values, Checkbox, Field, Form, FormContext, Number, ResetButton, SubmitButton,
-};
-use pwt::widget::{Column, Container, List, ListTile, Row};
+use pwt::widget::form::{delete_empty_values, Checkbox, Field, FormContext, Number};
+use pwt::widget::{Column, Row};
 
 use pwt::AsyncAbortGuard;
 
@@ -27,7 +24,7 @@ use proxmox_yew_comp::{
 use pve_api_types::QemuConfig;
 
 use crate::form::QemuConfigOstypeSelector;
-use crate::widgets::form_list_tile;
+use crate::widgets::{ConfigList, ConfigTile};
 use crate::QemuConfigStartup;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -82,8 +79,6 @@ pub enum Msg {
     LoadResult(Result<QemuConfig, Error>),
     Update(Value),
     UpdateResult(Result<(), Error>),
-    CloseDialog,
-    ShowDialog(Html),
 }
 
 pub struct PveQemuConfigPanel {
@@ -130,68 +125,33 @@ fn unwrap_object_property_schema(object_schema: &ObjectSchema, name: &str) -> &'
 */
 
 impl PveQemuConfigPanel {
-    fn edit_bool(&self, ctx: &Context<Self>, name: &str, title: String, value: bool) -> ListTile {
-        let trailing = Container::new()
-            .style("text-align", "end")
-            .with_child(if value { tr!("Yes") } else { tr!("No") });
-
-        form_list_tile(title.clone(), None::<&str>, Some(trailing.into()))
-            .interactive(true)
-            .onclick({
-                let link = ctx.link().clone();
-                let input = Checkbox::new()
-                    .name(name.to_string())
-                    .switch(true)
-                    .default(value);
-                move |_| {
-                    let panel = Row::new()
-                        .gap(1)
-                        .class(pwt::css::AlignItems::Center)
-                        .class("pwt-flex-fill")
-                        .class("pwt-font-size-title-medium")
-                        .with_child(&title)
-                        .with_flex_spacer()
-                        .with_child(input.clone());
-
-                    link.send_message(Msg::ShowDialog(
-                        Self::edit_dialog(&link, panel.into(), None).into(),
-                    ));
-                }
-            })
+    fn default_submit(&self, ctx: &Context<Self>) -> SubmitCallback<FormContext> {
+        let link = ctx.link().clone();
+        SubmitCallback::new(move |ctx: FormContext| {
+            let link = link.clone();
+            async move {
+                let value = ctx.get_submit_data();
+                link.send_message(Msg::Update(value));
+                Ok(())
+            }
+        })
     }
 
-    fn edit_dialog(
-        link: &Scope<Self>,
-        input_panel: Html,
-        on_submit: Option<Callback<FormContext>>,
-    ) -> SideDialog {
-        let on_submit = match on_submit {
-            Some(on_submit) => on_submit,
-            None => link.callback(|ctx: FormContext| {
-                let value = ctx.get_submit_data();
-                Msg::Update(value)
-            }),
-        };
-
-        let form = Form::new().class(pwt::css::FlexFit).with_child(
-            Column::new()
-                .class(pwt::css::FlexFit)
-                .padding(2)
-                .gap(4)
-                .with_child(input_panel)
-                .with_child(
-                    Row::new()
-                        .gap(2)
-                        .with_flex_spacer()
-                        .with_child(ResetButton::new().class("pwt-button-text"))
-                        .with_child(SubmitButton::new().text(tr!("Update")).on_submit(on_submit)),
-                ),
-        );
-
-        SideDialog::new()
-            .location(pwt::touch::SideDialogLocation::Bottom)
-            .on_close(link.callback(|_| Msg::CloseDialog))
-            .with_child(form)
+    fn edit_bool(&self, ctx: &Context<Self>, name: &str, title: String, value: bool) -> ConfigTile {
+        let name = name.to_string();
+        ConfigTile::new_bool(title, value)
+            .on_submit(Some(self.default_submit(ctx)))
+            .create_input_panel(move |_form_ctx: &FormContext| {
+                Row::new()
+                    .with_flex_spacer()
+                    .with_child(
+                        Checkbox::new()
+                            .name(name.to_string())
+                            .switch(true)
+                            .default(value),
+                    )
+                    .into()
+            })
     }
 
     fn edit_string(
@@ -200,61 +160,29 @@ impl PveQemuConfigPanel {
         name: &str,
         title: String,
         value: String,
-    ) -> ListTile {
-        self.edit_generic(
-            ctx,
-            title,
-            value.clone(),
-            || {
+    ) -> ConfigTile {
+        let name = name.to_string();
+        ConfigTile::new(title)
+            .value_text(value.clone())
+            .on_submit(Some(self.default_submit(ctx)))
+            .create_input_panel(move |_form_ctx: &FormContext| {
                 let mut input = Field::new()
                     .name(name.to_string())
                     .default(value.clone())
                     .submit_empty(true);
 
-                if let Some((optional, schema)) = lookup_schema(name) {
+                if let Some((optional, schema)) = lookup_schema(&name) {
                     input.set_schema(schema);
                     input.set_required(!optional);
                 }
                 input.into()
-            },
-            None,
-        )
-    }
-
-    fn edit_generic(
-        &self,
-        ctx: &Context<Self>,
-        title: String,
-        value: String,
-        create_form: impl Fn() -> Html,
-        on_submit: Option<Callback<FormContext>>,
-    ) -> ListTile {
-        form_list_tile(title.clone(), value, None)
-            .interactive(true)
-            .onclick({
-                let link = ctx.link().clone();
-                let form = create_form();
-                move |_| {
-                    let panel = Column::new()
-                        .gap(1)
-                        .class(pwt::css::Flex::Fill)
-                        .class(pwt::css::AlignItems::Stretch)
-                        .class("pwt-font-size-title-medium")
-                        .with_child(title.clone())
-                        .with_flex_spacer()
-                        .with_child(form.clone());
-
-                    link.send_message(Msg::ShowDialog(
-                        Self::edit_dialog(&link, panel.into(), on_submit.clone()).into(),
-                    ));
-                }
             })
     }
 
     fn view_config(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let props = ctx.props();
 
-        let mut list: Vec<ListTile> = Vec::new();
+        let mut list: Vec<ConfigTile> = Vec::new();
 
         list.push(self.edit_bool(
             ctx,
@@ -262,6 +190,7 @@ impl PveQemuConfigPanel {
             tr!("Start on boot"),
             data.onboot.unwrap_or(false),
         ));
+
         list.push(self.edit_bool(
             ctx,
             "tablet",
@@ -316,11 +245,11 @@ impl PveQemuConfigPanel {
                         );
             */
 
-            self.edit_generic(
-                ctx,
-                tr!("Start/Shutdown order"),
-                value.unwrap_or(String::from(tr!("Default") + " (" + &tr!("any") + ")")),
-                move || {
+            ConfigTile::new(tr!("Start/Shutdown order"))
+                .value_text(
+                    value.unwrap_or(String::from(tr!("Default") + " (" + &tr!("any") + ")")),
+                )
+                .create_input_panel(move |_form_ctx: &FormContext| {
                     Column::new()
                         .gap(2)
                         .class(pwt::css::Flex::Fill)
@@ -347,13 +276,21 @@ impl PveQemuConfigPanel {
                                 .default(data["_startup_down"].as_i64().map(|n| n as u32)), //.schema(down_schema),
                         ))
                         .into()
-                },
-                Some(ctx.link().callback(|ctx: FormContext| {
-                    let mut value = ctx.get_submit_data();
-                    property_string_from_parts::<QemuConfigStartup>(&mut value, "startup", true);
-                    Msg::Update(value)
-                })),
-            )
+                })
+                .on_submit({
+                    let link = ctx.link().clone();
+                    move |ctx: FormContext| {
+                        let link = link.clone();
+                        async move {
+                            let mut value = ctx.get_submit_data();
+                            property_string_from_parts::<QemuConfigStartup>(
+                                &mut value, "startup", true,
+                            );
+                            link.send_message(Msg::Update(value));
+                            Ok(())
+                        }
+                    }
+                })
         });
 
         list.push({
@@ -363,92 +300,85 @@ impl PveQemuConfigPanel {
                 None => String::from("-"),
             };
 
-            self.edit_generic(
-                ctx,
-                tr!("OS Type"),
-                value_str,
-                || {
+            ConfigTile::new(tr!("OS Type"))
+                .value_text(value_str)
+                .create_input_panel(move |_| {
                     QemuConfigOstypeSelector::new()
                         .style("width", "100%")
                         .name("ostype")
                         .submit_empty(true)
                         .default(value.map(|ostype| ostype.to_string()))
                         .into()
-                },
-                None,
-            )
+                })
+                .on_submit(Some(self.default_submit(ctx)))
         });
 
-        list.push(form_list_tile(
-            tr!("Boot Device"),
-            data.boot
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(tr!("Disk, Network, USB")),
-            None,
-        ));
+        list.push(
+            ConfigTile::new(tr!("Boot Device")).value_text(
+                data.boot
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(tr!("Disk, Network, USB")),
+            ),
+        );
 
-        list.push(form_list_tile(
-            tr!("Hotplug"),
-            data.hotplug
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(String::from("disk,network,usb")),
-            None,
-        ));
+        list.push(
+            ConfigTile::new(tr!("Hotplug")).value_text(
+                data.hotplug
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(String::from("disk,network,usb")),
+            ),
+        );
 
-        list.push(form_list_tile(
-            tr!("RTC start date"),
-            data.startdate
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(String::from("now")),
-            None,
-        ));
+        list.push(
+            ConfigTile::new(tr!("RTC start date")).value_text(
+                data.startdate
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(String::from("now")),
+            ),
+        );
 
-        list.push(form_list_tile(
-            tr!("SMBIOS settings (type1)"),
-            data.smbios1
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(String::from("-")),
-            None,
-        ));
+        list.push(
+            ConfigTile::new(tr!("SMBIOS settings (type1)")).value_text(
+                data.smbios1
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(String::from("-")),
+            ),
+        );
 
-        list.push(form_list_tile(
-            tr!("QEMU Guest Agent"),
-            data.smbios1
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(tr!("Default (disabled)")),
-            None,
-        ));
+        list.push(
+            ConfigTile::new(tr!("QEMU Guest Agent")).value_text(
+                data.smbios1
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(tr!("Default (disabled)")),
+            ),
+        );
 
-        list.push(form_list_tile(
-            tr!("Spice Enhancements"),
-            data.spice_enhancements
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(tr!("No enhancements")),
-            None,
-        ));
+        list.push(
+            ConfigTile::new(tr!("Spice Enhancements")).value_text(
+                data.spice_enhancements
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(tr!("No enhancements")),
+            ),
+        );
 
-        list.push(form_list_tile(
-            tr!("VM State Storage"),
-            data.vmstatestorage
-                .as_ref()
-                .map(String::from)
-                .unwrap_or(String::from("1 (autogenerated)")),
-            None,
-        ));
+        list.push(
+            ConfigTile::new(tr!("VM State Storage")).value_text(
+                data.vmstatestorage
+                    .as_ref()
+                    .map(String::from)
+                    .unwrap_or(String::from("1 (autogenerated)")),
+            ),
+        );
 
-        Container::new()
+        Column::new()
             .class(pwt::css::FlexFit)
-            .with_child(
-                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-                    .class(pwt::css::FlexFit)
-                    .grid_template_columns("1fr auto"),
-            )
+            .with_child(ConfigList::new().class(pwt::css::FlexFit).tiles(list))
             .with_optional_child(self.edit_dialog.clone())
             .into()
     }
@@ -495,12 +425,6 @@ impl Component for PveQemuConfigPanel {
                 if let Err(err) = result {
                     crate::show_failed_command_error(ctx.link(), err);
                 }
-            }
-            Msg::ShowDialog(dialog) => {
-                self.edit_dialog = Some(dialog);
-            }
-            Msg::CloseDialog => {
-                self.edit_dialog = None;
             }
             Msg::Update(value) => {
                 self.edit_dialog = None;
