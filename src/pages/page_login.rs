@@ -67,37 +67,39 @@ impl Component for PvePageLogin {
             props.consent_text.as_ref().filter(|t| !t.is_empty())
         };
 
+        let content: Html = if let Some(consent_text) = consent_text {
+            let card = crate::widgets::standard_card(tr!("Consent"), ())
+                .class("pwt-scheme-neutral")
+                .with_child(
+                    Column::new()
+                        .padding(2)
+                        .gap(2)
+                        .with_child(Container::from_tag("p").with_child(consent_text))
+                        .with_child(
+                            Row::new().with_flex_spacer().with_child(
+                                Button::new(tr!("OK"))
+                                    .on_activate(ctx.link().callback(|_| Msg::Consent)),
+                            ),
+                        ),
+                );
+            Column::new()
+                .class(pwt::css::FlexFit)
+                .class(pwt::css::JustifyContent::Center)
+                .padding(2)
+                .with_child(card)
+                .into()
+        } else {
+            LoginPanel::new()
+                .mobile(true)
+                .on_login(props.on_login.clone())
+                .into()
+        };
+
         Column::new()
             .class("pwt-flex-fill")
             .class("pwt-viewport")
             .with_child(TopNavBar::new())
-            .with_child(if let Some(consent_text) = consent_text {
-                let card = crate::widgets::standard_card(tr!("Consent"), None::<&str>)
-                    .class("pwt-scheme-neutral")
-                    .with_child(
-                        Column::new()
-                            .padding(2)
-                            .gap(2)
-                            .with_child(Container::from_tag("p").with_child(consent_text))
-                            .with_child(
-                                Row::new().with_flex_spacer().with_child(
-                                    Button::new(tr!("OK"))
-                                        .on_activate(ctx.link().callback(|_| Msg::Consent)),
-                                ),
-                            ),
-                    );
-                Column::new()
-                    .class(pwt::css::FlexFit)
-                    .class(pwt::css::JustifyContent::Center)
-                    .padding(2)
-                    .with_child(card)
-                    .into_html()
-            } else {
-                LoginPanel::new()
-                    .mobile(true)
-                    .on_login(props.on_login.clone())
-                    .into()
-            })
+            .with_child(content)
             .into()
     }
 }

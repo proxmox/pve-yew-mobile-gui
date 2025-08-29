@@ -102,7 +102,7 @@ impl PveStorageContentPanel {
                     Fa::new(get_content_icon(&item.content)).class("pwt-color-secondary"),
                     item.volid.clone(),
                     format!("Size {}", HumanByte::new_binary(item.size as f64)),
-                    Some(Fa::new("ellipsis-v").large().into()),
+                    Html::from(Fa::new("ellipsis-v").large()),
                 )
                 .interactive(true)
                 .onclick(

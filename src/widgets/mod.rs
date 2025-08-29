@@ -19,23 +19,25 @@ pub use volume_action_dialog::VolumeActionDialog;
 mod guest_backup_panel;
 pub use guest_backup_panel::GuestBackupPanel;
 
+mod edit_dialog;
+pub use edit_dialog::EditDialog;
+
 mod config_list;
-pub use config_list::{ConfigList, ConfigTile};
+pub use config_list::ConfigList;
+
+mod editable_property;
+pub use editable_property::EditableProperty;
 
 use pwt::prelude::*;
-use pwt::props::PwtSpace;
+use pwt::props::{IntoOptionalInlineHtml, PwtSpace};
 use pwt::widget::{Card, Column, Container, Fa, FieldLabel, ListTile, Progress, Row};
 
 use proxmox_human_byte::HumanByte;
-use yew::html::IntoPropValue;
 
-pub fn standard_card(
-    title: impl Into<AttrValue>,
-    subtitle: impl IntoPropValue<Option<AttrValue>>,
-) -> Card {
+pub fn standard_card(title: impl Into<AttrValue>, subtitle: impl IntoOptionalInlineHtml) -> Card {
     let title = title.into();
 
-    let head: Html = match subtitle.into_prop_value() {
+    let head: Html = match subtitle.into_optional_inline_html() {
         Some(subtitle) => Column::new()
             .padding(2)
             .gap(1)
@@ -120,12 +122,14 @@ pub fn storage_card(
 }
 
 pub fn standard_list_tile(
-    title: impl IntoPropValue<Option<AttrValue>>,
-    subtitle: impl IntoPropValue<Option<AttrValue>>,
-    leading: impl IntoPropValue<Option<Html>>,
-    trailing: impl IntoPropValue<Option<Html>>,
+    title: impl IntoOptionalInlineHtml,
+    subtitle: impl IntoOptionalInlineHtml,
+    leading: impl IntoOptionalInlineHtml,
+    trailing: impl IntoOptionalInlineHtml,
 ) -> ListTile {
-    let leading = leading.into_prop_value().unwrap_or(html! {<div/>});
+    let leading = leading
+        .into_optional_inline_html()
+        .unwrap_or(html! {<div/>});
 
     ListTile::new()
         .class(pwt::css::AlignItems::Center)
@@ -135,17 +139,17 @@ pub fn standard_list_tile(
         .border_bottom(true)
         .with_child(leading)
         .with_child(title_subtitle_column(title, subtitle))
-        .with_optional_child(trailing.into_prop_value())
+        .with_optional_child(trailing.into_optional_inline_html())
 }
 
 pub fn icon_list_tile(
     icon: impl Into<Fa>,
-    title: impl IntoPropValue<Option<AttrValue>>,
-    subtitle: impl IntoPropValue<Option<AttrValue>>,
-    trailing: impl IntoPropValue<Option<Html>>,
+    title: impl IntoOptionalInlineHtml,
+    subtitle: impl IntoOptionalInlineHtml,
+    trailing: impl IntoOptionalInlineHtml,
 ) -> ListTile {
-    let icon = icon.into().fixed_width().large_2x();
-    standard_list_tile(title, subtitle, icon.into_html(), trailing)
+    let icon: Html = icon.into().fixed_width().large_2x().into();
+    standard_list_tile(title, subtitle, icon, trailing)
 }
 
 pub fn list_tile_usage(
@@ -173,13 +177,12 @@ pub fn list_tile_usage(
 }
 
 pub fn title_subtitle_column(
-    title: impl IntoPropValue<Option<AttrValue>>,
-    // title: impl Into<AttrValue>,
-    subtitle: impl IntoPropValue<Option<AttrValue>>,
+    title: impl IntoOptionalInlineHtml,
+    subtitle: impl IntoOptionalInlineHtml,
 ) -> Column {
     let mut column = Column::new().gap(1);
 
-    if let Some(title) = title.into_prop_value() {
+    if let Some(title) = title.into_optional_inline_html() {
         column.add_child(
             Container::new()
                 .class("pwt-font-size-title-medium")
@@ -189,7 +192,7 @@ pub fn title_subtitle_column(
         );
     }
 
-    if let Some(subtitle) = subtitle.into_prop_value() {
+    if let Some(subtitle) = subtitle.into_optional_inline_html() {
         column.add_child(
             Container::new()
                 .class("pwt-font-size-title-small")
@@ -203,8 +206,8 @@ pub fn title_subtitle_column(
 
 pub fn form_list_tile(
     title: impl Into<AttrValue>,
-    subtitle: impl IntoPropValue<Option<AttrValue>>,
-    trailing: impl IntoPropValue<Option<Html>>,
+    subtitle: impl IntoOptionalInlineHtml,
+    trailing: impl IntoOptionalInlineHtml,
 ) -> ListTile {
     ListTile::new()
         .class(pwt::css::AlignItems::Center)
@@ -213,7 +216,7 @@ pub fn form_list_tile(
         //.class("pwt-scheme-surface")
         .border_bottom(true)
         .with_child(title_subtitle_column(title.into(), subtitle))
-        .with_optional_child(trailing.into_prop_value())
+        .with_optional_child(trailing.into_optional_inline_html())
 }
 
 pub fn label_field(label: impl Into<AttrValue>, field: impl Into<Html>) -> Html {

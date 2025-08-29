@@ -69,13 +69,13 @@ impl PveQemuHardwarePanel {
             Fa::new("memory"),
             data.memory.as_deref().unwrap_or("512").to_string() + " MB",
             tr!("Memory"),
-            None,
+            (),
         ));
         list.push(icon_list_tile(
             Fa::new("cpu"),
             processor_text(data),
             tr!("Processor"),
-            None,
+            (),
         ));
 
         list.push(icon_list_tile(
@@ -85,7 +85,7 @@ impl PveQemuHardwarePanel {
                 .map(|b| b.to_string())
                 .unwrap_or(format!("{} (SeaBIOS)", tr!("Default"))),
             tr!("Bios"),
-            None,
+            (),
         ));
 
         list.push(icon_list_tile(
@@ -96,7 +96,7 @@ impl PveQemuHardwarePanel {
                 .unwrap_or(format!("{} (i440fx)", tr!("Default")))
                 .to_string(),
             tr!("Machine Type"),
-            None,
+            (),
         ));
 
         for (n, disk_config) in &data.ide {
@@ -107,14 +107,14 @@ impl PveQemuHardwarePanel {
                             Fa::new("cdrom"),
                             disk_config.to_string(),
                             tr!("CD/DVD Drive") + &format!(" (ide{n})"),
-                            None,
+                            (),
                         ));
                     } else {
                         list.push(icon_list_tile(
                             Fa::new("hdd-o"),
                             disk_config.to_string(),
                             tr!("Hard Disk") + &format!(" (ide{n})"),
-                            None,
+                            (),
                         ));
                     }
                 }
@@ -126,7 +126,7 @@ impl PveQemuHardwarePanel {
                 Fa::new("hdd-o"),
                 disk_config.to_string(),
                 tr!("Hard Disk") + &format!(" (scsi{n})"),
-                None,
+                (),
             ));
         }
 
@@ -135,7 +135,7 @@ impl PveQemuHardwarePanel {
                 Fa::new("exchange"),
                 net_config.to_string(),
                 tr!("Network Device") + &format!(" (net{n})"),
-                None,
+                (),
             ));
         }
 

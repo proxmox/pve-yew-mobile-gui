@@ -65,16 +65,17 @@ impl PveLxcConfigPanel {
         name: &'static str,
         default: bool,
     ) -> ListTile {
-        let switch = Checkbox::new()
+        let switch: VNode = Checkbox::new()
             .switch(true)
             .name(name)
             .default(default)
             .on_input(
                 ctx.link()
                     .callback(move |value| Msg::StoreBoolConfig(name, value)),
-            );
+            )
+            .into();
 
-        form_list_tile(title, None::<&str>, Some(switch.into()))
+        form_list_tile(title, None::<&str>, switch)
     }
 
     fn view_config(&self, ctx: &Context<Self>, data: &LxcConfig) -> Html {
@@ -92,7 +93,7 @@ impl PveLxcConfigPanel {
                 .as_ref()
                 .map(String::from)
                 .unwrap_or(format!("CT {}", props.vmid)),
-            None,
+            None::<&str>,
         ));
 
         list.push(form_list_tile(
@@ -101,7 +102,7 @@ impl PveLxcConfigPanel {
                 .as_ref()
                 .map(String::from)
                 .unwrap_or(tr!("Default (any)")),
-            None,
+            None::<&str>,
         ));
 
         list.push(form_list_tile(
@@ -110,7 +111,7 @@ impl PveLxcConfigPanel {
                 .as_ref()
                 .map(|d| d.to_string())
                 .unwrap_or(tr!("Other")),
-            None,
+            None::<&str>,
         ));
 
         list.push(form_list_tile(
@@ -119,13 +120,13 @@ impl PveLxcConfigPanel {
                 .as_ref()
                 .map(|d| d.to_string())
                 .unwrap_or(String::from("-")),
-            None,
+            None::<&str>,
         ));
 
         list.push(form_list_tile(
             tr!("TTY count"),
             data.tty.unwrap_or(2).to_string(),
-            None,
+            None::<&str>,
         ));
 
         list.push(form_list_tile(
@@ -134,13 +135,13 @@ impl PveLxcConfigPanel {
                 .as_ref()
                 .map(|d| d.to_string())
                 .unwrap_or(String::from("tty")),
-            None,
+            None::<&str>,
         ));
 
         list.push(form_list_tile(
             tr!("Unpriviledged"),
             data.unprivileged.unwrap_or(false).to_string(),
-            None,
+            None::<&str>,
         ));
 
         list.push(form_list_tile(
@@ -149,7 +150,7 @@ impl PveLxcConfigPanel {
                 .as_ref()
                 .map(|d| d.to_string())
                 .unwrap_or(tr!("none")),
-            None,
+            None::<&str>,
         ));
 
         Form::new()

@@ -52,7 +52,7 @@ impl Component for PveQemuConfigOstypeSelector {
             .show_filter(false)
             .default(&props.default)
             .items(ITEM_KEYS.with(Rc::clone))
-            .render_value(|v: &AttrValue| QemuConfigOstypeSelector::render_value(&*v).to_html())
+            .render_value(|v: &AttrValue| QemuConfigOstypeSelector::render_value(&*v).into())
             .into()
     }
 }

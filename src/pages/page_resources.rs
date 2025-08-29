@@ -117,7 +117,7 @@ impl PvePageResources {
                 Some(level) => level,
             }
             .to_string(),
-            item.status.clone().map(|s| s.to_html()),
+            item.status.clone(),
         )
         .interactive(true)
         .onclick({
@@ -141,7 +141,7 @@ impl PvePageResources {
                 item.name.as_deref().unwrap_or("")
             ),
             item.node.clone(),
-            item.status.clone().map(|s| s.to_html()),
+            item.status.clone(),
         )
         .interactive(true)
     }
@@ -184,7 +184,7 @@ impl PvePageResources {
                 .class((item.status.as_deref() == Some("available")).then(|| "pwt-color-primary")),
             format!("{} ({})", name, plugin_type),
             item.node.clone(),
-            item.status.clone().map(|s| s.to_html()),
+            item.status.clone(),
         )
         .onclick({
             let navigator = ctx.link().navigator().clone().unwrap();

@@ -139,20 +139,15 @@ impl PveQemuDashboardPanel {
     fn view_status(&self, ctx: &Context<Self>, data: &QemuStatus) -> Html {
         let props = ctx.props();
 
-        let vm_icon = large_fa_icon("desktop", data.status == IsRunning::Running);
+        let vm_icon: Html = large_fa_icon("desktop", data.status == IsRunning::Running).into();
 
         let mut tiles: Vec<ListTile> = Vec::new();
 
         tiles.push(standard_list_tile(
             format!("{} {}", data.vmid, data.name.as_deref().unwrap_or("")),
-            &props.node,
-            Some(vm_icon.clone().into()),
-            Some(
-                data.qmpstatus
-                    .clone()
-                    .unwrap_or(data.status.to_string())
-                    .into(),
-            ),
+            props.node.clone(),
+            vm_icon,
+            data.qmpstatus.clone().unwrap_or(data.status.to_string()),
         ));
 
         if let Some(Ok(data)) = &self.data {
@@ -165,7 +160,7 @@ impl PveQemuDashboardPanel {
                     };
 
                     tiles.push(
-                        icon_list_tile(Fa::new("cpu"), tr!("CPU"), None::<&str>, None).with_child(
+                        icon_list_tile(Fa::new("cpu"), tr!("CPU"), (), ()).with_child(
                             list_tile_usage(
                                 format!("{:.2}", cpu),
                                 maxcpu.to_string(),
@@ -182,12 +177,13 @@ impl PveQemuDashboardPanel {
                         (mem as f32) / (maxmem as f32)
                     };
                     tiles.push(
-                        icon_list_tile(Fa::new("memory"), tr!("Memory"), None::<&str>, None)
-                            .with_child(list_tile_usage(
+                        icon_list_tile(Fa::new("memory"), tr!("Memory"), (), ()).with_child(
+                            list_tile_usage(
                                 HumanByte::new_binary(mem as f64).to_string(),
                                 HumanByte::new_binary(maxmem as f64).to_string(),
                                 mem_percentage,
-                            )),
+                            ),
+                        ),
                     );
                 }
             }

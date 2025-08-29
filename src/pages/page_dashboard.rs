@@ -121,18 +121,21 @@ impl PvePageDashboard {
                 let mut tiles: Vec<ListTile> = Vec::new();
 
                 tiles.push(
-                    icon_list_tile(Fa::new("cpu"), tr!("CPU"), None::<&str>, None).with_child(
-                        list_tile_usage(format!("{:.2}", cpu), maxcpu.to_string(), cpu_percentage),
-                    ),
+                    icon_list_tile(Fa::new("cpu"), tr!("CPU"), (), ()).with_child(list_tile_usage(
+                        format!("{:.2}", cpu),
+                        maxcpu.to_string(),
+                        cpu_percentage,
+                    )),
                 );
 
                 tiles.push(
-                    icon_list_tile(Fa::new("memory"), tr!("Memory"), None::<&str>, None)
-                        .with_child(list_tile_usage(
+                    icon_list_tile(Fa::new("memory"), tr!("Memory"), (), ()).with_child(
+                        list_tile_usage(
                             HumanByte::new_binary(mem).to_string(),
                             HumanByte::new_binary(maxmem).to_string(),
                             mem_percentage,
-                        )),
+                        ),
+                    ),
                 );
 
                 let mut storage_used_size = 0;
@@ -152,12 +155,13 @@ impl PvePageDashboard {
                 };
 
                 tiles.push(
-                    icon_list_tile(Fa::new("database"), tr!("Storage"), None::<&str>, None)
-                        .with_child(list_tile_usage(
+                    icon_list_tile(Fa::new("database"), tr!("Storage"), (), ()).with_child(
+                        list_tile_usage(
                             HumanByte::new_binary(storage_used_size as f64).to_string(),
                             HumanByte::new_binary(storage_total_size as f64).to_string(),
                             storage_percentage,
-                        )),
+                        ),
+                    ),
                 );
 
                 List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
@@ -200,7 +204,7 @@ impl PvePageDashboard {
                         ),
                         nodename.clone(),
                         subtitle.to_string(),
-                        Some(item.status.to_string().into()),
+                        item.status.to_string(),
                     )
                     .interactive(true)
                     .onclick(Callback::from(
@@ -272,7 +276,7 @@ impl PvePageDashboard {
                         Fa::new("desktop"),
                         tr!("Virtual Machines"),
                         format!("{vm_count} ({vm_online_count} online)"),
-                        None,
+                        (),
                     )
                     .onclick({
                         let navigator = ctx.link().navigator().clone().unwrap();
@@ -293,7 +297,7 @@ impl PvePageDashboard {
                         Fa::new("cube"),
                         tr!("LXC Container"),
                         format!("{ct_count} ({ct_online_count} online)"),
-                        None,
+                        (),
                     )
                     .onclick({
                         let navigator = ctx.link().navigator().clone().unwrap();
@@ -314,7 +318,7 @@ impl PvePageDashboard {
                         Fa::new("database"),
                         tr!("Storage"),
                         format!("{storage_count} ({storage_online_count} online)"),
-                        None,
+                        (),
                     )
                     .onclick({
                         let navigator = ctx.link().navigator().clone().unwrap();

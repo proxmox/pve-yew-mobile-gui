@@ -65,18 +65,13 @@ impl PvePageConfiguration {
         List::new(CONFIGS.len() as u64, move |pos| {
             let item = CONFIGS[pos as usize];
 
-            icon_list_tile(
-                Fa::new(item.0.to_string()),
-                item.1.to_string(),
-                None::<&str>,
-                None,
-            )
-            .interactive(true)
-            .onclick({
-                let navigator = navigator.clone();
-                move |_| navigator.push(item.2)
-            })
-            .into()
+            icon_list_tile(Fa::new(item.0.to_string()), item.1.to_string(), (), ())
+                .interactive(true)
+                .onclick({
+                    let navigator = navigator.clone();
+                    move |_| navigator.push(item.2)
+                })
+                .into()
         })
         .grid_template_columns("auto 1fr")
         .class("pwt-fit")

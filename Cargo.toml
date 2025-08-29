@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+derivative = "2.2.0"
 lazy_static = "1.4"
 yew = { version = "0.21",  features = ["csr"] }
 yew-router = { version = "0.18" }
@@ -27,10 +28,10 @@ proxmox-uuid = "1"
 proxmox-human-byte = "1.0"
 proxmox-base64 = "1"
 
-pwt = "0.6.4"
+pwt = "0.6.5"
 pwt-macros = "0.4"
 
-proxmox-yew-comp = "0.5.4"
+proxmox-yew-comp = "0.5.7"
 
 proxmox-login = "1.0"
 proxmox-client = "1.0"

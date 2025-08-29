@@ -56,27 +56,27 @@ impl PveLxcResourcesPanel {
             Fa::new("memory"),
             data.memory.unwrap_or(512).to_string() + " MB",
             tr!("Memory"),
-            None,
+            (),
         ));
         list.push(icon_list_tile(
             Fa::new("retweet"),
             data.swap.unwrap_or(0).to_string() + " MB",
             tr!("Swap"),
-            None,
+            (),
         ));
 
         list.push(icon_list_tile(
             Fa::new("cpu"),
             data.cores.unwrap_or(1).to_string(),
             tr!("Cores"),
-            None,
+            (),
         ));
 
         list.push(icon_list_tile(
             Fa::new("hdd-o"),
             data.rootfs.as_deref().unwrap_or("-").to_string(),
             tr!("Root Filesystem"),
-            None,
+            (),
         ));
 
         crate::widgets::standard_card(tr!("Resources"), None::<&str>)
@@ -95,7 +95,7 @@ impl PveLxcResourcesPanel {
                 Fa::new("exchange"),
                 net_config.to_string(),
                 tr!("Network Device") + &format!(" (net{n})"),
-                None,
+                (),
             ));
         }
 
@@ -116,14 +116,14 @@ impl PveLxcResourcesPanel {
                 .clone()
                 .unwrap_or(tr!("Use host settings")),
             tr!("DNS Domain"),
-            None,
+            (),
         ));
 
         list.push(icon_list_tile(
             Fa::new("search"),
             data.nameserver.clone().unwrap_or(tr!("Use host settings")),
             tr!("Nameserver"),
-            None,
+            (),
         ));
 
         crate::widgets::standard_card(tr!("DNS"), None::<&str>)
