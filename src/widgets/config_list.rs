@@ -111,7 +111,11 @@ impl PveConfigList {
                     list_tile.add_onclick({
                         let link = ctx.link().clone();
                         let item = item.clone();
-                        let loader = props.loader.clone();
+                        let loader = match item.loader {
+                            Some(loader) => Some(loader),
+                            None => props.loader.clone(),
+                        };
+
                         move |_| {
                             if let Some(render_input_panel) = item.render_input_panel.clone() {
                                 let dialog = EditDialog::new(item.title.clone())

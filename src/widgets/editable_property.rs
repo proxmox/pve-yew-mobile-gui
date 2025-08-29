@@ -1,7 +1,7 @@
 use proxmox_yew_comp::utils::render_boolean;
 use serde_json::Value;
 
-use proxmox_yew_comp::RenderKVGridRecordFn;
+use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback, RenderKVGridRecordFn};
 use pwt::prelude::*;
 use pwt::props::{IntoOptionalRenderFn, IntoSubmitCallback, RenderFn, SubmitCallback};
 use pwt::widget::form::{Checkbox, Field, FormContext};
@@ -28,6 +28,11 @@ pub struct EditableProperty {
     pub renderer: Option<RenderKVGridRecordFn>,
     /// Submit callback.
     pub on_submit: Option<SubmitCallback<FormContext>>,
+
+    /// Data loader.
+    #[builder_cb(IntoApiLoadCallback, into_api_load_callback, Value)]
+    pub loader: Option<ApiLoadCallback<Value>>,
+
     /// Edit input panel builder
     pub render_input_panel: Option<RenderFn<FormContext>>,
 }
@@ -41,6 +46,7 @@ impl EditableProperty {
             single_row: false,
             placeholder: None,
             renderer: None,
+            loader: None,
             on_submit: None,
             render_input_panel: None,
         }
