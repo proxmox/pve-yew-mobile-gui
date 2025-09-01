@@ -3,7 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use proxmox_client::ApiResponseData;
 use proxmox_yew_comp::form::flatten_property_string;
-use pwt::props::{IntoSubmitCallback, RenderFn, SubmitCallback};
+use pwt::props::{RenderFn, SubmitCallback};
 use serde_json::Value;
 
 use yew::prelude::*;
@@ -12,7 +12,7 @@ use yew::virtual_dom::{VComp, VNode};
 use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Field, Form, FormContext, Number};
+use pwt::widget::form::{delete_empty_values, Field, FormContext, Number};
 use pwt::widget::Column;
 
 use proxmox_yew_comp::{
@@ -52,7 +52,7 @@ fn get_config_url(node: &str, vmid: u32) -> String {
 async fn load_property_string(url: AttrValue, name: &str) -> Result<ApiResponseData<Value>, Error> {
     let mut resp = load_config(url).await?;
 
-    let (required, schema) = lookup_schema(name).unwrap();
+    let (_required, schema) = lookup_schema(name).unwrap();
     flatten_property_string(&mut resp.data, "startup", schema);
 
     Ok(resp)
@@ -77,12 +77,10 @@ async fn load_config(url: AttrValue) -> Result<ApiResponseData<Value>, Error> {
     // use Rust type to correctly convert pve boolean 0, 1 values
     let resp: ApiResponseData<QemuConfig> = proxmox_yew_comp::http_get_full(&*url, None).await?;
 
-    let mut resp = ApiResponseData {
+    Ok(ApiResponseData {
         data: serde_json::to_value(resp.data)?,
         attribs: resp.attribs,
-    };
-
-    Ok(resp)
+    })
 }
 
 pub struct PveQemuConfigPanel {
