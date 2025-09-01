@@ -242,8 +242,6 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
                     }
                     Err(err) => {
                         self.submit_error = Some(err.to_string());
-                        log::info!("FGAILED {err}");
-                        //crate::show_failed_command_error(ctx.link(), err)
                     }
                 }
                 true
