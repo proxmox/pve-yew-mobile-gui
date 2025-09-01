@@ -3,7 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use proxmox_client::ApiResponseData;
 use proxmox_yew_comp::form::flatten_property_string;
-use pwt::props::{RenderFn, SubmitCallback};
+use pwt::props::{IntoSubmitCallback, RenderFn, SubmitCallback};
 use serde_json::Value;
 
 use yew::prelude::*;
@@ -12,7 +12,7 @@ use yew::virtual_dom::{VComp, VNode};
 use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Field, FormContext, Number};
+use pwt::widget::form::{delete_empty_values, Field, Form, FormContext, Number};
 use pwt::widget::Column;
 
 use proxmox_yew_comp::{
@@ -56,6 +56,21 @@ async fn load_property_string(url: AttrValue, name: &str) -> Result<ApiResponseD
     flatten_property_string(&mut resp.data, "startup", schema);
 
     Ok(resp)
+}
+
+fn submit_property_string(url: &str, name: &str) -> SubmitCallback<FormContext> {
+    let url = url.to_string();
+    let name = name.to_string();
+    SubmitCallback::new(move |ctx: FormContext| {
+        let url = url.clone();
+        let name = name.clone();
+        async move {
+            let mut value = ctx.get_submit_data();
+            property_string_from_parts::<QemuConfigStartup>(&mut value, &name, true);
+            let value = delete_empty_values(&value, &[&name], false);
+            http_put(url.clone(), Some(value)).await
+        }
+    })
 }
 
 async fn load_config(url: AttrValue) -> Result<ApiResponseData<Value>, Error> {
@@ -179,19 +194,7 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .loader((|url| load_property_string(url, "startup"), url.clone()))
-                .on_submit({
-                    move |ctx: FormContext| {
-                        let url = url.clone();
-                        async move {
-                            let mut value = ctx.get_submit_data();
-                            property_string_from_parts::<QemuConfigStartup>(
-                                &mut value, "startup", true,
-                            );
-                            let value = delete_empty_values(&value, &["startup"], false);
-                            http_put(url.clone(), Some(value)).await
-                        }
-                    }
-                }),
+                .on_submit(Some(submit_property_string(&url, "startup"))),
             EditableProperty::new("boot", tr!("Boot Device")).required(true),
             EditableProperty::new("hotplug", tr!("Hotplug")).required(true),
             EditableProperty::new("startdate", tr!("RTC start date")).required(true),
