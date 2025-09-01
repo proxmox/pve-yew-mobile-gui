@@ -1,12 +1,6 @@
 use std::rc::Rc;
 
-use proxmox_client::ApiResponseData;
-use proxmox_yew_comp::form::flatten_property_string;
-use proxmox_yew_comp::ApiLoadCallback;
 use pwt::props::{RenderFn, SubmitCallback};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use serde_json::Value;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -17,14 +11,13 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Field, FormContext, Number};
 use pwt::widget::Column;
 
-use proxmox_yew_comp::{
-    form::property_string_from_parts, http_put, percent_encoding::percent_encode_component,
-    SchemaValidation,
-};
+use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component, SchemaValidation};
 
 use pve_api_types::QemuConfig;
 
-use crate::form::QemuConfigOstypeSelector;
+use crate::form::{
+    load_property_string, submit_property_string, typed_load, QemuConfigOstypeSelector,
+};
 use crate::widgets::{ConfigList, EditableProperty};
 use crate::QemuConfigStartup;
 
@@ -49,61 +42,6 @@ fn get_config_url(node: &str, vmid: u32) -> String {
         percent_encode_component(node),
         vmid
     )
-}
-
-fn load_property_string<T: DeserializeOwned + Serialize>(
-    url: impl Into<String>,
-    name: impl Into<String>,
-    schema: &'static Schema,
-) -> ApiLoadCallback<Value> {
-    let url = url.into();
-    let url_cloned = url.clone();
-    let name = name.into();
-
-    ApiLoadCallback::new(move || {
-        let url = url.clone();
-        let name = name.clone();
-        async move {
-            let mut resp = load_config::<T>(url).apply().await?;
-            flatten_property_string(&mut resp.data, &name, schema);
-            Ok(resp)
-        }
-    })
-    .url(url_cloned)
-}
-
-fn submit_property_string(
-    url: impl Into<String>,
-    name: impl Into<String>,
-) -> SubmitCallback<FormContext> {
-    let url = url.into();
-    let name = name.into();
-    SubmitCallback::new(move |ctx: FormContext| {
-        let url = url.clone();
-        let name = name.clone();
-        async move {
-            let mut value = ctx.get_submit_data();
-            property_string_from_parts::<QemuConfigStartup>(&mut value, &name, true);
-            let value = delete_empty_values(&value, &[&name], false);
-            http_put(url.clone(), Some(value)).await
-        }
-    })
-}
-
-fn load_config<T: DeserializeOwned + Serialize>(url: impl Into<String>) -> ApiLoadCallback<Value> {
-    let url = url.into();
-    ApiLoadCallback::new(move || {
-        let url = url.clone();
-        async move {
-            // use Rust type to correctly convert pve boolean 0, 1 values
-            let resp: ApiResponseData<T> = proxmox_yew_comp::http_get_full(url, None).await?;
-
-            Ok(ApiResponseData {
-                data: serde_json::to_value(resp.data)?,
-                attribs: resp.attribs,
-            })
-        }
-    })
 }
 
 pub struct PveQemuConfigPanel {
@@ -214,12 +152,12 @@ impl PveQemuConfigPanel {
                         ))
                         .into()
                 })
-                .loader(load_property_string::<QemuConfig>(
-                    &url,
-                    "startup",
-                    &QemuConfigStartup::API_SCHEMA,
+                .loader(load_property_string::<QemuConfig, QemuConfigStartup>(
+                    &url, "startup",
                 ))
-                .on_submit(Some(submit_property_string(&url, "startup"))),
+                .on_submit(Some(submit_property_string::<QemuConfigStartup>(
+                    &url, "startup",
+                ))),
             EditableProperty::new("boot", tr!("Boot Device")).required(true),
             EditableProperty::new("hotplug", tr!("Hotplug")).required(true),
             EditableProperty::new("startdate", tr!("RTC start date")).required(true),
@@ -249,7 +187,7 @@ impl Component for PveQemuConfigPanel {
         let default_submit = Self::default_submit(props);
 
         ConfigList::new(Rc::clone(&self.properties))
-            .loader(load_config::<QemuConfig>(url))
+            .loader(typed_load::<QemuConfig>(url))
             .on_submit(Some(default_submit))
             .into()
     }
