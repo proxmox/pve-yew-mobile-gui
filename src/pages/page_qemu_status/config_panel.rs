@@ -1,9 +1,11 @@
 use std::rc::Rc;
 
-use anyhow::Error;
 use proxmox_client::ApiResponseData;
 use proxmox_yew_comp::form::flatten_property_string;
+use proxmox_yew_comp::ApiLoadCallback;
 use pwt::props::{RenderFn, SubmitCallback};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::Value;
 
 use yew::prelude::*;
@@ -49,18 +51,33 @@ fn get_config_url(node: &str, vmid: u32) -> String {
     )
 }
 
-async fn load_property_string(url: AttrValue, name: &str) -> Result<ApiResponseData<Value>, Error> {
-    let mut resp = load_config(url).await?;
+fn load_property_string<T: DeserializeOwned + Serialize>(
+    url: impl Into<String>,
+    name: impl Into<String>,
+    schema: &'static Schema,
+) -> ApiLoadCallback<Value> {
+    let url = url.into();
+    let url_cloned = url.clone();
+    let name = name.into();
 
-    let (_required, schema) = lookup_schema(name).unwrap();
-    flatten_property_string(&mut resp.data, "startup", schema);
-
-    Ok(resp)
+    ApiLoadCallback::new(move || {
+        let url = url.clone();
+        let name = name.clone();
+        async move {
+            let mut resp = load_config::<T>(url).apply().await?;
+            flatten_property_string(&mut resp.data, &name, schema);
+            Ok(resp)
+        }
+    })
+    .url(url_cloned)
 }
 
-fn submit_property_string(url: &str, name: &str) -> SubmitCallback<FormContext> {
-    let url = url.to_string();
-    let name = name.to_string();
+fn submit_property_string(
+    url: impl Into<String>,
+    name: impl Into<String>,
+) -> SubmitCallback<FormContext> {
+    let url = url.into();
+    let name = name.into();
     SubmitCallback::new(move |ctx: FormContext| {
         let url = url.clone();
         let name = name.clone();
@@ -73,13 +90,19 @@ fn submit_property_string(url: &str, name: &str) -> SubmitCallback<FormContext> 
     })
 }
 
-async fn load_config(url: AttrValue) -> Result<ApiResponseData<Value>, Error> {
-    // use Rust type to correctly convert pve boolean 0, 1 values
-    let resp: ApiResponseData<QemuConfig> = proxmox_yew_comp::http_get_full(&*url, None).await?;
+fn load_config<T: DeserializeOwned + Serialize>(url: impl Into<String>) -> ApiLoadCallback<Value> {
+    let url = url.into();
+    ApiLoadCallback::new(move || {
+        let url = url.clone();
+        async move {
+            // use Rust type to correctly convert pve boolean 0, 1 values
+            let resp: ApiResponseData<T> = proxmox_yew_comp::http_get_full(url, None).await?;
 
-    Ok(ApiResponseData {
-        data: serde_json::to_value(resp.data)?,
-        attribs: resp.attribs,
+            Ok(ApiResponseData {
+                data: serde_json::to_value(resp.data)?,
+                attribs: resp.attribs,
+            })
+        }
     })
 }
 
@@ -191,7 +214,11 @@ impl PveQemuConfigPanel {
                         ))
                         .into()
                 })
-                .loader((|url| load_property_string(url, "startup"), url.clone()))
+                .loader(load_property_string::<QemuConfig>(
+                    &url,
+                    "startup",
+                    &QemuConfigStartup::API_SCHEMA,
+                ))
                 .on_submit(Some(submit_property_string(&url, "startup"))),
             EditableProperty::new("boot", tr!("Boot Device")).required(true),
             EditableProperty::new("hotplug", tr!("Hotplug")).required(true),
@@ -222,8 +249,7 @@ impl Component for PveQemuConfigPanel {
         let default_submit = Self::default_submit(props);
 
         ConfigList::new(Rc::clone(&self.properties))
-            .loader((load_config, url))
-            //.loader(url.clone())
+            .loader(load_config::<QemuConfig>(url))
             .on_submit(Some(default_submit))
             .into()
     }
