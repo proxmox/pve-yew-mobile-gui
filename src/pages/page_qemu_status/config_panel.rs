@@ -49,6 +49,15 @@ fn get_config_url(node: &str, vmid: u32) -> String {
     )
 }
 
+async fn load_property_string(url: AttrValue, name: &str) -> Result<ApiResponseData<Value>, Error> {
+    let mut resp = load_config(url).await?;
+
+    let (required, schema) = lookup_schema(name).unwrap();
+    flatten_property_string(&mut resp.data, "startup", schema);
+
+    Ok(resp)
+}
+
 async fn load_config(url: AttrValue) -> Result<ApiResponseData<Value>, Error> {
     // use Rust type to correctly convert pve boolean 0, 1 values
     let resp: ApiResponseData<QemuConfig> = proxmox_yew_comp::http_get_full(&*url, None).await?;
@@ -57,8 +66,6 @@ async fn load_config(url: AttrValue) -> Result<ApiResponseData<Value>, Error> {
         data: serde_json::to_value(resp.data)?,
         attribs: resp.attribs,
     };
-
-    flatten_property_string(&mut resp.data, "startup", &QemuConfigStartup::API_SCHEMA);
 
     Ok(resp)
 }
@@ -171,6 +178,7 @@ impl PveQemuConfigPanel {
                         ))
                         .into()
                 })
+                .loader((|url| load_property_string(url, "startup"), url.clone()))
                 .on_submit({
                     move |ctx: FormContext| {
                         let url = url.clone();
