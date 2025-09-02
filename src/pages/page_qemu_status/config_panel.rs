@@ -18,7 +18,7 @@ use pve_api_types::QemuConfig;
 use crate::form::{
     load_property_string, submit_property_string, typed_load, QemuConfigOstypeSelector,
 };
-use crate::widgets::{ConfigList, EditableProperty};
+use crate::widgets::{EditableProperty, PropertyList};
 use crate::QemuConfigStartup;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -187,7 +187,7 @@ impl Component for PveQemuConfigPanel {
         let url = get_config_url(&props.node, props.vmid);
         let default_submit = Self::default_submit(props);
 
-        ConfigList::new(Rc::clone(&self.properties))
+        PropertyList::new(Rc::clone(&self.properties))
             .loader(typed_load::<QemuConfig>(url))
             .on_submit(Some(default_submit))
             .into()

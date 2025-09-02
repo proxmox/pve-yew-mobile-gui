@@ -20,7 +20,7 @@ use crate::widgets::{form_list_tile, EditDialog, EditableProperty};
 
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
-pub struct ConfigList {
+pub struct PropertyList {
     /// List of property definitions
     pub properties: Rc<Vec<EditableProperty>>,
 
@@ -34,7 +34,7 @@ pub struct ConfigList {
     pub on_submit: Option<SubmitCallback<FormContext>>,
 }
 
-impl ConfigList {
+impl PropertyList {
     pub fn new(properties: Rc<Vec<EditableProperty>>) -> Self {
         yew::props!(Self { properties })
     }
@@ -52,15 +52,15 @@ pub enum Msg {
     ShowDialog(Html),
 }
 
-pub struct PveConfigList {
+pub struct PvePropertyList {
     data: Option<Result<Value, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     edit_dialog: Option<Html>,
 }
 
-impl PveConfigList {
-    fn view_config(&self, ctx: &Context<Self>, record: &Value) -> Html {
+impl PvePropertyList {
+    fn view_property(&self, ctx: &Context<Self>, record: &Value) -> Html {
         let props = ctx.props();
 
         let mut tiles: Vec<ListTile> = Vec::new();
@@ -154,9 +154,9 @@ impl PveConfigList {
     }
 }
 
-impl Component for PveConfigList {
+impl Component for PvePropertyList {
     type Message = Msg;
-    type Properties = ConfigList;
+    type Properties = PropertyList;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -207,13 +207,13 @@ impl Component for PveConfigList {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| self.view_config(ctx, data))
+        crate::widgets::render_loaded_data(&self.data, |data| self.view_property(ctx, data))
     }
 }
 
-impl From<ConfigList> for VNode {
-    fn from(props: ConfigList) -> Self {
-        let comp = VComp::new::<PveConfigList>(Rc::new(props), None);
+impl From<PropertyList> for VNode {
+    fn from(props: PropertyList) -> Self {
+        let comp = VComp::new::<PvePropertyList>(Rc::new(props), None);
         VNode::from(comp)
     }
 }

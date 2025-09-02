@@ -22,8 +22,8 @@ pub use guest_backup_panel::GuestBackupPanel;
 mod edit_dialog;
 pub use edit_dialog::EditDialog;
 
-mod config_list;
-pub use config_list::ConfigList;
+mod property_list;
+pub use property_list::PropertyList;
 
 mod editable_property;
 pub use editable_property::EditableProperty;
