@@ -61,12 +61,13 @@ impl EditableProperty {
         let default = default.into_prop_value();
         Self::new(name.clone(), title)
             .single_row(true)
+            .placeholder(default.map(|default| render_boolean(default)))
             .renderer(move |_name, value, _data| {
                 let text: String = match value.as_bool() {
                     Some(value) => render_boolean(value),
                     None => match default {
                         Some(default) => render_boolean(default),
-                        None => "-".into(), // fixme
+                        None => "-".into(),
                     },
                 };
                 text.into()

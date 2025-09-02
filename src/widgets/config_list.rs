@@ -71,23 +71,27 @@ impl PveConfigList {
                 continue;
             }
 
-            let value_text: Html = match value {
-                None => String::from("-").into(),
-                Some(value) => match &item.renderer {
-                    Some(renderer) => renderer.apply(&*item.name, &value, &record),
-                    None => if let Some(placeholder) = &item.placeholder {
+            let value_text: Html = match (value, &item.renderer) {
+                (None | Some(Value::Null), _) => {
+                    let placeholder = if let Some(placeholder) = &item.placeholder {
                         placeholder.to_string().into()
                     } else {
-                        match value {
-                            Value::Null => String::from("-"),
-                            Value::String(value) => value.clone(),
-                            Value::Bool(value) => render_boolean(*value),
-                            Value::Number(n) => n.to_string(),
-                            v => v.to_string(),
-                        }
-                    }
-                    .into(),
-                },
+                        String::from("-")
+                    };
+                    Container::new()
+                        .class(pwt::css::Opacity::Half)
+                        .with_child(placeholder)
+                        .into()
+                }
+
+                (Some(value), None) => match value {
+                    Value::String(value) => value.clone(),
+                    Value::Bool(value) => render_boolean(*value),
+                    Value::Number(n) => n.to_string(),
+                    v => v.to_string(),
+                }
+                .into(),
+                (Some(value), Some(renderer)) => renderer.apply(&*item.name, &value, &record),
             };
 
             let mut list_tile = if item.single_row {

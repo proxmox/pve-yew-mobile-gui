@@ -115,6 +115,7 @@ impl PveQemuConfigPanel {
             EditableProperty::new_bool("protection", tr!("Protection"), false).required(true),
             EditableProperty::new("name", tr!("Name"))
                 .required(true)
+                .placeholder(format!("VM {}", props.vmid))
                 .render_input_panel(render_string_input_panel("name")),
             EditableProperty::new("ostype", tr!("OS Type"))
                 .required(true)
