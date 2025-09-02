@@ -128,6 +128,7 @@ impl PveQemuConfigPanel {
                 }),
             EditableProperty::new("startup", tr!("Start/Shutdown order"))
                 .required(true)
+                .placeholder("order=any")
                 .render_input_panel(move |_: &FormContext| {
                     Column::new()
                         .gap(2)
