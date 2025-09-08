@@ -21,6 +21,7 @@ url = "2.1"
 percent-encoding = "2.1"
 gloo-timers = "0.3"
 gloo-utils = "0.2"
+regex = "1.7"
 
 proxmox-schema = "5"
 proxmox-time = "2"

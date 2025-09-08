@@ -1,10 +1,14 @@
+mod boot_device_list;
+pub use boot_device_list::{BootDeviceList, PveBootDeviceList};
+
 mod qemu_config_ostype_selector;
+pub use qemu_config_ostype_selector::QemuConfigOstypeSelector;
+
 use proxmox_schema::ApiType;
 use pwt::{
     props::SubmitCallback,
     widget::form::{delete_empty_values, FormContext},
 };
-pub use qemu_config_ostype_selector::QemuConfigOstypeSelector;
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;

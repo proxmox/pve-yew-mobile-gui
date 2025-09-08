@@ -35,10 +35,6 @@ use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback};
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[builder]
 pub struct EditDialog<T: Serialize> {
-    /// Yew node ref
-    #[prop_or_default]
-    node_ref: NodeRef,
-
     /// Yew component key
     #[prop_or_default]
     pub key: Option<Key>,
@@ -49,7 +45,7 @@ pub struct EditDialog<T: Serialize> {
 
     // Form renderer.
     #[prop_or_default]
-    pub renderer: Option<RenderFn<FormContext>>,
+    pub renderer: Option<RenderFn<(FormContext, Option<Value>)>>,
 
     /// Form data loader.
     #[builder_cb(IntoApiLoadCallback, into_api_load_callback, T)]
@@ -111,12 +107,18 @@ impl<T: Serialize> EditDialog<T> {
         })
     }
 
-    pub fn renderer(mut self, renderer: impl IntoOptionalRenderFn<FormContext>) -> Self {
+    pub fn renderer(
+        mut self,
+        renderer: impl IntoOptionalRenderFn<(FormContext, Option<Value>)>,
+    ) -> Self {
         self.set_renderer(renderer);
         self
     }
 
-    pub fn set_renderer(&mut self, renderer: impl IntoOptionalRenderFn<FormContext>) {
+    pub fn set_renderer(
+        &mut self,
+        renderer: impl IntoOptionalRenderFn<(FormContext, Option<Value>)>,
+    ) {
         self.renderer = renderer.into_optional_render_fn();
     }
 
@@ -148,6 +150,7 @@ pub struct PwtEditDialog<T> {
     loading: bool,
     form_ctx: FormContext,
     submit_error: Option<String>,
+    load_data: Option<Value>,
     load_error: Option<String>,
     async_pool: AsyncPool,
     _phantom: PhantomData<T>,
@@ -167,6 +170,7 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
             loading: false,
             submit_error: None,
             load_error: None,
+            load_data: None,
             async_pool: AsyncPool::new(),
             _phantom: PhantomData,
         }
@@ -204,6 +208,7 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
                                 value["digest"] = digest.clone();
                             }
                         }
+                        self.load_data = Some(value.clone());
                         self.form_ctx.load_form(value);
                     }
                 }
@@ -259,7 +264,7 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
         let loading = self.loading;
 
         let content = match &renderer {
-            Some(renderer) => renderer.apply(&form_ctx),
+            Some(renderer) => renderer.apply(&(form_ctx.clone(), self.load_data.clone())),
             None => html! {},
         };
 
@@ -356,7 +361,6 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
         match &self.load_error {
             Some(msg) => AlertDialog::new(msg).on_close(on_close).into(),
             None => SideDialog::new()
-                .node_ref(props.node_ref.clone())
                 .with_child(form)
                 .with_optional_child(submit_alert)
                 .location(pwt::touch::SideDialogLocation::Bottom)

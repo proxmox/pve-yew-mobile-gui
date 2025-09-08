@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use serde_json::Value;
+
 use pwt::props::{RenderFn, SubmitCallback};
 
 use yew::prelude::*;
@@ -16,7 +18,8 @@ use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component, Sch
 use pve_api_types::QemuConfig;
 
 use crate::form::{
-    load_property_string, submit_property_string, typed_load, QemuConfigOstypeSelector,
+    load_property_string, submit_property_string, typed_load, BootDeviceList,
+    QemuConfigOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList};
 use crate::QemuConfigStartup;
@@ -86,7 +89,7 @@ impl PveQemuConfigPanel {
     }
 
     fn properties(ctx: &Context<Self>) -> Rc<Vec<EditableProperty>> {
-        fn render_string_input_panel(name: &'static str) -> RenderFn<FormContext> {
+        fn render_string_input_panel(name: &'static str) -> RenderFn<(FormContext, Option<Value>)> {
             RenderFn::new(move |_| {
                 let mut input = Field::new().name(name.to_string()).submit_empty(true);
 
@@ -119,7 +122,7 @@ impl PveQemuConfigPanel {
                 .render_input_panel(render_string_input_panel("name")),
             EditableProperty::new("ostype", tr!("OS Type"))
                 .required(true)
-                .render_input_panel(move |_: &FormContext| {
+                .render_input_panel(move |_: &(FormContext, Option<Value>)| {
                     QemuConfigOstypeSelector::new()
                         .style("width", "100%")
                         .name("ostype")
@@ -129,7 +132,7 @@ impl PveQemuConfigPanel {
             EditableProperty::new("startup", tr!("Start/Shutdown order"))
                 .required(true)
                 .placeholder("order=any")
-                .render_input_panel(move |_: &FormContext| {
+                .render_input_panel(move |_: &(FormContext, Option<Value>)| {
                     Column::new()
                         .gap(2)
                         .class(pwt::css::Flex::Fill)
@@ -160,7 +163,13 @@ impl PveQemuConfigPanel {
                 .on_submit(Some(submit_property_string::<QemuConfigStartup>(
                     &url, "startup",
                 ))),
-            EditableProperty::new("boot", tr!("Boot Device")).required(true),
+            EditableProperty::new("boot", tr!("Boot Device"))
+                .render_input_panel(move |(_form_ctx, record): &(FormContext, Option<Value>)| {
+                    BootDeviceList::new(Rc::new(record.clone().unwrap_or(Value::Null)))
+                        .name("boot")
+                        .into()
+                })
+                .required(true),
             EditableProperty::new("hotplug", tr!("Hotplug")).required(true),
             EditableProperty::new("startdate", tr!("RTC start date")).required(true),
             EditableProperty::new("smbios1", tr!("SMBIOS settings (type1)")).required(true),

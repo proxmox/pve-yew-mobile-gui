@@ -34,7 +34,7 @@ pub struct EditableProperty {
     pub loader: Option<ApiLoadCallback<Value>>,
 
     /// Edit input panel builder
-    pub render_input_panel: Option<RenderFn<FormContext>>,
+    pub render_input_panel: Option<RenderFn<(FormContext, Option<Value>)>>,
 }
 
 impl EditableProperty {
@@ -72,7 +72,7 @@ impl EditableProperty {
                 };
                 text.into()
             })
-            .render_input_panel(move |_form_ctx: &FormContext| {
+            .render_input_panel(move |(_form_ctx, _record): &(FormContext, Option<Value>)| {
                 Row::new()
                     .with_flex_spacer()
                     .with_child(Checkbox::new().name(name.to_string()).switch(true))
@@ -82,12 +82,14 @@ impl EditableProperty {
 
     pub fn new_string(name: impl Into<AttrValue>, title: impl Into<AttrValue>) -> Self {
         let name = name.into();
-        Self::new(name.clone(), title).render_input_panel(move |_form_ctx: &FormContext| {
-            Field::new()
-                .name(name.to_string())
-                .submit_empty(true)
-                .into()
-        })
+        Self::new(name.clone(), title).render_input_panel(
+            move |(_form_ctx, _record): &(FormContext, Option<Value>)| {
+                Field::new()
+                    .name(name.to_string())
+                    .submit_empty(true)
+                    .into()
+            },
+        )
     }
 
     pub fn renderer(mut self, renderer: impl 'static + Fn(&str, &Value, &Value) -> Html) -> Self {
@@ -99,12 +101,18 @@ impl EditableProperty {
         self.renderer = Some(RenderKVGridRecordFn::new(renderer));
     }
 
-    pub fn render_input_panel(mut self, renderer: impl IntoOptionalRenderFn<FormContext>) -> Self {
+    pub fn render_input_panel(
+        mut self,
+        renderer: impl IntoOptionalRenderFn<(FormContext, Option<Value>)>,
+    ) -> Self {
         self.set_render_input_panel(renderer);
         self
     }
 
-    pub fn set_render_input_panel(&mut self, renderer: impl IntoOptionalRenderFn<FormContext>) {
+    pub fn set_render_input_panel(
+        &mut self,
+        renderer: impl IntoOptionalRenderFn<(FormContext, Option<Value>)>,
+    ) {
         self.render_input_panel = renderer.into_optional_render_fn();
     }
 
