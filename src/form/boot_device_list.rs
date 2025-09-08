@@ -293,6 +293,7 @@ impl ManagedField for PveBootDeviceField {
             .enumerate()
             .map(|(index, item)| {
                 let enabled = item.enabled;
+                let is_last = (index + 1) == self.devices.len();
                 let leading: Html = Checkbox::new()
                     .switch(true)
                     .checked(item.enabled)
@@ -306,7 +307,7 @@ impl ManagedField for PveBootDeviceField {
                     )
                     .with_child(
                         ActionIcon::new("fa fa-chevron-down")
-                            .disabled((index + 1) == self.devices.len())
+                            .disabled(is_last)
                             .on_activate(ctx.link().callback(move |_| Msg::Down(index))),
                     )
                     .into();
@@ -317,6 +318,8 @@ impl ManagedField for PveBootDeviceField {
                     trailing,
                 )
                 .interactive(true)
+                .border_bottom(!is_last)
+                .padding_x(0)
                 .key(item.name.clone())
             })
             .collect();
