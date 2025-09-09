@@ -36,6 +36,7 @@ pub struct PveHotplugFeatureMaster {
 impl PveHotplugFeatureMaster {
     pub fn update_selection(&mut self, value: Value) {
         let value = match value {
+            Value::Null => String::from("network,disk,usb"),
             Value::String(s) => {
                 if s == "0" {
                     String::new()
@@ -110,10 +111,13 @@ impl ManagedField for PveHotplugFeatureMaster {
         }
     }
 
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let mut me = Self {
             selection: HashSet::new(),
-        }
+        };
+        let state = ctx.state();
+        me.update_selection(state.value.clone());
+        me
     }
 
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
