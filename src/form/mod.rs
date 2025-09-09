@@ -27,6 +27,7 @@ pub fn typed_load<T: DeserializeOwned + Serialize>(
     url: impl Into<String>,
 ) -> ApiLoadCallback<Value> {
     let url = url.into();
+    let url_cloned = url.clone();
     ApiLoadCallback::new(move || {
         let url = url.clone();
         async move {
@@ -39,6 +40,7 @@ pub fn typed_load<T: DeserializeOwned + Serialize>(
             })
         }
     })
+    .url(url_cloned)
 }
 
 pub fn load_property_string<
