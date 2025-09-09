@@ -19,7 +19,7 @@ use pve_api_types::QemuConfig;
 
 use crate::form::{
     load_property_string, submit_property_string, typed_load, BootDeviceList,
-    QemuConfigOstypeSelector,
+    HotplugFeatureSelector, QemuConfigOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList};
 use crate::QemuConfigStartup;
@@ -83,7 +83,8 @@ impl PveQemuConfigPanel {
         let url = get_config_url(&props.node, props.vmid);
         SubmitCallback::new(move |ctx: FormContext| {
             let value = ctx.get_submit_data();
-            let value = delete_empty_values(&value, &["name", "ostype", "startup"], false);
+            let value =
+                delete_empty_values(&value, &["name", "ostype", "startup", "hotplug"], false);
             http_put(url.clone(), Some(value))
         })
     }
@@ -170,14 +171,31 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .required(true),
-            EditableProperty::new("hotplug", tr!("Hotplug")).required(true),
+            EditableProperty::new("hotplug", tr!("Hotplug"))
+                .placeholder("network,disk,usb")
+                .renderer(|_name, v, _| {
+                    let text: String = match v.as_str() {
+                        Some(s) => match s {
+                            "0" => tr!("Disabled"),
+                            "1" => format!("{} (network,disk,usb)", tr!("Default")),
+                            _ => s.to_string(),
+                        },
+                        _ => v.to_string(),
+                    };
+                    text.into()
+                })
+                .render_input_panel(move |(_form_ctx, _record): &(FormContext, Option<Value>)| {
+                    HotplugFeatureSelector::new()
+                        .name("hotplug")
+                        .submit_empty(true)
+                        .into()
+                })
+                .required(true),
             EditableProperty::new("startdate", tr!("RTC start date")).required(true),
             EditableProperty::new("smbios1", tr!("SMBIOS settings (type1)")).required(true),
             EditableProperty::new("agent", tr!("QEMU Guest Agent")).required(true),
             EditableProperty::new("spice-enhancements", tr!("Spice Enhancements")).required(true),
             EditableProperty::new("vmstatestorage", tr!("VM State Storage")).required(true),
-            // Test
-            //EditableProperty::new_bool("", tr!("")).required(true),
         ])
     }
 }
