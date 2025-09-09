@@ -1,14 +1,44 @@
+use std::rc::Rc;
+
+use derivative::Derivative;
 use proxmox_yew_comp::utils::render_boolean;
 use serde_json::Value;
 
 use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback, RenderKVGridRecordFn};
 use pwt::prelude::*;
-use pwt::props::{IntoOptionalRenderFn, IntoSubmitCallback, RenderFn, SubmitCallback};
+use pwt::props::{IntoSubmitCallback, SubmitCallback};
 use pwt::widget::form::{Checkbox, Field, FormContext};
 use pwt::widget::Row;
 
 use pwt_macros::builder;
 use yew::html::IntoPropValue;
+
+/// For use with [EditableProperty]
+#[derive(Derivative)]
+#[derivative(Clone, PartialEq)]
+pub struct RenderPropertyInputPanelFn(
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    #[allow(clippy::type_complexity)]
+    Rc<dyn Fn(FormContext, Rc<Value>) -> Html>,
+);
+
+impl RenderPropertyInputPanelFn {
+    /// Creates a new instance.
+    pub fn new(renderer: impl Into<RenderPropertyInputPanelFn>) -> Self {
+        renderer.into()
+    }
+
+    /// Apply the render function
+    pub fn apply(&self, form_ctx: FormContext, record: Rc<Value>) -> Html {
+        (self.0)(form_ctx, record)
+    }
+}
+
+impl<F: 'static + Fn(FormContext, Rc<Value>) -> Html> From<F> for RenderPropertyInputPanelFn {
+    fn from(renderer: F) -> Self {
+        Self(Rc::new(renderer))
+    }
+}
 
 #[derive(Clone, PartialEq)]
 #[builder]
@@ -34,7 +64,7 @@ pub struct EditableProperty {
     pub loader: Option<ApiLoadCallback<Value>>,
 
     /// Edit input panel builder
-    pub render_input_panel: Option<RenderFn<(FormContext, Option<Value>)>>,
+    pub render_input_panel: Option<RenderPropertyInputPanelFn>,
 }
 
 impl EditableProperty {
@@ -72,7 +102,7 @@ impl EditableProperty {
                 };
                 text.into()
             })
-            .render_input_panel(move |(_form_ctx, _record): &(FormContext, Option<Value>)| {
+            .render_input_panel(move |_form_ctx, _record| {
                 Row::new()
                     .with_flex_spacer()
                     .with_child(Checkbox::new().name(name.to_string()).switch(true))
@@ -82,14 +112,12 @@ impl EditableProperty {
 
     pub fn new_string(name: impl Into<AttrValue>, title: impl Into<AttrValue>) -> Self {
         let name = name.into();
-        Self::new(name.clone(), title).render_input_panel(
-            move |(_form_ctx, _record): &(FormContext, Option<Value>)| {
-                Field::new()
-                    .name(name.to_string())
-                    .submit_empty(true)
-                    .into()
-            },
-        )
+        Self::new(name.clone(), title).render_input_panel(move |_form_ctx, _record| {
+            Field::new()
+                .name(name.to_string())
+                .submit_empty(true)
+                .into()
+        })
     }
 
     pub fn renderer(mut self, renderer: impl 'static + Fn(&str, &Value, &Value) -> Html) -> Self {
@@ -101,19 +129,13 @@ impl EditableProperty {
         self.renderer = Some(RenderKVGridRecordFn::new(renderer));
     }
 
-    pub fn render_input_panel(
-        mut self,
-        renderer: impl IntoOptionalRenderFn<(FormContext, Option<Value>)>,
-    ) -> Self {
+    pub fn render_input_panel(mut self, renderer: impl Into<RenderPropertyInputPanelFn>) -> Self {
         self.set_render_input_panel(renderer);
         self
     }
 
-    pub fn set_render_input_panel(
-        &mut self,
-        renderer: impl IntoOptionalRenderFn<(FormContext, Option<Value>)>,
-    ) {
-        self.render_input_panel = renderer.into_optional_render_fn();
+    pub fn set_render_input_panel(&mut self, renderer: impl Into<RenderPropertyInputPanelFn>) {
+        self.render_input_panel = Some(RenderPropertyInputPanelFn::new(renderer));
     }
 
     pub fn on_submit(mut self, callback: impl IntoSubmitCallback<FormContext>) -> Self {

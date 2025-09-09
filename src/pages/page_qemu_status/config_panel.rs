@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use serde_json::Value;
 
-use pwt::props::{RenderFn, SubmitCallback};
+use pwt::props::SubmitCallback;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -24,7 +24,7 @@ use crate::form::{
     load_property_string, submit_property_string, typed_load, BootDeviceList,
     HotplugFeatureSelector, QemuConfigOstypeSelector,
 };
-use crate::widgets::{EditableProperty, PropertyList};
+use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -93,8 +93,8 @@ impl PveQemuConfigPanel {
     }
 
     fn properties(ctx: &Context<Self>) -> Rc<Vec<EditableProperty>> {
-        fn render_string_input_panel(name: &'static str) -> RenderFn<(FormContext, Option<Value>)> {
-            RenderFn::new(move |_| {
+        fn render_string_input_panel(name: &'static str) -> RenderPropertyInputPanelFn {
+            RenderPropertyInputPanelFn::new(move |_, _| {
                 let mut input = Field::new().name(name.to_string()).submit_empty(true);
 
                 if let Some((optional, schema)) = lookup_schema(&name) {
@@ -126,7 +126,7 @@ impl PveQemuConfigPanel {
                 .render_input_panel(render_string_input_panel("name")),
             EditableProperty::new("ostype", tr!("OS Type"))
                 .required(true)
-                .render_input_panel(move |_: &(FormContext, Option<Value>)| {
+                .render_input_panel(move |_, _| {
                     QemuConfigOstypeSelector::new()
                         .style("width", "100%")
                         .name("ostype")
@@ -136,7 +136,7 @@ impl PveQemuConfigPanel {
             EditableProperty::new("startup", tr!("Start/Shutdown order"))
                 .required(true)
                 .placeholder("order=any")
-                .render_input_panel(move |_: &(FormContext, Option<Value>)| {
+                .render_input_panel(move |_, _| {
                     Column::new()
                         .gap(2)
                         .class(pwt::css::Flex::Fill)
@@ -168,10 +168,8 @@ impl PveQemuConfigPanel {
                     &url, "startup",
                 ))),
             EditableProperty::new("boot", tr!("Boot Device"))
-                .render_input_panel(move |(_form_ctx, record): &(FormContext, Option<Value>)| {
-                    BootDeviceList::new(Rc::new(record.clone().unwrap_or(Value::Null)))
-                        .name("boot")
-                        .into()
+                .render_input_panel(move |_, record: Rc<Value>| {
+                    BootDeviceList::new(record.clone()).name("boot").into()
                 })
                 .required(true),
             EditableProperty::new("hotplug", tr!("Hotplug"))
@@ -205,7 +203,7 @@ impl PveQemuConfigPanel {
                     })
                     .url(url),
                 )
-                .render_input_panel(move |(_form_ctx, _record): &(FormContext, Option<Value>)| {
+                .render_input_panel(move |_, _| {
                     HotplugFeatureSelector::new()
                         .name("hotplug")
                         .submit_empty(true)

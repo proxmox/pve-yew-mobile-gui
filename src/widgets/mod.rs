@@ -26,7 +26,7 @@ mod property_list;
 pub use property_list::PropertyList;
 
 mod editable_property;
-pub use editable_property::EditableProperty;
+pub use editable_property::{EditableProperty, RenderPropertyInputPanelFn};
 
 use pwt::prelude::*;
 use pwt::props::{IntoOptionalInlineHtml, PwtSpace};
