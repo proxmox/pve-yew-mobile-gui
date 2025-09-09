@@ -33,21 +33,29 @@ pub struct PveHotplugFeatureMaster {
     selection: HashSet<String>,
 }
 
-impl PveHotplugFeatureMaster {
-    pub fn update_selection(&mut self, value: Value) {
-        let value = match value {
-            Value::Null => String::from("network,disk,usb"),
-            Value::String(s) => {
-                if s == "0" {
-                    String::new()
+pub fn normalize_hotplug_value(value: &Value) -> Value {
+    match value {
+        Value::Null => "disk,network,usb".into(),
+        Value::String(s) => {
+            if s == "0" {
+                "".into()
+            } else {
+                if s == "1" {
+                    "disk,network,usb".into()
                 } else {
-                    if s == "1" {
-                        String::from("network,disk,usb")
-                    } else {
-                        s
-                    }
+                    s.clone().into()
                 }
             }
+        }
+        _ => value.clone(),
+    }
+}
+
+impl PveHotplugFeatureMaster {
+    pub fn update_selection(&mut self, value: Value) {
+        let value = normalize_hotplug_value(&value);
+        let value = match value {
+            Value::String(s) => s,
             Value::Array(_) => {
                 return; // internal state, no update necessary
             }
@@ -81,15 +89,18 @@ impl ManagedField for PveHotplugFeatureMaster {
                 if list.is_empty() {
                     return Ok("0".into());
                 }
-                let text = list
+                let mut list: Vec<String> = list
                     .iter()
                     .map(|item| item.as_str().map(String::from))
                     .flatten()
                     .filter(|s| !s.is_empty())
-                    .collect::<Vec<String>>()
-                    .join(",");
+                    .collect();
 
-                Value::from(text)
+                list.sort();
+
+                list.join(",");
+
+                Value::from(list.join(","))
             }
             _ => value.clone(),
         };

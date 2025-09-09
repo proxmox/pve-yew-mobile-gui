@@ -5,7 +5,9 @@ mod qemu_config_ostype_selector;
 pub use qemu_config_ostype_selector::QemuConfigOstypeSelector;
 
 mod hotplug_feature_selector;
-pub use hotplug_feature_selector::{HotplugFeatureSelector, PveHotplugFeatureSelector};
+pub use hotplug_feature_selector::{
+    normalize_hotplug_value, HotplugFeatureSelector, PveHotplugFeatureSelector,
+};
 
 use proxmox_schema::ApiType;
 use pwt::{

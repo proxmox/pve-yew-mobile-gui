@@ -7,13 +7,16 @@ use pwt::props::{RenderFn, SubmitCallback};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use proxmox_client::ApiResponseData;
 use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Field, FormContext, Number};
 use pwt::widget::Column;
 
-use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component, SchemaValidation};
+use proxmox_yew_comp::{
+    http_put, percent_encoding::percent_encode_component, ApiLoadCallback, SchemaValidation,
+};
 
 use pve_api_types::QemuConfig;
 
@@ -184,6 +187,24 @@ impl PveQemuConfigPanel {
                     };
                     text.into()
                 })
+                .loader(
+                    ApiLoadCallback::new({
+                        let url = url.clone();
+                        move || {
+                            let url = url.clone();
+                            async move {
+                                let mut resp: ApiResponseData<Value> =
+                                    proxmox_yew_comp::http_get_full(url, None).await?;
+                                // normalize on load (improves reset behavior)
+                                resp.data["hotplug"] = crate::form::normalize_hotplug_value(
+                                    resp.data.get("hotplug").unwrap_or(&Value::Null),
+                                );
+                                Ok(resp)
+                            }
+                        }
+                    })
+                    .url(url),
+                )
                 .render_input_panel(move |(_form_ctx, _record): &(FormContext, Option<Value>)| {
                     HotplugFeatureSelector::new()
                         .name("hotplug")
