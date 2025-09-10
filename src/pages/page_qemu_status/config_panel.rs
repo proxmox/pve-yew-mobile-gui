@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use anyhow::bail;
+use regex::Regex;
 use serde_json::Value;
 
 use pwt::props::SubmitCallback;
@@ -40,6 +42,10 @@ impl QemuConfigPanel {
             vmid,
         }
     }
+}
+
+thread_local! {
+    static QEMU_STARTDATE_MATCH: Regex = Regex::new(r#"^(now|\d{4}-\d{1,2}-\d{1,2}(T\d{1,2}:\d{1,2}:\d{1,2})?)$"#).unwrap();
 }
 
 fn get_config_url(node: &str, vmid: u32) -> String {
@@ -86,8 +92,11 @@ impl PveQemuConfigPanel {
         let url = get_config_url(&props.node, props.vmid);
         SubmitCallback::new(move |ctx: FormContext| {
             let value = ctx.get_submit_data();
-            let value =
-                delete_empty_values(&value, &["name", "ostype", "startup", "hotplug"], false);
+            let value = delete_empty_values(
+                &value,
+                &["name", "ostype", "startup", "hotplug", "startdate"],
+                false,
+            );
             http_put(url.clone(), Some(value))
         })
     }
@@ -204,7 +213,26 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .required(true),
-            EditableProperty::new("startdate", tr!("RTC start date")).required(true),
+            EditableProperty::new("startdate", tr!("RTC start date"))
+                .placeholder("now")
+                // Note current schema definition does not include the regex, so we
+                // need to add a validate function to the field.
+                .render_input_panel(move |_, _| {
+                    Field::new()
+                        .name("startdate")
+                        .submit_empty(true)
+                        .validate(|v: &String| {
+                            if QEMU_STARTDATE_MATCH.with(|r| r.is_match(v)) {
+                                return Ok(());
+                            }
+                            bail!(
+                                tr!("Format")
+                                    + ": \"now\" or \"2006-06-17T16:01:21\" or \"2006-06-17\""
+                            )
+                        })
+                        .into()
+                })
+                .required(true),
             EditableProperty::new("smbios1", tr!("SMBIOS settings (type1)")).required(true),
             EditableProperty::new("agent", tr!("QEMU Guest Agent")).required(true),
             EditableProperty::new("spice-enhancements", tr!("Spice Enhancements")).required(true),
