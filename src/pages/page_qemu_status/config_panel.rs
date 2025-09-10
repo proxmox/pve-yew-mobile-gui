@@ -22,7 +22,7 @@ use pve_api_types::QemuConfig;
 
 use crate::form::{
     load_property_string, submit_property_string, typed_load, BootDeviceList,
-    HotplugFeatureSelector, QemuConfigOstypeSelector,
+    HotplugFeatureSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -127,7 +127,7 @@ impl PveQemuConfigPanel {
             EditableProperty::new("ostype", tr!("OS Type"))
                 .required(true)
                 .render_input_panel(move |_, _| {
-                    QemuConfigOstypeSelector::new()
+                    QemuOstypeSelector::new()
                         .style("width", "100%")
                         .name("ostype")
                         .submit_empty(true)

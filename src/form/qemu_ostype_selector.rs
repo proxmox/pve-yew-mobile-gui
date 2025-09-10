@@ -9,17 +9,17 @@ use pwt::widget::form::Combobox;
 use pwt::props::{FieldBuilder, WidgetBuilder};
 use pwt_macros::{builder, widget};
 
-#[widget(comp=PveQemuConfigOstypeSelector, @input)]
+#[widget(comp=PveQemuOstypeSelector, @input)]
 #[derive(Clone, Properties, PartialEq)]
 #[builder]
-pub struct QemuConfigOstypeSelector {
+pub struct QemuOstypeSelector {
     /// The default value.
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     pub default: Option<AttrValue>,
 }
 
-impl QemuConfigOstypeSelector {
+impl QemuOstypeSelector {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -33,11 +33,11 @@ impl QemuConfigOstypeSelector {
     }
 }
 
-pub struct PveQemuConfigOstypeSelector {}
+pub struct PveQemuOstypeSelector {}
 
-impl Component for PveQemuConfigOstypeSelector {
+impl Component for PveQemuOstypeSelector {
     type Message = ();
-    type Properties = QemuConfigOstypeSelector;
+    type Properties = QemuOstypeSelector;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {}
@@ -52,7 +52,7 @@ impl Component for PveQemuConfigOstypeSelector {
             .show_filter(false)
             .default(&props.default)
             .items(ITEM_KEYS.with(Rc::clone))
-            .render_value(|v: &AttrValue| QemuConfigOstypeSelector::render_value(&*v).into())
+            .render_value(|v: &AttrValue| QemuOstypeSelector::render_value(&*v).into())
             .into()
     }
 }
