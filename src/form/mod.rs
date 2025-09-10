@@ -6,7 +6,8 @@ pub use qemu_ostype_selector::{format_qemu_ostype, QemuOstypeSelector};
 
 mod hotplug_feature_selector;
 pub use hotplug_feature_selector::{
-    normalize_hotplug_value, HotplugFeatureSelector, PveHotplugFeatureSelector,
+    format_hotplug_feature, normalize_hotplug_value, HotplugFeatureSelector,
+    PveHotplugFeatureSelector,
 };
 
 use proxmox_schema::ApiType;

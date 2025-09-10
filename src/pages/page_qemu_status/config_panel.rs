@@ -21,8 +21,8 @@ use proxmox_yew_comp::{
 use pve_api_types::QemuConfig;
 
 use crate::form::{
-    format_qemu_ostype, load_property_string, submit_property_string, typed_load, BootDeviceList,
-    HotplugFeatureSelector, QemuOstypeSelector,
+    format_hotplug_feature, format_qemu_ostype, load_property_string, submit_property_string,
+    typed_load, BootDeviceList, HotplugFeatureSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -177,18 +177,8 @@ impl PveQemuConfigPanel {
                 })
                 .required(true),
             EditableProperty::new("hotplug", tr!("Hotplug"))
-                .placeholder("network,disk,usb")
-                .renderer(|_name, v, _| {
-                    let text: String = match v.as_str() {
-                        Some(s) => match s {
-                            "0" => tr!("Disabled"),
-                            "1" => format!("{} (network,disk,usb)", tr!("Default")),
-                            _ => s.to_string(),
-                        },
-                        _ => v.to_string(),
-                    };
-                    text.into()
-                })
+                .placeholder(format_hotplug_feature(&Value::Null))
+                .renderer(|_, v, _| format_hotplug_feature(v).into())
                 .loader(
                     ApiLoadCallback::new({
                         let url = url.clone();

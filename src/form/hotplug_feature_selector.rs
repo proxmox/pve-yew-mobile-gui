@@ -33,6 +33,37 @@ pub struct PveHotplugFeatureMaster {
     selection: HashSet<String>,
 }
 
+pub fn format_hotplug_feature(value: &Value) -> String {
+    let default_text = format!(
+        "{} ({}, {}, {})",
+        tr!("Default"),
+        tr!("Network"),
+        tr!("Disk"),
+        "USB"
+    );
+    match value {
+        Value::Null => default_text.clone(),
+        Value::String(s) => match s.as_str() {
+            "0" => tr!("Disabled"),
+            "1" => default_text,
+            _ => s
+                .split(',')
+                .filter(|s| !s.is_empty())
+                .map(|s| match s {
+                    "disk" => tr!("Disk"),
+                    "network" => tr!("Network"),
+                    "usb" => String::from("USB"),
+                    "memory" => tr!("Memory"),
+                    "cpu" => tr!("CPU"),
+                    _ => s.to_string(),
+                })
+                .collect::<Vec<String>>()
+                .join(" "),
+        },
+        _ => value.to_string(),
+    }
+}
+
 pub fn normalize_hotplug_value(value: &Value) -> Value {
     match value {
         Value::Null => "disk,network,usb".into(),
