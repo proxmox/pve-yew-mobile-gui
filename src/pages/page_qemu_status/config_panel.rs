@@ -220,6 +220,7 @@ impl PveQemuConfigPanel {
                 .render_input_panel(move |_, _| {
                     Field::new()
                         .name("startdate")
+                        .placeholder("now")
                         .submit_empty(true)
                         .validate(|v: &String| {
                             if QEMU_STARTDATE_MATCH.with(|r| r.is_match(v)) {
