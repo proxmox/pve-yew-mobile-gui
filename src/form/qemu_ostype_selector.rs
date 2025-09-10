@@ -89,3 +89,10 @@ thread_local! {
         Rc::new(item_list.iter().map(|t| AttrValue::Static(t.0)).collect())
     };
 }
+
+pub fn format_qemu_ostype(ostype: &str) -> String {
+    ITEM_MAP.with(|map| match map.get(ostype) {
+        Some(text) => text.clone(),
+        None => ostype.to_string(),
+    })
+}

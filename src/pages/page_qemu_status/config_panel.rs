@@ -21,7 +21,7 @@ use proxmox_yew_comp::{
 use pve_api_types::QemuConfig;
 
 use crate::form::{
-    load_property_string, submit_property_string, typed_load, BootDeviceList,
+    format_qemu_ostype, load_property_string, submit_property_string, typed_load, BootDeviceList,
     HotplugFeatureSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
@@ -126,6 +126,10 @@ impl PveQemuConfigPanel {
                 .render_input_panel(render_string_input_panel("name")),
             EditableProperty::new("ostype", tr!("OS Type"))
                 .required(true)
+                .renderer(|_, v, _| match v.as_str() {
+                    Some(s) => format_qemu_ostype(s).into(),
+                    None => v.into(),
+                })
                 .render_input_panel(move |_, _| {
                     QemuOstypeSelector::new()
                         .style("width", "100%")
