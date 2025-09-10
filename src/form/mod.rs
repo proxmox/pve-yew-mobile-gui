@@ -10,6 +10,9 @@ pub use hotplug_feature_selector::{
     PveHotplugFeatureSelector,
 };
 
+mod qemu_smbios1_edit;
+pub use qemu_smbios1_edit::{PveQemuSmbios1Edit, QemuSmbios1Edit};
+
 use proxmox_schema::ApiType;
 use pwt::{
     props::SubmitCallback,

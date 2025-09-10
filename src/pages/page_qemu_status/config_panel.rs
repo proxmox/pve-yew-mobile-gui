@@ -20,11 +20,11 @@ use proxmox_yew_comp::{
     http_put, percent_encoding::percent_encode_component, ApiLoadCallback, SchemaValidation,
 };
 
-use pve_api_types::QemuConfig;
+use pve_api_types::{QemuConfig, QemuConfigAgent};
 
 use crate::form::{
     format_hotplug_feature, format_qemu_ostype, load_property_string, submit_property_string,
-    typed_load, BootDeviceList, HotplugFeatureSelector, QemuOstypeSelector,
+    typed_load, BootDeviceList, HotplugFeatureSelector, QemuOstypeSelector, QemuSmbios1Edit,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -149,7 +149,7 @@ impl PveQemuConfigPanel {
             EditableProperty::new("startup", tr!("Start/Shutdown order"))
                 .required(true)
                 .placeholder("order=any")
-                .render_input_panel(move |_, _| {
+                .render_input_panel(|_, _| {
                     Column::new()
                         .gap(2)
                         .class(pwt::css::Flex::Fill)
@@ -204,7 +204,7 @@ impl PveQemuConfigPanel {
                             }
                         }
                     })
-                    .url(url),
+                    .url(url.clone()),
                 )
                 .render_input_panel(move |_, _| {
                     HotplugFeatureSelector::new()
@@ -234,8 +234,17 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .required(true),
-            EditableProperty::new("smbios1", tr!("SMBIOS settings (type1)")).required(true),
-            EditableProperty::new("agent", tr!("QEMU Guest Agent")).required(true),
+            EditableProperty::new("smbios1", tr!("SMBIOS settings (type1)"))
+                .required(true)
+                .render_input_panel(move |_, _| QemuSmbios1Edit::new().name("smbios1").into()),
+            EditableProperty::new("agent", tr!("QEMU Guest Agent"))
+                .required(true)
+                .loader(load_property_string::<QemuConfig, QemuConfigAgent>(
+                    &url, "agent",
+                ))
+                .on_submit(Some(submit_property_string::<QemuConfigAgent>(
+                    &url, "agent",
+                ))),
             EditableProperty::new("spice-enhancements", tr!("Spice Enhancements")).required(true),
             EditableProperty::new("vmstatestorage", tr!("VM State Storage")).required(true),
         ])
