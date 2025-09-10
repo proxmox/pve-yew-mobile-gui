@@ -171,7 +171,7 @@ impl PveQemuConfigPanel {
                 .on_submit(Some(submit_property_string::<QemuConfigStartup>(
                     &url, "startup",
                 ))),
-            EditableProperty::new("boot", tr!("Boot Device"))
+            EditableProperty::new("boot", tr!("Boot Order"))
                 .render_input_panel(move |_, record: Rc<Value>| {
                     BootDeviceList::new(record.clone()).name("boot").into()
                 })
