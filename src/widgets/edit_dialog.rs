@@ -264,7 +264,7 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
 
         let input_panel = Column::new()
             .gap(1)
-            .class(pwt::css::Flex::Fill)
+            .class(pwt::css::FlexFit)
             .class(pwt::css::AlignItems::Stretch)
             .class("pwt-font-size-title-medium")
             .with_child(props.title.clone())
@@ -317,7 +317,7 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
             );
 
         let form = Column::new()
-            .class("pwt-flex-fit")
+            .class(pwt::css::FlexFit)
             .style("position", "relative")
             .with_child(
                 Progress::new()
@@ -355,6 +355,7 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
         match &self.load_error {
             Some(msg) => AlertDialog::new(msg).on_close(on_close).into(),
             None => SideDialog::new()
+                .style("max-height", "90dvh")
                 .with_child(form)
                 .with_optional_child(submit_alert)
                 .location(pwt::touch::SideDialogLocation::Bottom)
