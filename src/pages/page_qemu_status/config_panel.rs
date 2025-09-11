@@ -13,8 +13,8 @@ use proxmox_client::ApiResponseData;
 use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Field, FormContext, Number};
-use pwt::widget::Column;
+use pwt::widget::form::{delete_empty_values, Checkbox, Field, FormContext, Number};
+use pwt::widget::{Column, Container};
 
 use proxmox_yew_comp::{
     http_put, percent_encoding::percent_encode_component, ApiLoadCallback, SchemaValidation,
@@ -237,6 +237,44 @@ impl PveQemuConfigPanel {
             qemu_smbios_property("smbios1", url.clone()),
             EditableProperty::new("agent", tr!("QEMU Guest Agent"))
                 .required(true)
+                .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
+                .render_input_panel(|form_ctx: FormContext, _| {
+                    let enabled = form_ctx.read().get_field_checked("_agent_enabled");
+                    let ffob_enabled = form_ctx
+                        .read()
+                        .get_field_checked("_agent_freeze-fs-on-backup");
+
+                    let warning = |msg: String| Container::new().class("pwt-color-warning").padding_top(2).with_child(msg);
+
+                    Column::new()
+                        .class(pwt::css::FlexFit)
+                        .with_child(
+                            Checkbox::new()
+                                .name("_agent_enabled")
+                                .box_label(tr!("Use QEMU Guest Agent")),
+                        )
+                        .with_child(
+                            Checkbox::new()
+                                .name("_agent_fstrim_cloned_disks")
+                                .box_label(tr!("Run guest-trim after a disk move or VM migration"))
+                                .disabled(!enabled),
+                        )
+                        .with_child(
+                            Checkbox::new()
+                                .name("_agent_freeze-fs-on-backup")
+                                .box_label(tr!(
+                                    "Freeze/thaw guest filesystems on backup for consistency"
+                                ))
+                                .disabled(!enabled),
+                        )
+                        .with_optional_child((!ffob_enabled).then(|| warning(tr!(
+                            "Freeze/thaw for guest filesystems disabled. This can lead to inconsistent disk backups."
+                        ))))
+                        .with_optional_child(enabled.then(|| warning(tr!(
+                            "Make sure the QEMU Guest Agent is installed in the VM"
+                        ))))
+                        .into()
+                })
                 .loader(load_property_string::<QemuConfig, QemuConfigAgent>(
                     &url, "agent",
                 ))
