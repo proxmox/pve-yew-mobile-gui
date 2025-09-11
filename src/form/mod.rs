@@ -11,7 +11,7 @@ pub use hotplug_feature_selector::{
 };
 
 mod qemu_smbios1_edit;
-pub use qemu_smbios1_edit::{PveQemuSmbios1Edit, QemuSmbios1Edit};
+pub use qemu_smbios1_edit::qemu_smbios_property;
 
 use proxmox_schema::ApiType;
 use pwt::{

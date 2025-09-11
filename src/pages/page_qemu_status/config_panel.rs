@@ -23,8 +23,8 @@ use proxmox_yew_comp::{
 use pve_api_types::{QemuConfig, QemuConfigAgent};
 
 use crate::form::{
-    format_hotplug_feature, format_qemu_ostype, load_property_string, submit_property_string,
-    typed_load, BootDeviceList, HotplugFeatureSelector, QemuOstypeSelector, QemuSmbios1Edit,
+    format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_smbios_property,
+    submit_property_string, typed_load, BootDeviceList, HotplugFeatureSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -234,9 +234,7 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .required(true),
-            EditableProperty::new("smbios1", tr!("SMBIOS settings (type1)"))
-                .required(true)
-                .render_input_panel(move |_, _| QemuSmbios1Edit::new().name("smbios1").into()),
+            qemu_smbios_property("smbios1", url.clone()),
             EditableProperty::new("agent", tr!("QEMU Guest Agent"))
                 .required(true)
                 .loader(load_property_string::<QemuConfig, QemuConfigAgent>(
