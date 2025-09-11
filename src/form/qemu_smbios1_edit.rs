@@ -15,8 +15,6 @@ use pwt_macros::{builder, widget};
 
 pub type PveQemuSmbios1Edit = ManagedFieldMaster<PveQemuSmbios1Master>;
 
-// Fixme: implement base64 encoding?
-
 #[widget(comp=ManagedFieldMaster<PveQemuSmbios1Master>, @input)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
@@ -48,6 +46,54 @@ fn smbios1_default() -> PveQmSmbios1 {
     serde_json::from_value(json!({})).unwrap()
 }
 
+fn smbios1_decode(mut data: PveQmSmbios1) -> PveQmSmbios1 {
+    let decode_option = |target: &mut Option<String>| {
+        if let Some(data) = target.as_deref() {
+            if let Ok(bin_data) = proxmox_base64::decode(data) {
+                *target = Some(String::from_utf8_lossy(&bin_data).into());
+            }
+        }
+    };
+
+    if let Some(true) = data.base64 {
+        data.base64 = Some(false);
+        decode_option(&mut data.manufacturer);
+        decode_option(&mut data.product);
+        decode_option(&mut data.version);
+        decode_option(&mut data.serial);
+        decode_option(&mut data.sku);
+        decode_option(&mut data.family);
+    }
+
+    data
+}
+
+fn smbios1_encode(mut data: PveQmSmbios1) -> PveQmSmbios1 {
+    let mut use_base64 = false;
+    let mut encode_option = |target: &mut Option<String>| {
+        if let Some(data) = target.as_deref() {
+            use_base64 = true;
+            *target = Some(proxmox_base64::encode(data));
+        }
+    };
+
+    match data.base64 {
+        None | Some(false) => {
+            encode_option(&mut data.manufacturer);
+            encode_option(&mut data.product);
+            encode_option(&mut data.version);
+            encode_option(&mut data.serial);
+            encode_option(&mut data.sku);
+            encode_option(&mut data.family);
+
+            data.base64 = use_base64.then(|| true);
+        }
+        _ => { /* do nothing */ }
+    }
+
+    data
+}
+
 thread_local! {
     static UUID_MATCH: Regex = Regex::new(r#"^[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$"#).unwrap();
 }
@@ -56,7 +102,7 @@ impl PveQemuSmbios1Master {
         match value {
             Value::Null => self.data = smbios1_default(),
             Value::String(s) => match PveQmSmbios1::API_SCHEMA.parse_property_string(&s) {
-                Ok(value) => self.data = serde_json::from_value(value).unwrap(),
+                Ok(value) => self.data = smbios1_decode(serde_json::from_value(value).unwrap()),
                 Err(err) => {
                     log::error!("unable to parse smbios1 property string: {err}");
                     self.data = smbios1_default();
@@ -85,7 +131,7 @@ impl ManagedField for PveQemuSmbios1Master {
     fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         let value = match value {
             Value::Object(_) => {
-                let data = serde_json::from_value(value.clone())?;
+                let data = smbios1_encode(serde_json::from_value(value.clone())?);
                 let text = proxmox_schema::property_string::print::<PveQmSmbios1>(&data)?;
                 text.into()
             }
