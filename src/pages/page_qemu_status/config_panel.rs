@@ -244,7 +244,12 @@ impl PveQemuConfigPanel {
                         .read()
                         .get_field_checked("_agent_freeze-fs-on-backup");
 
-                    let warning = |msg: String| Container::new().class("pwt-color-warning").padding_top(2).with_child(msg);
+                    let warning = |msg: String| {
+                        Container::new()
+                            .class("pwt-color-warning")
+                            .padding(1)
+                            .with_child(msg)
+                    };
 
                     Column::new()
                         .class(pwt::css::FlexFit)
@@ -267,22 +272,26 @@ impl PveQemuConfigPanel {
                                 ))
                                 .disabled(!enabled),
                         )
-                        .with_child(crate::widgets::label_field(
-                            tr!("Type"),
-                            Combobox::new()
-                                .name("_agent_type")
-                                .placeholder(tr!("Default") + " (VirtIO)")
-                                .with_item("virtio")
-                                .with_item("isa")
-                                .render_value(|value: &AttrValue| {
-                                    match value.as_str() {
-                                        "virtio" => "VirtIO",
-                                        "isa" => "ISA",
-                                        _ => value,
-                                    }.into()
-                                })
-
-                        ).padding_top(2))
+                        .with_child(
+                            crate::widgets::label_field(
+                                tr!("Type"),
+                                Combobox::new()
+                                    .name("_agent_type")
+                                    .placeholder(tr!("Default") + " (VirtIO)")
+                                    .with_item("virtio")
+                                    .with_item("isa")
+                                    .render_value(|value: &AttrValue| {
+                                        match value.as_str() {
+                                            "virtio" => "VirtIO",
+                                            "isa" => "ISA",
+                                            _ => value,
+                                        }
+                                        .into()
+                                    }),
+                            )
+                            .padding_top(2)
+                            .padding_bottom(1)
+                        )
                         .with_optional_child((!ffob_enabled).then(|| warning(tr!(
                             "Freeze/thaw for guest filesystems disabled. This can lead to inconsistent disk backups."
                         ))))
