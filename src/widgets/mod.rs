@@ -219,7 +219,7 @@ pub fn form_list_tile(
         .with_optional_child(trailing.into_optional_inline_html())
 }
 
-pub fn label_field(label: impl Into<AttrValue>, field: impl Into<Html>) -> Html {
+pub fn label_field(label: impl Into<AttrValue>, field: impl Into<Html>) -> Column {
     Column::new()
         .with_child(FieldLabel::new(label.into()).padding_bottom(PwtSpace::Em(0.3)))
         .with_child(field)
