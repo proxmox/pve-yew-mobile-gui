@@ -13,6 +13,9 @@ pub use hotplug_feature_selector::{
 mod qemu_smbios1_edit;
 pub use qemu_smbios1_edit::qemu_smbios_property;
 
+mod qemu_spice_enhancement_edit;
+pub use qemu_spice_enhancement_edit::qemu_spice_enhancement_property;
+
 use proxmox_schema::ApiType;
 use pwt::{
     props::SubmitCallback,

@@ -24,7 +24,8 @@ use pve_api_types::{QemuConfig, QemuConfigAgent};
 
 use crate::form::{
     format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_smbios_property,
-    submit_property_string, typed_load, BootDeviceList, HotplugFeatureSelector, QemuOstypeSelector,
+    qemu_spice_enhancement_property, submit_property_string, typed_load, BootDeviceList,
+    HotplugFeatureSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -306,7 +307,7 @@ impl PveQemuConfigPanel {
                 .on_submit(Some(submit_property_string::<QemuConfigAgent>(
                     &url, "agent",
                 ))),
-            EditableProperty::new("spice-enhancements", tr!("Spice Enhancements")).required(true),
+            qemu_spice_enhancement_property("spice_enhancements", url.clone()),
             EditableProperty::new("vmstatestorage", tr!("VM State Storage")).required(true),
         ])
     }
