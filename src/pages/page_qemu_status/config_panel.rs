@@ -20,7 +20,7 @@ use proxmox_yew_comp::{
     http_put, percent_encoding::percent_encode_component, ApiLoadCallback, SchemaValidation,
 };
 
-use pve_api_types::{QemuConfig, QemuConfigAgent};
+use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType, QemuConfig, QemuConfigAgent};
 
 use crate::form::{
     format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_smbios_property,
@@ -308,7 +308,28 @@ impl PveQemuConfigPanel {
                     &url, "agent",
                 ))),
             qemu_spice_enhancement_property("spice_enhancements", url.clone()),
-            EditableProperty::new("vmstatestorage", tr!("VM State Storage")).required(true),
+            EditableProperty::new("vmstatestorage", tr!("VM State Storage"))
+                .required(true)
+                .placeholder(tr!("Automatic")),
+            EditableProperty::new("amd-sev", tr!("AMD SEV"))
+                .required(true)
+                .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
+                .renderer(|_, v, _| {
+                    if let Value::String(amd_sev) = v {
+                        if let Ok(amd_sev_props) = PveQemuSevFmt::API_SCHEMA.parse_property_string(amd_sev) {
+                             if let Ok(data) = serde_json::from_value::<PveQemuSevFmt>(amd_sev_props) {
+                                let text = match data.ty {
+                                    PveQemuSevFmtType::Std => "AMD SEV",
+                                    PveQemuSevFmtType::Es=> "AMD SEV-ES",
+                                    PveQemuSevFmtType::Snp=> "AMD SEV-SNP",
+                                };
+                                return text.into();
+                            }
+                        }
+                    }
+                    v.into()
+                })
+
         ])
     }
 }
