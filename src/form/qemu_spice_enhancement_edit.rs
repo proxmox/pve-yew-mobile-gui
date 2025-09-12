@@ -1,10 +1,12 @@
+use std::rc::Rc;
+
 use proxmox_yew_comp::form::property_string_from_parts;
 use pwt::props::SubmitCallback;
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
 
-use pve_api_types::{QemuConfig, QemuConfigSpiceEnhancements};
+use pve_api_types::{QemuConfig, QemuConfigSpiceEnhancements, QemuConfigVga, QemuConfigVgaType};
 
 use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
@@ -20,10 +22,25 @@ fn property_name(name: &str, prop: &str) -> String {
 }
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _| {
+    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
         let folder_sharing = form_ctx
             .read()
             .get_field_checked(property_name(&name, "foldersharing"));
+
+        let mut show_spice_hint = true;
+        if let Some(Value::String(vga)) = record.get("vga") {
+            if let Ok(vga_props) = QemuConfigVga::API_SCHEMA.parse_property_string(vga) {
+                if let Ok(vga) = serde_json::from_value::<QemuConfigVga>(vga_props) {
+                    match vga.ty {
+                        Some(QemuConfigVgaType::Qxl)
+                        | Some(QemuConfigVgaType::Qxl2)
+                        | Some(QemuConfigVgaType::Qxl3)
+                        | Some(QemuConfigVgaType::Qxl4) => show_spice_hint = false,
+                        _ => {}
+                    }
+                }
+            }
+        }
 
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
@@ -45,9 +62,11 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .with_item("all")
                     .with_item("filter"),
             ))
-            .with_child(hint(tr!(
-            "To use these features set the display to SPICE in the hardware settings of the VM."
-        )))
+            .with_optional_child(show_spice_hint.then(|| {
+                hint(tr!(
+                    "To use these features set the display to SPICE in the hardware settings of the VM."
+                ))
+            }))
             .with_optional_child(folder_sharing.then(|| {
                 hint(tr!(
                     "Make sure the SPICE WebDav daemon is installed in the VM."
