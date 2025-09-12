@@ -35,7 +35,7 @@ pwt-macros = "0.5"
 proxmox-yew-comp = "0.6.0"
 
 proxmox-login = "1.0"
-proxmox-client = "1.0"
+proxmox-client = { version = "1.0", features = ["perl-api-path-builder"] }
 
 pve-api-types = { path = "proxmox-api-types/pve-api-types" }
 
