@@ -20,12 +20,14 @@ use proxmox_yew_comp::{
     http_put, percent_encoding::percent_encode_component, ApiLoadCallback, SchemaValidation,
 };
 
-use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType, QemuConfig, QemuConfigAgent};
+use pve_api_types::{
+    PveQemuSevFmt, PveQemuSevFmtType, QemuConfig, QemuConfigAgent, StorageContent,
+};
 
 use crate::form::{
     format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_smbios_property,
     qemu_spice_enhancement_property, submit_property_string, typed_load, BootDeviceList,
-    HotplugFeatureSelector, QemuOstypeSelector,
+    HotplugFeatureSelector, PveStorageSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -95,7 +97,14 @@ impl PveQemuConfigPanel {
             let value = ctx.get_submit_data();
             let value = delete_empty_values(
                 &value,
-                &["name", "ostype", "startup", "hotplug", "startdate"],
+                &[
+                    "name",
+                    "ostype",
+                    "startup",
+                    "hotplug",
+                    "startdate",
+                    "vmstatestorage",
+                ],
                 false,
             );
             http_put(url.clone(), Some(value))
@@ -308,9 +317,20 @@ impl PveQemuConfigPanel {
                     &url, "agent",
                 ))),
             qemu_spice_enhancement_property("spice_enhancements", url.clone()),
-            EditableProperty::new("vmstatestorage", tr!("VM State Storage"))
+            EditableProperty::new("vmstatestorage", tr!("VM State storage"))
                 .required(true)
-                .placeholder(tr!("Automatic")),
+                .placeholder(tr!("Automatic"))
+                .render_input_panel({
+                    let node = props.node.clone();
+                    move |_, _| {
+                        PveStorageSelector::new(&node)
+                            .name("vmstatestorage")
+                            .submit_empty(true)
+                            .content_types(vec![StorageContent::Images])
+                            .placeholder(tr!("Automatic (Storage used by the VM, or 'local')"))
+                            .into()
+                    }
+                }),
             EditableProperty::new("amd-sev", tr!("AMD SEV"))
                 .required(true)
                 .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))

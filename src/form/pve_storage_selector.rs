@@ -51,7 +51,7 @@ pub struct PveStorageSelector {
 
     /// If set, automatically selects the first value from the store (if no default is selected)
     #[builder]
-    #[prop_or(true)]
+    #[prop_or(false)]
     pub autoselect: bool,
 }
 
