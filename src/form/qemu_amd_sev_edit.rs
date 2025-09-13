@@ -4,9 +4,12 @@ use pwt::prelude::*;
 
 use crate::widgets::EditableProperty;
 
-pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) -> EditableProperty {
-    let url = url.into();
-    let name = name.into();
+pub fn qemu_amd_sev_property(
+    _name: impl Into<String>,
+    _url: impl Into<String>,
+) -> EditableProperty {
+    //let url = url.into();
+    //let name = name.into();
 
     EditableProperty::new("amd-sev", tr!("AMD SEV"))
         .required(true)

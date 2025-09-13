@@ -5,7 +5,6 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use proxmox_schema::ApiType;
 use pve_api_types::PveQmBoot;
 
 use pwt::prelude::*;

@@ -5,7 +5,6 @@ use gloo_timers::callback::Timeout;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use proxmox_schema::ApiType;
 use pwt::prelude::*;
 use pwt::widget::{Fa, List, ListTile};
 use pwt::AsyncAbortGuard;

@@ -20,9 +20,7 @@ use proxmox_yew_comp::{
     http_put, percent_encoding::percent_encode_component, ApiLoadCallback, SchemaValidation,
 };
 
-use pve_api_types::{
-    PveQemuSevFmt, PveQemuSevFmtType, QemuConfig, QemuConfigAgent, StorageContent,
-};
+use pve_api_types::{QemuConfig, QemuConfigAgent, StorageContent};
 
 use crate::form::{
     format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_amd_sev_property,
