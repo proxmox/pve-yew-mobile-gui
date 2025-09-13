@@ -12,15 +12,16 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
         .required(true)
         .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
         .renderer(|_, v, _| {
-            if let Ok(data) = crate::form::parse_property_string_value::<PveQemuSevFmt>(v) {
-                match data.ty {
-                    PveQemuSevFmtType::Std => "AMD SEV",
-                    PveQemuSevFmtType::Es => "AMD SEV-ES",
-                    PveQemuSevFmtType::Snp => "AMD SEV-SNP",
+            if let serde_json::Value::String(v) = v {
+                if let Ok(data) = crate::form::parse_property_string::<PveQemuSevFmt>(v) {
+                    let text = match data.ty {
+                        PveQemuSevFmtType::Std => "AMD SEV",
+                        PveQemuSevFmtType::Es => "AMD SEV-ES",
+                        PveQemuSevFmtType::Snp => "AMD SEV-SNP",
+                    };
+                    return format!("{text} ({v})").into();
                 }
-                .into()
-            } else {
-                v.into()
             }
+            v.into()
         })
 }
