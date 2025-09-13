@@ -18,6 +18,7 @@ use pwt::props::{FieldBuilder, LoadCallback, WidgetBuilder, WidgetStyleBuilder};
 use pwt::state::Store;
 use pwt::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use pwt::widget::form::{Selector, SelectorRenderArgs, ValidateFn};
+use pwt::widget::{Column, Container, Progress, Row};
 
 use pwt_macros::{builder, widget};
 
@@ -53,6 +54,11 @@ pub struct PveStorageSelector {
     #[builder]
     #[prop_or(false)]
     pub autoselect: bool,
+
+    /// Layout for mobile devices.
+    #[builder]
+    #[prop_or(false)]
+    pub mobile: bool,
 }
 
 impl PveStorageSelector {
@@ -161,14 +167,21 @@ impl Component for PveStorageSelectorComp {
                 }
             }
         };
+
+        let mobile = props.mobile;
+
         Selector::new(
             self.store.clone(),
             move |args: &SelectorRenderArgs<Store<StorageInfo>>| {
                 GridPicker::new(
-                    DataTable::new(columns(), args.store.clone())
-                        .min_width(300)
-                        .header_focusable(false)
-                        .class(pwt::css::FlexFit),
+                    DataTable::new(
+                        if mobile { columns_mobile() } else { columns() },
+                        args.store.clone(),
+                    )
+                    .min_width(300)
+                    .show_header(!mobile)
+                    .header_focusable(false)
+                    .class(pwt::css::FlexFit),
                 )
                 .selection(args.selection.clone())
                 .on_select(args.controller.on_select_callback())
@@ -184,6 +197,50 @@ impl Component for PveStorageSelectorComp {
         .default(props.default.clone())
         .into()
     }
+}
+
+fn columns_mobile() -> Rc<Vec<DataTableHeader<StorageInfo>>> {
+    Rc::new(vec![DataTableColumn::new(tr!("Name"))
+        .get_property(|entry: &StorageInfo| &entry.storage)
+        .sort_order(true)
+        .render(|entry: &StorageInfo| {
+            let (usage_text, percentage) =
+                if let (Some(total), Some(used)) = (entry.total, entry.used) {
+                    let left_text = HumanByte::new_binary(used as f64);
+                    let right_text = HumanByte::new_binary(total as f64);
+
+                    (Row::new()
+            .gap(2)
+            .class("pwt-align-items-flex-end")
+            .with_child(html! {
+                <div class="pwt-font-size-title-small pwt-flex-fill">{left_text.to_string()}</div>
+            })
+            .with_flex_spacer()
+            .with_child(html! {
+                <div class="pwt-font-size-title-small">{right_text.to_string()}</div>
+            }), (used as f32) / (total as f32))
+                } else {
+                    (
+                        Row::new()
+                            .gap(2)
+                            .with_child(tr!("Storage size/usage unknown")),
+                        0.0,
+                    )
+                };
+
+            Column::new()
+                .with_child(
+                    Container::new().with_child(format!("{} ({})", &entry.storage, &entry.ty)),
+                )
+                .with_child(
+                    Column::new()
+                        .gap(1)
+                        .with_child(usage_text)
+                        .with_child(Progress::new().value(percentage)),
+                )
+                .into()
+        })
+        .into()])
 }
 
 fn columns() -> Rc<Vec<DataTableHeader<StorageInfo>>> {

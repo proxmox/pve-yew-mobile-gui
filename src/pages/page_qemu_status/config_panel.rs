@@ -324,6 +324,7 @@ impl PveQemuConfigPanel {
                     let node = props.node.clone();
                     move |_, _| {
                         PveStorageSelector::new(&node)
+                            .mobile(true)
                             .name("vmstatestorage")
                             .submit_empty(true)
                             .content_types(vec![StorageContent::Images])
