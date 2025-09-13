@@ -65,6 +65,13 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .name(property_name("key-sharing"))
                     .box_label(tr!("Allow Key-Sharing")),
             )
+            .with_child(
+                Checkbox::new()
+                    .style("visibility", (!sev_enabled).then(|| "hidden"))
+                    .disabled(!sev_enabled)
+                    .name(property_name("kernel-hashes"))
+                    .box_label(tr!("Enable Kernel Hashes")),
+            )
             .with_optional_child(snp_enabled.then(|| {
                 hint(tr!(
                     "WARNING: When using SEV-SNP no EFI disk is loaded as pflash."
