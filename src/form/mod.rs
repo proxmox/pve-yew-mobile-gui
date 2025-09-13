@@ -100,14 +100,23 @@ pub fn submit_property_string<P: ApiType + Serialize + DeserializeOwned>(
     })
 }
 
-pub fn parse_property_string<T: ApiType + DeserializeOwned>(value: &Value) -> Result<T, Error> {
+pub fn parse_property_string_value<T: ApiType + DeserializeOwned>(
+    value: &Value,
+) -> Result<T, Error> {
     if let Value::String(value_str) = value {
-        match T::API_SCHEMA.parse_property_string(value_str) {
-            Ok(props) => return serde_json::from_value::<T>(props).map_err(|e| e.into()),
-            Err(e) => return Err(e),
-        }
+        parse_property_string(value_str)
+    } else {
+        Err(format_err!(
+            "parse_property_string: value is no string type"
+        ))
     }
-    Err(format_err!(
-        "parse_property_string: value is no string type"
-    ))
+}
+
+pub fn parse_property_string<T: ApiType + DeserializeOwned>(
+    value_str: impl AsRef<str>,
+) -> Result<T, Error> {
+    match T::API_SCHEMA.parse_property_string(value_str.as_ref()) {
+        Ok(props) => return serde_json::from_value::<T>(props).map_err(|e| e.into()),
+        Err(e) => return Err(e),
+    }
 }

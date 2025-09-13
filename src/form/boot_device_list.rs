@@ -92,15 +92,7 @@ impl PveBootDeviceField {
             }
         };
 
-        let boot: Value = match PveQmBoot::API_SCHEMA.parse_property_string(&value) {
-            Ok(boot) => boot,
-            Err(err) => {
-                log::error!("unable to parse boot property string: {err}");
-                Value::Null
-            }
-        };
-
-        let boot: PveQmBoot = match serde_json::from_value(boot) {
+        let boot: PveQmBoot = match crate::form::parse_property_string(&value) {
             Ok(boot) => boot,
             Err(err) => {
                 log::error!("unable to parse boot option value: {err}");

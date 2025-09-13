@@ -29,15 +29,13 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
 
         let mut show_spice_hint = true;
         if let Some(Value::String(vga)) = record.get("vga") {
-            if let Ok(vga_props) = QemuConfigVga::API_SCHEMA.parse_property_string(vga) {
-                if let Ok(vga) = serde_json::from_value::<QemuConfigVga>(vga_props) {
-                    match vga.ty {
-                        Some(QemuConfigVgaType::Qxl)
-                        | Some(QemuConfigVgaType::Qxl2)
-                        | Some(QemuConfigVgaType::Qxl3)
-                        | Some(QemuConfigVgaType::Qxl4) => show_spice_hint = false,
-                        _ => {}
-                    }
+            if let Ok(vga) = crate::form::parse_property_string::<QemuConfigVga>(vga) {
+                match vga.ty {
+                    Some(QemuConfigVgaType::Qxl)
+                    | Some(QemuConfigVgaType::Qxl2)
+                    | Some(QemuConfigVgaType::Qxl3)
+                    | Some(QemuConfigVgaType::Qxl4) => show_spice_hint = false,
+                    _ => {}
                 }
             }
         }

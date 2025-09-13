@@ -100,23 +100,22 @@ impl PveQemuHardwarePanel {
         ));
 
         for (n, disk_config) in &data.ide {
-            if let Ok(config) = PveQmIde::API_SCHEMA.parse_property_string(disk_config) {
-                if let Ok(config) = serde_json::from_value::<PveQmIde>(config) {
-                    if config.media == Some(PveQmIdeMedia::Cdrom) {
-                        list.push(icon_list_tile(
-                            Fa::new("cdrom"),
-                            disk_config.to_string(),
-                            tr!("CD/DVD Drive") + &format!(" (ide{n})"),
-                            (),
-                        ));
-                    } else {
-                        list.push(icon_list_tile(
-                            Fa::new("hdd-o"),
-                            disk_config.to_string(),
-                            tr!("Hard Disk") + &format!(" (ide{n})"),
-                            (),
-                        ));
-                    }
+            if let Ok(config) = crate::form::parse_property_string::<PveQmIde>(disk_config.as_str())
+            {
+                if config.media == Some(PveQmIdeMedia::Cdrom) {
+                    list.push(icon_list_tile(
+                        Fa::new("cdrom"),
+                        disk_config.to_string(),
+                        tr!("CD/DVD Drive") + &format!(" (ide{n})"),
+                        (),
+                    ));
+                } else {
+                    list.push(icon_list_tile(
+                        Fa::new("hdd-o"),
+                        disk_config.to_string(),
+                        tr!("Hard Disk") + &format!(" (ide{n})"),
+                        (),
+                    ));
                 }
             }
         }
