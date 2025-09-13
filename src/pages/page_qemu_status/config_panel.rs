@@ -25,9 +25,9 @@ use pve_api_types::{
 };
 
 use crate::form::{
-    format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_smbios_property,
-    qemu_spice_enhancement_property, submit_property_string, typed_load, BootDeviceList,
-    HotplugFeatureSelector, PveStorageSelector, QemuOstypeSelector,
+    format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_amd_sev_property,
+    qemu_smbios_property, qemu_spice_enhancement_property, submit_property_string, typed_load,
+    BootDeviceList, HotplugFeatureSelector, PveStorageSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -332,25 +332,7 @@ impl PveQemuConfigPanel {
                             .into()
                     }
                 }),
-            EditableProperty::new("amd-sev", tr!("AMD SEV"))
-                .required(true)
-                .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
-                .renderer(|_, v, _| {
-                    if let Value::String(amd_sev) = v {
-                        if let Ok(amd_sev_props) = PveQemuSevFmt::API_SCHEMA.parse_property_string(amd_sev) {
-                             if let Ok(data) = serde_json::from_value::<PveQemuSevFmt>(amd_sev_props) {
-                                let text = match data.ty {
-                                    PveQemuSevFmtType::Std => "AMD SEV",
-                                    PveQemuSevFmtType::Es=> "AMD SEV-ES",
-                                    PveQemuSevFmtType::Snp=> "AMD SEV-SNP",
-                                };
-                                return text.into();
-                            }
-                        }
-                    }
-                    v.into()
-                })
-
+            qemu_amd_sev_property("amd-sev", url.clone()),
         ])
     }
 }

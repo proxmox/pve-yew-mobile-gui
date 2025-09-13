@@ -1,4 +1,5 @@
 mod boot_device_list;
+use anyhow::{format_err, Error};
 pub use boot_device_list::{BootDeviceList, PveBootDeviceList};
 
 mod qemu_ostype_selector;
@@ -15,6 +16,9 @@ pub use qemu_smbios1_edit::qemu_smbios_property;
 
 mod qemu_spice_enhancement_edit;
 pub use qemu_spice_enhancement_edit::qemu_spice_enhancement_property;
+
+mod qemu_amd_sev_edit;
+pub use qemu_amd_sev_edit::qemu_amd_sev_property;
 
 mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
@@ -94,4 +98,16 @@ pub fn submit_property_string<P: ApiType + Serialize + DeserializeOwned>(
             http_put(url.clone(), Some(value)).await
         }
     })
+}
+
+pub fn parse_property_string<T: ApiType + DeserializeOwned>(value: &Value) -> Result<T, Error> {
+    if let Value::String(value_str) = value {
+        match T::API_SCHEMA.parse_property_string(value_str) {
+            Ok(props) => return serde_json::from_value::<T>(props).map_err(|e| e.into()),
+            Err(e) => return Err(e),
+        }
+    }
+    Err(format_err!(
+        "parse_property_string: value is no string type"
+    ))
 }
