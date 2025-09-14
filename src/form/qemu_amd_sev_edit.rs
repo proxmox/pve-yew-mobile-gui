@@ -1,4 +1,4 @@
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
 use proxmox_yew_comp::{
@@ -48,7 +48,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .style("visibility", (!sev_enabled).then(|| "hidden"))
+                    .style("display", (!sev_enabled).then(|| "none"))
                     .disabled(!sev_enabled)
                     .submit(false)
                     .name(property_name("debug"))
@@ -56,10 +56,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .style(
-                        "visibility",
-                        (!sev_enabled || snp_enabled).then(|| "hidden"),
-                    )
+                    .style("display", (!sev_enabled || snp_enabled).then(|| "none"))
                     .disabled(!sev_enabled || snp_enabled)
                     .submit(false)
                     .name(property_name("key-sharing"))
@@ -67,7 +64,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .style("visibility", (!sev_enabled).then(|| "hidden"))
+                    .style("display", (!sev_enabled).then(|| "none"))
                     .disabled(!sev_enabled)
                     .name(property_name("kernel-hashes"))
                     .box_label(tr!("Enable Kernel Hashes")),
@@ -149,6 +146,10 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
                 async move {
                     let property_name = |prop| format!("_{name}_{prop}");
                     let mut form_data = form_ctx.get_submit_data();
+                    if form_data.get(property_name("type")).is_none() {
+                        let value = json!({"delete": name});
+                        return http_put(url, Some(value)).await;
+                    }
                     let debug = form_ctx.read().get_field_checked(property_name("debug"));
                     if !debug {
                         form_data[property_name("no-debug")] = true.into();
@@ -161,7 +162,7 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
                     }
                     property_string_from_parts::<PveQemuSevFmt>(&mut form_data, &name, true);
                     let value = delete_empty_values(&form_data, &[&name], false);
-                    http_put(url.clone(), Some(value)).await
+                    http_put(url, Some(value)).await
                 }
             })
         })
