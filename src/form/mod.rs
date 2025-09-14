@@ -37,6 +37,7 @@ use proxmox_yew_comp::{
     form::{flatten_property_string, property_string_from_parts},
     http_put, ApiLoadCallback,
 };
+use yew::Callback;
 
 // fixme: move to proxmox-yew-comp::form
 pub fn typed_load<T: DeserializeOwned + Serialize>(
@@ -82,6 +83,28 @@ pub fn load_property_string<
     .url(url_cloned)
 }
 
+pub fn submit_property_string_hook<P: ApiType + Serialize + DeserializeOwned>(
+    name: impl Into<String>,
+    delete_empty: bool,
+) -> Callback<FormContext, Result<Value, Error>> {
+    let name = name.into();
+    Callback::from(move |form_ctx: FormContext| {
+        let mut data = form_ctx.get_submit_data();
+        property_string_from_parts::<P>(&mut data, "agent", true);
+        if delete_empty {
+            let is_empty = match data.get(&name) {
+                Some(Value::Null) => true,
+                Some(Value::String(s)) => s.is_empty(),
+                _ => false,
+            };
+            if is_empty {
+                delete_empty_values(&data, &[&name], false);
+            }
+        }
+        Ok(data)
+    })
+}
+
 pub fn submit_property_string<P: ApiType + Serialize + DeserializeOwned>(
     url: impl Into<String>,
     name: impl Into<String>,
@@ -94,6 +117,7 @@ pub fn submit_property_string<P: ApiType + Serialize + DeserializeOwned>(
         async move {
             let mut value = ctx.get_submit_data();
             property_string_from_parts::<P>(&mut value, &name, true);
+            // fixme: do we rellay need/want this here?
             let value = delete_empty_values(&value, &[&name], false);
             http_put(url.clone(), Some(value)).await
         }

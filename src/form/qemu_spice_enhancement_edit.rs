@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use proxmox_yew_comp::form::property_string_from_parts;
-use pwt::props::SubmitCallback;
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
@@ -12,9 +11,6 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
 use pwt::widget::{Column, Container};
 
-use proxmox_yew_comp::http_put;
-
-use crate::form::submit_property_string;
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 fn property_name(name: &str, prop: &str) -> String {
@@ -111,39 +107,30 @@ pub fn qemu_spice_enhancement_property(
             QemuConfig,
             QemuConfigSpiceEnhancements,
         >(&url, &name))
-        .on_submit(Some(submit_property_string::<QemuConfigSpiceEnhancements>(
-            &url, &name,
-        )))
-        .on_submit({
-            let url = url.clone();
-            SubmitCallback::new(move |ctx: FormContext| {
-                let url = url.clone();
-                let name = name.clone();
-                async move {
-                    let form_data = ctx.get_submit_data();
+        .submit_hook({
+            let name = name.clone();
+            move |ctx: FormContext| {
+                let form_data = ctx.get_submit_data();
 
-                    let mut value = json!({});
+                let mut value = json!({});
 
-                    let foldersharing_prop_name = property_name(&name, "foldersharing");
-                    if let Some(Value::Bool(true)) = form_data.get(&foldersharing_prop_name) {
-                        value[foldersharing_prop_name] = Value::Bool(true);
-                    }
-                    let videostreaming_prop_name = property_name(&name, "videostreaming");
-                    if let Some(Value::String(videostreaming)) =
-                        form_data.get(&videostreaming_prop_name)
-                    {
-                        if videostreaming != "off" {
-                            value[videostreaming_prop_name] = videostreaming.to_string().into();
-                        }
-                    }
-
-                    property_string_from_parts::<QemuConfigSpiceEnhancements>(
-                        &mut value, &name, true,
-                    );
-
-                    let value = delete_empty_values(&value, &[&name], false);
-                    http_put(url.clone(), Some(value)).await
+                let foldersharing_prop_name = property_name(&name, "foldersharing");
+                if let Some(Value::Bool(true)) = form_data.get(&foldersharing_prop_name) {
+                    value[foldersharing_prop_name] = Value::Bool(true);
                 }
-            })
+                let videostreaming_prop_name = property_name(&name, "videostreaming");
+                if let Some(Value::String(videostreaming)) =
+                    form_data.get(&videostreaming_prop_name)
+                {
+                    if videostreaming != "off" {
+                        value[videostreaming_prop_name] = videostreaming.to_string().into();
+                    }
+                }
+
+                property_string_from_parts::<QemuConfigSpiceEnhancements>(&mut value, &name, true);
+
+                let value = delete_empty_values(&value, &[&name], false);
+                Ok(value)
+            }
         })
 }

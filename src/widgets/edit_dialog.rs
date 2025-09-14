@@ -75,8 +75,14 @@ pub struct EditDialog<T: Serialize> {
     pub on_done: Option<Callback<()>>,
 
     /// Submit callback.
+    #[builder_cb(IntoSubmitCallback, into_submit_callback, Value)]
     #[prop_or_default]
-    pub on_submit: Option<SubmitCallback<FormContext>>,
+    pub on_submit: Option<SubmitCallback<Value>>,
+
+    /// Submit hook.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub submit_hook: Option<Callback<FormContext, Result<Value, Error>>>,
 
     /// Reset button press callback.
     #[prop_or_default]
@@ -114,11 +120,6 @@ impl<T: Serialize> EditDialog<T> {
 
     pub fn set_renderer(&mut self, renderer: impl Into<RenderPropertyInputPanelFn>) {
         self.renderer = Some(RenderPropertyInputPanelFn::new(renderer));
-    }
-
-    pub fn on_submit(mut self, callback: impl IntoSubmitCallback<FormContext>) -> Self {
-        self.on_submit = callback.into_submit_callback();
-        self
     }
 
     pub fn is_edit(&self) -> bool {
@@ -222,9 +223,18 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
                 if let Some(on_submit) = props.on_submit.clone() {
                     let link = ctx.link().clone();
                     let form_ctx = self.form_ctx.clone();
+                    let submit_hook = props.submit_hook.clone();
                     self.loading = true;
                     self.async_pool.spawn(async move {
-                        let result = on_submit.apply(form_ctx).await;
+                        let result = if let Some(submit_hook) = &submit_hook {
+                            submit_hook.emit(form_ctx)
+                        } else {
+                            Ok(form_ctx.get_submit_data())
+                        };
+                        let result = match result {
+                            Ok(submit_data) => on_submit.apply(submit_data).await,
+                            Err(err) => Err(err),
+                        };
                         link.send_message(Msg::SubmitResult(result));
                     });
                 }

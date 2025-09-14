@@ -24,7 +24,7 @@ use pve_api_types::{QemuConfig, QemuConfigAgent, StorageContent};
 
 use crate::form::{
     format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_amd_sev_property,
-    qemu_smbios_property, qemu_spice_enhancement_property, submit_property_string, typed_load,
+    qemu_smbios_property, qemu_spice_enhancement_property, submit_property_string_hook, typed_load,
     BootDeviceList, HotplugFeatureSelector, PveStorageSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
@@ -89,10 +89,9 @@ fn lookup_object_property_schema(
 }
 
 impl PveQemuConfigPanel {
-    fn default_submit(props: &QemuConfigPanel) -> SubmitCallback<FormContext> {
+    fn default_submit(props: &QemuConfigPanel) -> SubmitCallback<Value> {
         let url = get_config_url(&props.node, props.vmid);
-        SubmitCallback::new(move |ctx: FormContext| {
-            let value = ctx.get_submit_data();
+        SubmitCallback::new(move |value: Value| {
             let value = delete_empty_values(
                 &value,
                 &[
@@ -185,9 +184,7 @@ impl PveQemuConfigPanel {
                 .loader(load_property_string::<QemuConfig, QemuConfigStartup>(
                     &url, "startup",
                 ))
-                .on_submit(Some(submit_property_string::<QemuConfigStartup>(
-                    &url, "startup",
-                ))),
+                .submit_hook(submit_property_string_hook::<QemuConfigStartup>("startup", true)),
             EditableProperty::new("boot", tr!("Boot Order"))
                 .render_input_panel(move |_, record: Rc<Value>| {
                     BootDeviceList::new(record.clone()).name("boot").into()
@@ -311,9 +308,7 @@ impl PveQemuConfigPanel {
                 .loader(load_property_string::<QemuConfig, QemuConfigAgent>(
                     &url, "agent",
                 ))
-                .on_submit(Some(submit_property_string::<QemuConfigAgent>(
-                    &url, "agent",
-                ))),
+                .submit_hook(submit_property_string_hook::<QemuConfigAgent>("agent", true)),
             qemu_spice_enhancement_property("spice_enhancements", url.clone()),
             EditableProperty::new("vmstatestorage", tr!("VM State storage"))
                 .required(true)
@@ -330,7 +325,7 @@ impl PveQemuConfigPanel {
                             .into()
                     }
                 }),
-            qemu_amd_sev_property("amd-sev", url.clone()),
+            qemu_amd_sev_property("amd-sev"),
         ])
     }
 }

@@ -1,20 +1,13 @@
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
-use proxmox_yew_comp::{
-    form::{flatten_property_string, property_string_from_parts},
-    http_put, ApiLoadCallback,
-};
-use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType, QemuConfig};
+use proxmox_yew_comp::form::{flatten_property_string, property_string_from_parts};
+use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType};
 
-use pwt::{
-    prelude::*,
-    props::SubmitCallback,
-    widget::{
-        form::{delete_empty_values, Checkbox, Combobox, FormContext},
-        Column, Container,
-    },
-};
+use pwt::prelude::*;
+
+use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
+use pwt::widget::{Column, Container};
 
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
@@ -94,8 +87,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     })
 }
 
-pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) -> EditableProperty {
-    let url = url.into();
+pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
     let name = name.into();
 
     EditableProperty::new("amd-sev", tr!("AMD SEV"))
@@ -133,53 +125,50 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
                 Ok(record)
             }
         })
-        .on_submit({
-            let url = url.clone();
-            SubmitCallback::new(move |form_ctx: FormContext| {
-                let url = url.clone();
-                let name = name.clone();
-                async move {
-                    let property_name = |prop| format!("_{name}_{prop}");
-                    let mut form_data = form_ctx.get_submit_data();
-                    let ty = match form_data.get(property_name("type")) {
-                        Some(Value::String(ty)) => ty.clone(),
-                        _ => String::new(),
-                    };
-                    if ty.is_empty() {
-                        let value = json!({"delete": name});
-                        return http_put(url, Some(value)).await;
-                    }
+        .submit_hook({
+            let name = name.clone();
+            move |form_ctx: FormContext| {
+                let property_name = |prop| format!("_{name}_{prop}");
 
-                    let debug = form_ctx.read().get_field_checked(property_name("debug"));
-                    if !debug {
-                        form_data[property_name("no-debug")] = true.into();
-                    }
-
-                    let key_sharing = form_ctx
-                        .read()
-                        .get_field_checked(property_name("key-sharing"));
-                    if !key_sharing && ty != "snp" {
-                        form_data[property_name("no-key-sharing")] = true.into();
-                    }
-
-                    let allow_smt_name = property_name("allow-smt");
-                    let allow_smt = form_ctx.read().get_field_checked(allow_smt_name.clone());
-                    if !allow_smt && ty == "snp" {
-                        form_data[allow_smt_name] = false.into();
-                    }
-
-                    let kernel_hashes_name = property_name("kernel-hashes");
-                    if form_ctx
-                        .read()
-                        .get_field_checked(kernel_hashes_name.clone())
-                    {
-                        form_data[kernel_hashes_name] = true.into();
-                    }
-
-                    property_string_from_parts::<PveQemuSevFmt>(&mut form_data, &name, true);
-                    let value = delete_empty_values(&form_data, &[&name], false);
-                    http_put(url, Some(value)).await
+                let mut form_data = form_ctx.get_submit_data();
+                let ty = match form_data.get(property_name("type")) {
+                    Some(Value::String(ty)) => ty.clone(),
+                    _ => String::new(),
+                };
+                if ty.is_empty() {
+                    return Ok(json!({"delete": name}));
                 }
-            })
+
+                let debug = form_ctx.read().get_field_checked(property_name("debug"));
+                if !debug {
+                    form_data[property_name("no-debug")] = true.into();
+                }
+
+                let key_sharing = form_ctx
+                    .read()
+                    .get_field_checked(property_name("key-sharing"));
+                if !key_sharing && ty != "snp" {
+                    form_data[property_name("no-key-sharing")] = true.into();
+                }
+
+                let allow_smt_name = property_name("allow-smt");
+                let allow_smt = form_ctx.read().get_field_checked(allow_smt_name.clone());
+                if !allow_smt && ty == "snp" {
+                    form_data[allow_smt_name] = false.into();
+                }
+
+                let kernel_hashes_name = property_name("kernel-hashes");
+                if form_ctx
+                    .read()
+                    .get_field_checked(kernel_hashes_name.clone())
+                {
+                    form_data[kernel_hashes_name] = true.into();
+                }
+
+                property_string_from_parts::<PveQemuSevFmt>(&mut form_data, &name, true);
+                let value = delete_empty_values(&form_data, &[&name], false);
+
+                Ok(value)
+            }
         })
 }

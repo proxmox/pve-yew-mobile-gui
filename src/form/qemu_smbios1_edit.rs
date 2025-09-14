@@ -1,6 +1,5 @@
 use anyhow::bail;
 use proxmox_yew_comp::form::property_string_from_parts;
-use pwt::props::SubmitCallback;
 use regex::Regex;
 use serde_json::Value;
 
@@ -12,7 +11,7 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Field, FormContext, TextArea};
 use pwt::widget::Column;
 
-use proxmox_yew_comp::{http_put, ApiLoadCallback};
+use proxmox_yew_comp::ApiLoadCallback;
 
 use crate::form::{flatten_property_string, typed_load};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
@@ -131,29 +130,25 @@ pub fn qemu_smbios_property(name: impl Into<String>, url: impl Into<String>) -> 
             })
             .url(url.clone())
         })
-        .on_submit({
-            let url = url.clone();
-            SubmitCallback::new(move |ctx: FormContext| {
-                let url = url.clone();
-                let name = name.clone();
-                async move {
-                    let mut value = ctx.get_submit_data();
-                    let mut base64 = false;
-                    let property_name = |prop| format!("_{name}_{prop}");
+        .submit_hook({
+            let name = name.clone();
+            move |ctx: FormContext| {
+                let mut value = ctx.get_submit_data();
+                let mut base64 = false;
+                let property_name = |prop| format!("_{name}_{prop}");
 
-                    for name in PROPERTIES.iter().map(|n| property_name(*n)) {
-                        if let Some(Value::String(utf8)) = value.get(&name) {
-                            base64 = true;
-                            value[name] = proxmox_base64::encode(utf8).into();
-                        }
+                for name in PROPERTIES.iter().map(|n| property_name(*n)) {
+                    if let Some(Value::String(utf8)) = value.get(&name) {
+                        base64 = true;
+                        value[name] = proxmox_base64::encode(utf8).into();
                     }
-                    if base64 {
-                        value[property_name("base64")] = true.into();
-                    }
-                    property_string_from_parts::<PveQmSmbios1>(&mut value, &name, true);
-                    let value = delete_empty_values(&value, &[&name], false);
-                    http_put(url.clone(), Some(value)).await
                 }
-            })
+                if base64 {
+                    value[property_name("base64")] = true.into();
+                }
+                property_string_from_parts::<PveQmSmbios1>(&mut value, &name, true);
+                let value = delete_empty_values(&value, &[&name], false);
+                Ok(value)
+            }
         })
 }

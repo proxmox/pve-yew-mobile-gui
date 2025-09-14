@@ -57,8 +57,10 @@ pub struct EditableProperty {
     #[builder(IntoPropValue, into_prop_value)]
     pub placeholder: Option<AttrValue>,
     pub renderer: Option<RenderKVGridRecordFn>,
+
     /// Submit callback.
-    pub on_submit: Option<SubmitCallback<FormContext>>,
+    #[builder_cb(IntoSubmitCallback, into_submit_callback, Value)]
+    pub on_submit: Option<SubmitCallback<Value>>,
 
     /// Data loader.
     #[builder_cb(IntoApiLoadCallback, into_api_load_callback, Value)]
@@ -67,6 +69,10 @@ pub struct EditableProperty {
     /// Load hook.
     #[builder(IntoPropValue, into_prop_value)]
     pub load_hook: Option<Callback<Value, Result<Value, Error>>>,
+
+    /// Submit hook.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub submit_hook: Option<Callback<FormContext, Result<Value, Error>>>,
 
     /// Edit input panel builder
     pub render_input_panel: Option<RenderPropertyInputPanelFn>,
@@ -83,6 +89,7 @@ impl EditableProperty {
             renderer: None,
             loader: None,
             load_hook: None,
+            submit_hook: None,
             on_submit: None,
             render_input_panel: None,
         }
@@ -142,10 +149,5 @@ impl EditableProperty {
 
     pub fn set_render_input_panel(&mut self, renderer: impl Into<RenderPropertyInputPanelFn>) {
         self.render_input_panel = Some(RenderPropertyInputPanelFn::new(renderer));
-    }
-
-    pub fn on_submit(mut self, callback: impl IntoSubmitCallback<FormContext>) -> Self {
-        self.on_submit = callback.into_submit_callback();
-        self
     }
 }

@@ -7,7 +7,6 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::props::{IntoSubmitCallback, SubmitCallback};
-use pwt::widget::form::FormContext;
 use pwt::widget::{Column, Container, List, ListTile};
 use pwt::AsyncAbortGuard;
 
@@ -29,19 +28,15 @@ pub struct PropertyList {
     #[prop_or_default]
     pub loader: Option<ApiLoadCallback<Value>>,
 
-    /// Default Submit callback (for properties without on_submit)
+    /// Submit callback.
+    #[builder_cb(IntoSubmitCallback, into_submit_callback, Value)]
     #[prop_or_default]
-    pub on_submit: Option<SubmitCallback<FormContext>>,
+    pub on_submit: Option<SubmitCallback<Value>>,
 }
 
 impl PropertyList {
     pub fn new(properties: Rc<Vec<EditableProperty>>) -> Self {
         yew::props!(Self { properties })
-    }
-
-    pub fn on_submit(mut self, callback: impl IntoSubmitCallback<FormContext>) -> Self {
-        self.on_submit = callback.into_submit_callback();
-        self
     }
 }
 
@@ -139,6 +134,7 @@ impl PvePropertyList {
                                 let dialog = EditDialog::new(item.title.clone())
                                     .on_done(link.callback(|_| Msg::CloseDialog))
                                     .loader(loader.clone())
+                                    .submit_hook(item.submit_hook.clone())
                                     .on_submit(Some(on_submit.clone()))
                                     .renderer(render_input_panel);
 
