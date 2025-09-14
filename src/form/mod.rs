@@ -91,9 +91,9 @@ pub fn pspn(prop_name: &str, part: &str) -> String {
 
 /// Convert a property string to separate properties
 ///
-/// This is useful for use in an [`crate::EditWindow`] when editing parts of a property string.
+/// This is useful for use in an [`crate::widgets::EditDialog`] when editing parts of a property string.
 /// Takes the `name` property from `data`, parses it as property string, and sets it back to
-/// `data` as `_{name}_{key}` (see [pnpn]), so this can be used as a field. If it's not desired
+/// `data` as `_{name}_{key}` (see [pspn]), so this can be used as a field. If it's not desired
 /// to expose a property to the UI, simply add a hidden field to the form.
 pub fn flatten_property_string(
     data: &mut Value,
@@ -118,7 +118,7 @@ pub fn flatten_property_string(
 // Copied from proxmox-yew-com and added proper error handling
 /// Uses an [`proxmox_schema::ObjectSchema`] to generate a property string from separate properties.
 ///
-/// This is useful for use in an [`crate::EditWindow`] when editing parts of a property string.
+/// This is useful for use in an [`crate::widgets::EditDialog`] when editing parts of a property string.
 /// Takes the single properties from `data` and assembles a property string.
 ///
 /// Property string data is removed from the original data, and re-added as assembled

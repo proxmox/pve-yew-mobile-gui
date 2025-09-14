@@ -53,6 +53,8 @@ pub struct EditDialog<T: Serialize> {
     pub loader: Option<ApiLoadCallback<T>>,
 
     /// Load hook.
+    ///
+    /// This callback can be used to modify the data returned by the [Self::loader].
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub load_hook: Option<Callback<Value, Result<Value, Error>>>,
@@ -80,11 +82,19 @@ pub struct EditDialog<T: Serialize> {
     pub on_done: Option<Callback<()>>,
 
     /// Submit callback.
+    ///
+    /// On submit, this is called with the data from the [FormContext].
+    ///
+    /// The [Self::submit_hook] can be used to extract and modify the data
+    /// which gets submitted.
     #[builder_cb(IntoSubmitCallback, into_submit_callback, Value)]
     #[prop_or_default]
     pub on_submit: Option<SubmitCallback<Value>>,
 
     /// Submit hook.
+    ///
+    /// This callback can used to extract and modify data before
+    /// calling the [Self::on_submit] callback.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub submit_hook: Option<Callback<FormContext, Result<Value, Error>>>,
