@@ -20,9 +20,10 @@ use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component, Sch
 use pve_api_types::{QemuConfig, QemuConfigAgent, StorageContent};
 
 use crate::form::{
-    format_hotplug_feature, format_qemu_ostype, property_string_load_hook, qemu_amd_sev_property,
-    qemu_smbios_property, qemu_spice_enhancement_property, submit_property_string_hook, typed_load,
-    BootDeviceList, HotplugFeatureSelector, PveStorageSelector, QemuOstypeSelector,
+    format_hotplug_feature, format_qemu_ostype, property_string_load_hook,
+    property_string_submit_hook, qemu_amd_sev_property, qemu_smbios_property,
+    qemu_spice_enhancement_property, typed_load, BootDeviceList, HotplugFeatureSelector,
+    PveStorageSelector, QemuOstypeSelector,
 };
 use crate::widgets::{EditableProperty, PropertyList, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
@@ -178,7 +179,7 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .load_hook(property_string_load_hook::<QemuConfigStartup>("startup"))
-                .submit_hook(submit_property_string_hook::<QemuConfigStartup>("startup", true)),
+                .submit_hook(property_string_submit_hook::<QemuConfigStartup>("startup", true)),
             EditableProperty::new("boot", tr!("Boot Order"))
                 .render_input_panel(move |_, record: Rc<Value>| {
                     BootDeviceList::new(record.clone()).name("boot").into()
@@ -286,7 +287,7 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .load_hook(property_string_load_hook::<QemuConfigAgent>("agent"))
-                .submit_hook(submit_property_string_hook::<QemuConfigAgent>("agent", true)),
+                .submit_hook(property_string_submit_hook::<QemuConfigAgent>("agent", true)),
             qemu_spice_enhancement_property("spice_enhancements"),
             EditableProperty::new("vmstatestorage", tr!("VM State storage"))
                 .required(true)

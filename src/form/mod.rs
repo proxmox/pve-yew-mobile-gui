@@ -24,10 +24,7 @@ mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
 use proxmox_schema::ApiType;
-use pwt::{
-    props::SubmitCallback,
-    widget::form::{delete_empty_values, FormContext},
-};
+use pwt::widget::form::{delete_empty_values, FormContext};
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
@@ -35,7 +32,7 @@ use serde_json::Value;
 use proxmox_client::ApiResponseData;
 use proxmox_yew_comp::{
     form::{flatten_property_string, property_string_from_parts},
-    http_put, ApiLoadCallback,
+    ApiLoadCallback,
 };
 use yew::Callback;
 
@@ -60,29 +57,6 @@ pub fn typed_load<T: DeserializeOwned + Serialize>(
     .url(url_cloned)
 }
 
-pub fn load_property_string<
-    T: DeserializeOwned + Serialize,
-    P: ApiType + Serialize + DeserializeOwned,
->(
-    url: impl Into<String>,
-    name: impl Into<String>,
-) -> ApiLoadCallback<Value> {
-    let url = url.into();
-    let url_cloned = url.clone();
-    let name = name.into();
-
-    ApiLoadCallback::new(move || {
-        let url = url.clone();
-        let name = name.clone();
-        async move {
-            let mut resp = typed_load::<T>(url).apply().await?;
-            flatten_property_string(&mut resp.data, &name, &P::API_SCHEMA);
-            Ok(resp)
-        }
-    })
-    .url(url_cloned)
-}
-
 pub fn property_string_load_hook<P: ApiType + Serialize + DeserializeOwned>(
     name: impl Into<String>,
 ) -> Callback<Value, Result<Value, Error>> {
@@ -94,7 +68,7 @@ pub fn property_string_load_hook<P: ApiType + Serialize + DeserializeOwned>(
     })
 }
 
-pub fn submit_property_string_hook<P: ApiType + Serialize + DeserializeOwned>(
+pub fn property_string_submit_hook<P: ApiType + Serialize + DeserializeOwned>(
     name: impl Into<String>,
     delete_empty: bool,
 ) -> Callback<FormContext, Result<Value, Error>> {
@@ -114,25 +88,6 @@ pub fn submit_property_string_hook<P: ApiType + Serialize + DeserializeOwned>(
             }
         }
         Ok(data)
-    })
-}
-
-pub fn submit_property_string<P: ApiType + Serialize + DeserializeOwned>(
-    url: impl Into<String>,
-    name: impl Into<String>,
-) -> SubmitCallback<FormContext> {
-    let url = url.into();
-    let name = name.into();
-    SubmitCallback::new(move |ctx: FormContext| {
-        let url = url.clone();
-        let name = name.clone();
-        async move {
-            let mut value = ctx.get_submit_data();
-            property_string_from_parts::<P>(&mut value, &name, true);
-            // fixme: do we rellay need/want this here?
-            let value = delete_empty_values(&value, &[&name], false);
-            http_put(url.clone(), Some(value)).await
-        }
     })
 }
 
