@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use anyhow::Error;
 use derivative::Derivative;
 use proxmox_yew_comp::utils::render_boolean;
 use serde_json::Value;
@@ -63,6 +64,10 @@ pub struct EditableProperty {
     #[builder_cb(IntoApiLoadCallback, into_api_load_callback, Value)]
     pub loader: Option<ApiLoadCallback<Value>>,
 
+    /// Load hook.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub load_hook: Option<Callback<Value, Result<Value, Error>>>,
+
     /// Edit input panel builder
     pub render_input_panel: Option<RenderPropertyInputPanelFn>,
 }
@@ -77,6 +82,7 @@ impl EditableProperty {
             placeholder: None,
             renderer: None,
             loader: None,
+            load_hook: None,
             on_submit: None,
             render_input_panel: None,
         }

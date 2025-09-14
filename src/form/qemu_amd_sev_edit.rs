@@ -115,32 +115,23 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
             }
             v.into()
         })
-        .loader({
-            let url_cloned = url.clone();
+        .load_hook({
             let name = name.clone();
-            ApiLoadCallback::new(move || {
-                let url = url_cloned.clone();
-                let name = name.clone();
-                async move {
-                    let property_name = |prop| format!("_{name}_{prop}");
+            move |mut record| {
+                let property_name = |prop| format!("_{name}_{prop}");
 
-                    let mut resp = crate::form::typed_load::<QemuConfig>(url).apply().await?;
-                    flatten_property_string(&mut resp.data, &name, &PveQemuSevFmt::API_SCHEMA);
+                flatten_property_string(&mut record, &name, &PveQemuSevFmt::API_SCHEMA);
 
-                    let no_debug = resp.data[property_name("no-debug")]
-                        .as_bool()
-                        .unwrap_or(false);
-                    resp.data[property_name("debug")] = (!no_debug).into();
+                let no_debug = record[property_name("no-debug")].as_bool().unwrap_or(false);
+                record[property_name("debug")] = (!no_debug).into();
 
-                    let no_key_sharing = resp.data[property_name("no-key-sharing")]
-                        .as_bool()
-                        .unwrap_or(false);
-                    resp.data[property_name("key-sharing")] = (!no_key_sharing).into();
+                let no_key_sharing = record[property_name("no-key-sharing")]
+                    .as_bool()
+                    .unwrap_or(false);
+                record[property_name("key-sharing")] = (!no_key_sharing).into();
 
-                    Ok(resp)
-                }
-            })
-            .url(url.clone())
+                Ok(record)
+            }
         })
         .on_submit({
             let url = url.clone();
