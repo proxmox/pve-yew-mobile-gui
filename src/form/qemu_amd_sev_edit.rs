@@ -115,7 +115,6 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
             }
             v.into()
         })
-        .loader(crate::form::load_property_string::<QemuConfig, PveQemuSevFmt>(&url, &name))
         .loader({
             let url_cloned = url.clone();
             let name = name.clone();
