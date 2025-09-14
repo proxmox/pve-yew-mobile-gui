@@ -29,6 +29,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
 
         Column::new()
             .gap(2)
+            .padding_bottom(1) // avoid scrollbar ?!
             .with_child(
                 Combobox::new()
                     .name(property_name("type"))
@@ -61,6 +62,15 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .submit(false)
                     .name(property_name("key-sharing"))
                     .box_label(tr!("Allow Key-Sharing")),
+            )
+            .with_child(
+                Checkbox::new()
+                    .style("display", (!snp_enabled).then(|| "none"))
+                    .disabled(!snp_enabled)
+                    .default(true)
+                    .submit(false)
+                    .name(property_name("allow-smt"))
+                    .box_label(tr!("Allow SMT")),
             )
             .with_child(
                 Checkbox::new()
@@ -118,18 +128,12 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
                     let mut resp = crate::form::typed_load::<QemuConfig>(url).apply().await?;
                     flatten_property_string(&mut resp.data, &name, &PveQemuSevFmt::API_SCHEMA);
 
-                    let no_debug = resp
-                        .data
-                        .get(property_name("no-debug"))
-                        .unwrap_or(&Value::Bool(false))
+                    let no_debug = resp.data[property_name("no-debug")]
                         .as_bool()
                         .unwrap_or(false);
                     resp.data[property_name("debug")] = (!no_debug).into();
 
-                    let no_key_sharing = resp
-                        .data
-                        .get(property_name("no-key-sharing"))
-                        .unwrap_or(&Value::Bool(false))
+                    let no_key_sharing = resp.data[property_name("no-key-sharing")]
                         .as_bool()
                         .unwrap_or(false);
                     resp.data[property_name("key-sharing")] = (!no_key_sharing).into();
@@ -166,6 +170,12 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
                         .get_field_checked(property_name("key-sharing"));
                     if !key_sharing && ty != "snp" {
                         form_data[property_name("no-key-sharing")] = true.into();
+                    }
+
+                    let allow_smt_name = property_name("allow-smt");
+                    let allow_smt = form_ctx.read().get_field_checked(allow_smt_name.clone());
+                    if !allow_smt && ty == "snp" {
+                        form_data[allow_smt_name] = false.into();
                     }
 
                     let kernel_hashes_name = property_name("kernel-hashes");
