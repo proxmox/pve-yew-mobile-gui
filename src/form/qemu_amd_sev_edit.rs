@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
-use proxmox_yew_comp::form::{flatten_property_string, property_string_from_parts};
+use proxmox_yew_comp::form::property_string_from_parts;
 use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType};
 
 use pwt::prelude::*;
@@ -9,14 +9,14 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
 use pwt::widget::{Column, Container};
 
+use crate::form::{flatten_property_string, pspn};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _| {
-        let property_name = |prop| format!("_{name}_{prop}");
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
-        let amd_sev_type = form_ctx.read().get_field_text(property_name("type"));
+        let amd_sev_type = form_ctx.read().get_field_text(pspn(&name, "type"));
         let snp_enabled = amd_sev_type == "snp";
         let sev_enabled = !amd_sev_type.is_empty();
 
@@ -25,7 +25,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             .padding_bottom(1) // avoid scrollbar ?!
             .with_child(
                 Combobox::new()
-                    .name(property_name("type"))
+                    .name(pspn(&name, "type"))
                     .with_item("std")
                     .with_item("es")
                     .with_item("snp")
@@ -45,7 +45,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .style("display", (!sev_enabled).then(|| "none"))
                     .disabled(!sev_enabled)
                     .submit(false)
-                    .name(property_name("debug"))
+                    .name(pspn(&name, "debug"))
                     .box_label(tr!("Allow Debugging")),
             )
             .with_child(
@@ -53,7 +53,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .style("display", (!sev_enabled || snp_enabled).then(|| "none"))
                     .disabled(!sev_enabled || snp_enabled)
                     .submit(false)
-                    .name(property_name("key-sharing"))
+                    .name(pspn(&name, "key-sharing"))
                     .box_label(tr!("Allow Key-Sharing")),
             )
             .with_child(
@@ -62,14 +62,14 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .disabled(!snp_enabled)
                     .default(true)
                     .submit(false)
-                    .name(property_name("allow-smt"))
+                    .name(pspn(&name, "allow-smt"))
                     .box_label(tr!("Allow SMT")),
             )
             .with_child(
                 Checkbox::new()
                     .style("display", (!sev_enabled).then(|| "none"))
                     .disabled(!sev_enabled)
-                    .name(property_name("kernel-hashes"))
+                    .name(pspn(&name, "kernel-hashes"))
                     .submit(false)
                     .box_label(tr!("Enable Kernel Hashes")),
             )
@@ -110,17 +110,15 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
         .load_hook({
             let name = name.clone();
             move |mut record| {
-                let property_name = |prop| format!("_{name}_{prop}");
+                flatten_property_string(&mut record, &name, &PveQemuSevFmt::API_SCHEMA)?;
 
-                flatten_property_string(&mut record, &name, &PveQemuSevFmt::API_SCHEMA);
+                let no_debug = record[pspn(&name, "no-debug")].as_bool().unwrap_or(false);
+                record[pspn(&name, "debug")] = (!no_debug).into();
 
-                let no_debug = record[property_name("no-debug")].as_bool().unwrap_or(false);
-                record[property_name("debug")] = (!no_debug).into();
-
-                let no_key_sharing = record[property_name("no-key-sharing")]
+                let no_key_sharing = record[pspn(&name, "no-key-sharing")]
                     .as_bool()
                     .unwrap_or(false);
-                record[property_name("key-sharing")] = (!no_key_sharing).into();
+                record[pspn(&name, "key-sharing")] = (!no_key_sharing).into();
 
                 Ok(record)
             }
@@ -128,10 +126,8 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
         .submit_hook({
             let name = name.clone();
             move |form_ctx: FormContext| {
-                let property_name = |prop| format!("_{name}_{prop}");
-
                 let mut form_data = form_ctx.get_submit_data();
-                let ty = match form_data.get(property_name("type")) {
+                let ty = match form_data.get(pspn(&name, "type")) {
                     Some(Value::String(ty)) => ty.clone(),
                     _ => String::new(),
                 };
@@ -139,25 +135,25 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
                     return Ok(json!({"delete": name}));
                 }
 
-                let debug = form_ctx.read().get_field_checked(property_name("debug"));
+                let debug = form_ctx.read().get_field_checked(pspn(&name, "debug"));
                 if !debug {
-                    form_data[property_name("no-debug")] = true.into();
+                    form_data[pspn(&name, "no-debug")] = true.into();
                 }
 
                 let key_sharing = form_ctx
                     .read()
-                    .get_field_checked(property_name("key-sharing"));
+                    .get_field_checked(pspn(&name, "key-sharing"));
                 if !key_sharing && ty != "snp" {
-                    form_data[property_name("no-key-sharing")] = true.into();
+                    form_data[pspn(&name, "no-key-sharing")] = true.into();
                 }
 
-                let allow_smt_name = property_name("allow-smt");
+                let allow_smt_name = pspn(&name, "allow-smt");
                 let allow_smt = form_ctx.read().get_field_checked(allow_smt_name.clone());
                 if !allow_smt && ty == "snp" {
                     form_data[allow_smt_name] = false.into();
                 }
 
-                let kernel_hashes_name = property_name("kernel-hashes");
+                let kernel_hashes_name = pspn(&name, "kernel-hashes");
                 if form_ctx
                     .read()
                     .get_field_checked(kernel_hashes_name.clone())

@@ -11,18 +11,14 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
 use pwt::widget::{Column, Container};
 
-use crate::form::property_string_load_hook;
+use crate::form::{property_string_load_hook, pspn};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
-
-fn property_name(name: &str, prop: &str) -> String {
-    format!("_{name}_{prop}")
-}
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
         let folder_sharing = form_ctx
             .read()
-            .get_field_checked(property_name(&name, "foldersharing"));
+            .get_field_checked(pspn(&name, "foldersharing"));
 
         let mut show_spice_hint = true;
         if let Some(Value::String(vga)) = record.get("vga") {
@@ -45,13 +41,13 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             .gap(2)
             .with_child(
                 Checkbox::new()
-                    .name(property_name(&name, "foldersharing"))
+                    .name(pspn(&name, "foldersharing"))
                     .box_label(tr!("Folder Sharing")),
             )
             .with_child(crate::widgets::label_field(
                 tr!("Video Streaming"),
                 Combobox::new()
-                    .name(property_name(&name, "videostreaming"))
+                    .name(pspn(&name, "videostreaming"))
                     .default("off")
                     .with_item("off")
                     .with_item("all")
@@ -110,11 +106,11 @@ pub fn qemu_spice_enhancement_property(name: impl Into<String>) -> EditablePrope
 
                 let mut value = json!({});
 
-                let foldersharing_prop_name = property_name(&name, "foldersharing");
+                let foldersharing_prop_name = pspn(&name, "foldersharing");
                 if let Some(Value::Bool(true)) = form_data.get(&foldersharing_prop_name) {
                     value[foldersharing_prop_name] = Value::Bool(true);
                 }
-                let videostreaming_prop_name = property_name(&name, "videostreaming");
+                let videostreaming_prop_name = pspn(&name, "videostreaming");
                 if let Some(Value::String(videostreaming)) =
                     form_data.get(&videostreaming_prop_name)
                 {

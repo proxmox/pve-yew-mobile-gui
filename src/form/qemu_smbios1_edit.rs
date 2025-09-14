@@ -11,7 +11,7 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Field, FormContext, TextArea};
 use pwt::widget::Column;
 
-use crate::form::flatten_property_string;
+use crate::form::{flatten_property_string, pspn};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 thread_local! {
@@ -31,8 +31,6 @@ const PROPERTIES: &[&str] = &[
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |_, _| {
         let field_height = "2em";
-        let property_name = |prop| format!("_{name}_{prop}");
-
         Column::new()
                     .gap(2)
                     // This is scrollable, so we Diasble the SideDialog gesture detecture..
@@ -47,7 +45,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .with_child(crate::widgets::label_field(
                         tr!("UUID"),
                         Field::new()
-                            .name(property_name("uuid"))
+                            .name(pspn(&name, "uuid"))
                             .validate(|v: &String| {
                                 if UUID_MATCH.with(|r| r.is_match(v)) {
                                     return Ok(());
@@ -61,37 +59,37 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .with_child(crate::widgets::label_field(
                         tr!("Manufacturer"),
                         TextArea::new()
-                            .name(property_name("manufacturer"))
+                            .name(pspn(&name, "manufacturer"))
                             .style("height", field_height)
                     ))
                     .with_child(crate::widgets::label_field(
                         tr!("Product"),
                         TextArea::new()
-                            .name(property_name("product"))
+                            .name(pspn(&name, "product"))
                             .style("height", field_height)
                     ))
                     .with_child(crate::widgets::label_field(
                         tr!("Version"),
                         TextArea::new()
-                            .name(property_name("version"))
+                            .name(pspn(&name, "version"))
                             .style("height", field_height)
                     ))
                     .with_child(crate::widgets::label_field(
                         tr!("Serial"),
                         TextArea::new()
-                            .name(property_name("serial"))
+                            .name(pspn(&name, "serial"))
                     .style("height", field_height)
             ))
             .with_child(crate::widgets::label_field(
                 "SKU",
                 TextArea::new()
-                    .name(property_name("sku"))
+                    .name(pspn(&name, "sku"))
                     .style("height", field_height)
             ))
             .with_child(crate::widgets::label_field(
                 tr!("Family"),
                 TextArea::new()
-                    .name(property_name("family"))
+                    .name(pspn(&name, "family"))
                     .style("height", field_height)
             ))
             .into()
@@ -107,13 +105,11 @@ pub fn qemu_smbios_property(name: impl Into<String>) -> EditableProperty {
             let name = name.clone();
 
             move |mut record: Value| {
-                let property_name = |prop| format!("_{name}_{prop}");
-
-                flatten_property_string(&mut record, &name, &PveQmSmbios1::API_SCHEMA);
+                flatten_property_string(&mut record, &name, &PveQmSmbios1::API_SCHEMA)?;
 
                 // decode base64 encoded properties
-                if let Some(Value::Bool(true)) = record.get(property_name("base64")) {
-                    for prop in PROPERTIES.iter().map(|prop| property_name(prop)) {
+                if let Some(Value::Bool(true)) = record.get(pspn(&name, "base64")) {
+                    for prop in PROPERTIES.iter().map(|prop| pspn(&name, prop)) {
                         if let Some(Value::String(base64)) = record.get(&prop) {
                             if let Ok(bin_data) = proxmox_base64::decode(base64) {
                                 record[prop] = String::from_utf8_lossy(&bin_data).into();
@@ -129,17 +125,16 @@ pub fn qemu_smbios_property(name: impl Into<String>) -> EditableProperty {
             move |ctx: FormContext| {
                 let mut value = ctx.get_submit_data();
                 let mut base64 = false;
-                let property_name = |prop| format!("_{name}_{prop}");
 
                 // always base64 encoded properties
-                for name in PROPERTIES.iter().map(|n| property_name(*n)) {
+                for name in PROPERTIES.iter().map(|n| pspn(&name, *n)) {
                     if let Some(Value::String(utf8)) = value.get(&name) {
                         base64 = true;
                         value[name] = proxmox_base64::encode(utf8).into();
                     }
                 }
                 if base64 {
-                    value[property_name("base64")] = true.into();
+                    value[pspn(&name, "base64")] = true.into();
                 }
                 property_string_from_parts::<PveQmSmbios1>(&mut value, &name, true);
                 let value = delete_empty_values(&value, &[&name], false);

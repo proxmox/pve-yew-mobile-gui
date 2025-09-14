@@ -1,5 +1,5 @@
 mod boot_device_list;
-use anyhow::{format_err, Error};
+use anyhow::{bail, format_err, Error};
 pub use boot_device_list::{BootDeviceList, PveBootDeviceList};
 
 mod qemu_ostype_selector;
@@ -23,17 +23,14 @@ pub use qemu_amd_sev_edit::qemu_amd_sev_property;
 mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
-use proxmox_schema::ApiType;
+use proxmox_schema::{ApiType, Schema};
 use pwt::widget::form::{delete_empty_values, FormContext};
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 
 use proxmox_client::ApiResponseData;
-use proxmox_yew_comp::{
-    form::{flatten_property_string, property_string_from_parts},
-    ApiLoadCallback,
-};
+use proxmox_yew_comp::{form::property_string_from_parts, ApiLoadCallback};
 use yew::Callback;
 
 // fixme: move to proxmox-yew-comp::form
@@ -62,8 +59,7 @@ pub fn property_string_load_hook<P: ApiType + Serialize + DeserializeOwned>(
 ) -> Callback<Value, Result<Value, Error>> {
     let name = name.into();
     Callback::from(move |mut record: Value| {
-        // fixme: raise errors?
-        flatten_property_string(&mut record, &name, &P::API_SCHEMA);
+        flatten_property_string(&mut record, &name, &P::API_SCHEMA)?;
         Ok(record)
     })
 }
@@ -89,6 +85,41 @@ pub fn property_string_submit_hook<P: ApiType + Serialize + DeserializeOwned>(
         }
         Ok(data)
     })
+}
+
+/// Property String Property Name
+///
+/// Create name to store parts of a property (`_{prop_name}_{part}`).
+pub fn pspn(prop_name: &str, part: &str) -> String {
+    format!("_{prop_name}_{part}")
+}
+
+// Copied from proxmox-yew-com, added proper error handling
+
+/// Convert a property string to separate properties
+///
+/// This is useful for use in an [`crate::EditWindow`] when editing parts of a property string.
+/// Takes the `name` property from `data`, parses it as property string, and sets it back to
+/// `data` as `_{name}_{key}` (see [pnpn]), so this can be used as a field. If it's not desired
+/// to expose a property to the UI, simply add a hidden field to the form.
+pub fn flatten_property_string(
+    data: &mut Value,
+    name: &str,
+    schema: &'static Schema,
+) -> Result<(), Error> {
+    if let Some(prop_str) = data[name].as_str() {
+        match schema.parse_property_string(prop_str)? {
+            Value::Object(map) => {
+                for (part, v) in map {
+                    data[pspn(name, &part)] = v;
+                }
+            }
+            _other => {
+                bail!("flatten_property_string {name:?} failed: result is not an Object");
+            }
+        }
+    }
+    Ok(())
 }
 
 pub fn parse_property_string_value<T: ApiType + DeserializeOwned>(
