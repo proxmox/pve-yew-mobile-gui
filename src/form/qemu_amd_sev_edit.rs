@@ -67,6 +67,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                     .style("display", (!sev_enabled).then(|| "none"))
                     .disabled(!sev_enabled)
                     .name(property_name("kernel-hashes"))
+                    .submit(false)
                     .box_label(tr!("Enable Kernel Hashes")),
             )
             .with_optional_child(snp_enabled.then(|| {
@@ -146,20 +147,35 @@ pub fn qemu_amd_sev_property(name: impl Into<String>, url: impl Into<String>) ->
                 async move {
                     let property_name = |prop| format!("_{name}_{prop}");
                     let mut form_data = form_ctx.get_submit_data();
-                    if form_data.get(property_name("type")).is_none() {
+                    let ty = match form_data.get(property_name("type")) {
+                        Some(Value::String(ty)) => ty.clone(),
+                        _ => String::new(),
+                    };
+                    if ty.is_empty() {
                         let value = json!({"delete": name});
                         return http_put(url, Some(value)).await;
                     }
+
                     let debug = form_ctx.read().get_field_checked(property_name("debug"));
                     if !debug {
                         form_data[property_name("no-debug")] = true.into();
                     }
+
                     let key_sharing = form_ctx
                         .read()
                         .get_field_checked(property_name("key-sharing"));
-                    if !key_sharing {
+                    if !key_sharing && ty != "snp" {
                         form_data[property_name("no-key-sharing")] = true.into();
                     }
+
+                    let kernel_hashes_name = property_name("kernel-hashes");
+                    if form_ctx
+                        .read()
+                        .get_field_checked(kernel_hashes_name.clone())
+                    {
+                        form_data[kernel_hashes_name] = true.into();
+                    }
+
                     property_string_from_parts::<PveQemuSevFmt>(&mut form_data, &name, true);
                     let value = delete_empty_values(&form_data, &[&name], false);
                     http_put(url, Some(value)).await
