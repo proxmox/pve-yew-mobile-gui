@@ -52,6 +52,11 @@ pub struct EditDialog<T: Serialize> {
     #[prop_or_default]
     pub loader: Option<ApiLoadCallback<T>>,
 
+    /// Load hook.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub load_hook: Option<Callback<Value, Result<Value, Error>>>,
+
     /// Submit button text.
     ///
     /// Default is Add, or Update if there is a loader.
@@ -203,8 +208,18 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
                                 value["digest"] = digest.clone();
                             }
                         }
-                        self.load_data = Rc::new(value.clone());
-                        self.form_ctx.load_form(value);
+                        if let Some(load_hook) = &props.load_hook {
+                            match load_hook.emit(value) {
+                                Ok(value) => {
+                                    self.load_data = Rc::new(value.clone());
+                                    self.form_ctx.load_form(value);
+                                }
+                                Err(err) => self.load_error = Some(err.to_string()),
+                            }
+                        } else {
+                            self.load_data = Rc::new(value.clone());
+                            self.form_ctx.load_form(value);
+                        }
                     }
                 }
                 true

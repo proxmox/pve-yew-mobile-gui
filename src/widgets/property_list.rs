@@ -110,29 +110,16 @@ impl PvePropertyList {
                     list_tile.add_onclick({
                         let link = ctx.link().clone();
                         let item = item.clone();
-                        let mut loader = match item.loader {
+                        let loader = match item.loader {
                             Some(loader) => Some(loader),
                             None => props.loader.clone(),
                         };
-
-                        if let Some(main_loader) = loader.clone() {
-                            if let Some(load_hook) = item.load_hook.clone() {
-                                loader = Some(ApiLoadCallback::new(move || {
-                                    let main_loader = main_loader.clone();
-                                    let load_hook = load_hook.clone();
-                                    async move {
-                                        let mut record = main_loader.apply().await?;
-                                        record.data = load_hook.emit(record.data)?;
-                                        Ok(record)
-                                    }
-                                }))
-                            }
-                        }
 
                         move |_| {
                             if let Some(render_input_panel) = item.render_input_panel.clone() {
                                 let dialog = EditDialog::new(item.title.clone())
                                     .on_done(link.callback(|_| Msg::CloseDialog))
+                                    .load_hook(item.load_hook.clone())
                                     .loader(loader.clone())
                                     .submit_hook(item.submit_hook.clone())
                                     .on_submit(Some(on_submit.clone()))
