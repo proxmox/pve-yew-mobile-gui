@@ -90,7 +90,7 @@ pub fn submit_property_string_hook<P: ApiType + Serialize + DeserializeOwned>(
     let name = name.into();
     Callback::from(move |form_ctx: FormContext| {
         let mut data = form_ctx.get_submit_data();
-        property_string_from_parts::<P>(&mut data, "agent", true);
+        property_string_from_parts::<P>(&mut data, &name, true);
         if delete_empty {
             let is_empty = match data.get(&name) {
                 Some(Value::Null) => true,
