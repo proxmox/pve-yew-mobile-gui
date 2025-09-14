@@ -27,10 +27,11 @@ use proxmox_schema::{ApiType, Schema};
 use pwt::widget::form::{delete_empty_values, FormContext};
 
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use proxmox_client::ApiResponseData;
-use proxmox_yew_comp::{form::property_string_from_parts, ApiLoadCallback};
+use proxmox_schema::ObjectSchemaType;
+use proxmox_yew_comp::ApiLoadCallback;
 use yew::Callback;
 
 // fixme: move to proxmox-yew-comp::form
@@ -71,17 +72,9 @@ pub fn property_string_submit_hook<P: ApiType + Serialize + DeserializeOwned>(
     let name = name.into();
     Callback::from(move |form_ctx: FormContext| {
         let mut data = form_ctx.get_submit_data();
-        // fixme: raise errors?
-        property_string_from_parts::<P>(&mut data, &name, true);
+        property_string_from_parts::<P>(&mut data, &name, true)?;
         if delete_empty {
-            let is_empty = match data.get(&name) {
-                Some(Value::Null) => true,
-                Some(Value::String(s)) => s.is_empty(),
-                _ => false,
-            };
-            if is_empty {
-                delete_empty_values(&data, &[&name], false);
-            }
+            data = delete_empty_values(&data, &[&name], false);
         }
         Ok(data)
     })
@@ -120,6 +113,61 @@ pub fn flatten_property_string(
         }
     }
     Ok(())
+}
+
+// Copied from proxmox-yew-com and added proper error handling
+/// Uses an [`proxmox_schema::ObjectSchema`] to generate a property string from separate properties.
+///
+/// This is useful for use in an [`crate::EditWindow`] when editing parts of a property string.
+/// Takes the single properties from `data` and assembles a property string.
+///
+/// Property string data is removed from the original data, and re-added as assembled
+/// property string with name `name`.
+///
+/// Uses [pspn] for property names like [flatten_property_string].
+pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
+    data: &mut Value,
+    name: &str,
+    skip_empty_values: bool,
+) -> Result<(), Error> {
+    let props = match T::API_SCHEMA {
+        Schema::Object(object_schema) => object_schema.properties(),
+        _ => bail!("property_string_from_parts: internal error - got unsupported schema type"),
+    };
+
+    if let Value::Object(map) = data {
+        let mut value = json!({});
+
+        let mut has_parts = false;
+        for (part, _, _) in props {
+            if let Some(v) = map.remove(&pspn(name, part)) {
+                has_parts = true;
+                let is_empty = match &v {
+                    Value::String(s) => s.is_empty(),
+                    _ => false,
+                };
+                if !(skip_empty_values && is_empty) {
+                    value[part] = v;
+                }
+            }
+        }
+
+        if !has_parts {
+            data[name] = "".into();
+            return Ok(());
+        }
+
+        let option: Option<T> = serde_json::from_value(value)?;
+        data[name] = match option {
+            Some(parsed) => proxmox_schema::property_string::print::<T>(&parsed)?,
+            None => String::new(),
+        }
+        .into();
+
+        Ok(())
+    } else {
+        bail!("property_string_from_parts: data is no Object");
+    }
 }
 
 pub fn parse_property_string_value<T: ApiType + DeserializeOwned>(

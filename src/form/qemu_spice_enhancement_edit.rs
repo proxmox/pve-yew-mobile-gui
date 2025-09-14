@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use proxmox_yew_comp::form::property_string_from_parts;
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
@@ -11,7 +10,7 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
 use pwt::widget::{Column, Container};
 
-use crate::form::{property_string_load_hook, pspn};
+use crate::form::{property_string_from_parts, property_string_load_hook, pspn};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
@@ -119,8 +118,7 @@ pub fn qemu_spice_enhancement_property(name: impl Into<String>) -> EditablePrope
                     }
                 }
 
-                property_string_from_parts::<QemuConfigSpiceEnhancements>(&mut value, &name, true);
-
+                property_string_from_parts::<QemuConfigSpiceEnhancements>(&mut value, &name, true)?;
                 let value = delete_empty_values(&value, &[&name], false);
                 Ok(value)
             }

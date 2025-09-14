@@ -1,7 +1,6 @@
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
-use proxmox_yew_comp::form::property_string_from_parts;
 use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType};
 
 use pwt::prelude::*;
@@ -9,7 +8,7 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
 use pwt::widget::{Column, Container};
 
-use crate::form::{flatten_property_string, pspn};
+use crate::form::{flatten_property_string, property_string_from_parts, pspn};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
@@ -161,10 +160,9 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
                     form_data[kernel_hashes_name] = true.into();
                 }
 
-                property_string_from_parts::<PveQemuSevFmt>(&mut form_data, &name, true);
-                let value = delete_empty_values(&form_data, &[&name], false);
-
-                Ok(value)
+                property_string_from_parts::<PveQemuSevFmt>(&mut form_data, &name, true)?;
+                let form_data = delete_empty_values(&form_data, &[&name], false);
+                Ok(form_data)
             }
         })
 }

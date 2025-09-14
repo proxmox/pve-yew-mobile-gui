@@ -1,5 +1,4 @@
 use anyhow::bail;
-use proxmox_yew_comp::form::property_string_from_parts;
 use regex::Regex;
 use serde_json::Value;
 
@@ -11,7 +10,7 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Field, FormContext, TextArea};
 use pwt::widget::Column;
 
-use crate::form::{flatten_property_string, pspn};
+use crate::form::{flatten_property_string, property_string_from_parts, pspn};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 thread_local! {
@@ -136,7 +135,7 @@ pub fn qemu_smbios_property(name: impl Into<String>) -> EditableProperty {
                 if base64 {
                     value[pspn(&name, "base64")] = true.into();
                 }
-                property_string_from_parts::<PveQmSmbios1>(&mut value, &name, true);
+                property_string_from_parts::<PveQmSmbios1>(&mut value, &name, true)?;
                 let value = delete_empty_values(&value, &[&name], false);
                 Ok(value)
             }
