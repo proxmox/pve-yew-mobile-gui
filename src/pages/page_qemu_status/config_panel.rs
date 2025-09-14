@@ -9,21 +9,18 @@ use pwt::props::SubmitCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use proxmox_client::ApiResponseData;
 use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, FormContext, Number};
 use pwt::widget::{Column, Container};
 
-use proxmox_yew_comp::{
-    http_put, percent_encoding::percent_encode_component, ApiLoadCallback, SchemaValidation,
-};
+use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component, SchemaValidation};
 
 use pve_api_types::{QemuConfig, QemuConfigAgent, StorageContent};
 
 use crate::form::{
-    format_hotplug_feature, format_qemu_ostype, load_property_string, qemu_amd_sev_property,
+    format_hotplug_feature, format_qemu_ostype, property_string_load_hook, qemu_amd_sev_property,
     qemu_smbios_property, qemu_spice_enhancement_property, submit_property_string_hook, typed_load,
     BootDeviceList, HotplugFeatureSelector, PveStorageSelector, QemuOstypeSelector,
 };
@@ -122,7 +119,6 @@ impl PveQemuConfigPanel {
         }
 
         let props = ctx.props();
-        let url = get_config_url(&props.node, props.vmid);
 
         Rc::new(vec![
             EditableProperty::new_bool("onboot", tr!("Start on boot"), false).required(true),
@@ -181,9 +177,7 @@ impl PveQemuConfigPanel {
                         ))
                         .into()
                 })
-                .loader(load_property_string::<QemuConfig, QemuConfigStartup>(
-                    &url, "startup",
-                ))
+                .load_hook(property_string_load_hook::<QemuConfigStartup>("startup"))
                 .submit_hook(submit_property_string_hook::<QemuConfigStartup>("startup", true)),
             EditableProperty::new("boot", tr!("Boot Order"))
                 .render_input_panel(move |_, record: Rc<Value>| {
@@ -193,24 +187,10 @@ impl PveQemuConfigPanel {
             EditableProperty::new("hotplug", tr!("Hotplug"))
                 .placeholder(format_hotplug_feature(&Value::Null))
                 .renderer(|_, v, _| format_hotplug_feature(v).into())
-                .loader(
-                    ApiLoadCallback::new({
-                        let url = url.clone();
-                        move || {
-                            let url = url.clone();
-                            async move {
-                                let mut resp: ApiResponseData<Value> =
-                                    proxmox_yew_comp::http_get_full(url, None).await?;
-                                // normalize on load (improves reset behavior)
-                                resp.data["hotplug"] = crate::form::normalize_hotplug_value(
-                                    resp.data.get("hotplug").unwrap_or(&Value::Null),
-                                );
-                                Ok(resp)
-                            }
-                        }
-                    })
-                    .url(url.clone()),
-                )
+                .load_hook(|mut record: Value| {
+                    record["hotplug"] = crate::form::normalize_hotplug_value(&record["hotplug"]);
+                    Ok(record)
+                })
                 .render_input_panel(move |_, _| {
                     HotplugFeatureSelector::new()
                         .name("hotplug")
@@ -239,7 +219,7 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .required(true),
-            qemu_smbios_property("smbios1", url.clone()),
+            qemu_smbios_property("smbios1"),
             EditableProperty::new("agent", tr!("QEMU Guest Agent"))
                 .required(true)
                 .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
@@ -305,11 +285,9 @@ impl PveQemuConfigPanel {
                         ))))
                         .into()
                 })
-                .loader(load_property_string::<QemuConfig, QemuConfigAgent>(
-                    &url, "agent",
-                ))
+                .load_hook(property_string_load_hook::<QemuConfigAgent>("agent"))
                 .submit_hook(submit_property_string_hook::<QemuConfigAgent>("agent", true)),
-            qemu_spice_enhancement_property("spice_enhancements", url.clone()),
+            qemu_spice_enhancement_property("spice_enhancements"),
             EditableProperty::new("vmstatestorage", tr!("VM State storage"))
                 .required(true)
                 .placeholder(tr!("Automatic"))

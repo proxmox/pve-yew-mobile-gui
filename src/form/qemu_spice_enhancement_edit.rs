@@ -5,12 +5,13 @@ use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
 
-use pve_api_types::{QemuConfig, QemuConfigSpiceEnhancements, QemuConfigVga, QemuConfigVgaType};
+use pve_api_types::{QemuConfigSpiceEnhancements, QemuConfigVga, QemuConfigVgaType};
 
 use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
 use pwt::widget::{Column, Container};
 
+use crate::form::property_string_load_hook;
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 fn property_name(name: &str, prop: &str) -> String {
@@ -70,11 +71,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     })
 }
 
-pub fn qemu_spice_enhancement_property(
-    name: impl Into<String>,
-    url: impl Into<String>,
-) -> EditableProperty {
-    let url = url.into();
+pub fn qemu_spice_enhancement_property(name: impl Into<String>) -> EditableProperty {
     let name = name.into();
     EditableProperty::new(name.clone(), tr!("Spice Enhancements"))
         .required(true)
@@ -103,10 +100,9 @@ pub fn qemu_spice_enhancement_property(
             value.into()
         })
         .render_input_panel(input_panel(name.clone()))
-        .loader(crate::form::load_property_string::<
-            QemuConfig,
-            QemuConfigSpiceEnhancements,
-        >(&url, &name))
+        .load_hook(property_string_load_hook::<QemuConfigSpiceEnhancements>(
+            &name,
+        ))
         .submit_hook({
             let name = name.clone();
             move |ctx: FormContext| {

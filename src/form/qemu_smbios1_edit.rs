@@ -5,15 +5,13 @@ use serde_json::Value;
 
 use proxmox_schema::ApiType;
 
-use pve_api_types::{PveQmSmbios1, QemuConfig};
+use pve_api_types::PveQmSmbios1;
 
 use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Field, FormContext, TextArea};
 use pwt::widget::Column;
 
-use proxmox_yew_comp::ApiLoadCallback;
-
-use crate::form::{flatten_property_string, typed_load};
+use crate::form::flatten_property_string;
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 thread_local! {
@@ -100,35 +98,31 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     })
 }
 
-pub fn qemu_smbios_property(name: impl Into<String>, url: impl Into<String>) -> EditableProperty {
-    let url = url.into();
+pub fn qemu_smbios_property(name: impl Into<String>) -> EditableProperty {
     let name = name.into();
     EditableProperty::new(name.clone(), tr!("SMBIOS settings (type1)"))
         .required(true)
         .render_input_panel(input_panel(name.clone()))
-        .loader({
-            let cloned_url = url.clone();
+        .load_hook({
             let name = name.clone();
-            ApiLoadCallback::new(move || {
-                let cloned_url = cloned_url.clone();
-                let name = name.clone();
-                async move {
-                    let property_name = |prop| format!("_{name}_{prop}");
-                    let mut resp = typed_load::<QemuConfig>(cloned_url).apply().await?;
-                    flatten_property_string(&mut resp.data, &name, &PveQmSmbios1::API_SCHEMA);
-                    if let Some(Value::Bool(true)) = resp.data.get(property_name("base64")) {
-                        for prop in PROPERTIES.iter().map(|prop| property_name(prop)) {
-                            if let Some(Value::String(base64)) = resp.data.get(&prop) {
-                                if let Ok(bin_data) = proxmox_base64::decode(base64) {
-                                    resp.data[prop] = String::from_utf8_lossy(&bin_data).into();
-                                }
+
+            move |mut record: Value| {
+                let property_name = |prop| format!("_{name}_{prop}");
+
+                flatten_property_string(&mut record, &name, &PveQmSmbios1::API_SCHEMA);
+
+                // decode base64 encoded properties
+                if let Some(Value::Bool(true)) = record.get(property_name("base64")) {
+                    for prop in PROPERTIES.iter().map(|prop| property_name(prop)) {
+                        if let Some(Value::String(base64)) = record.get(&prop) {
+                            if let Ok(bin_data) = proxmox_base64::decode(base64) {
+                                record[prop] = String::from_utf8_lossy(&bin_data).into();
                             }
                         }
                     }
-                    Ok(resp)
                 }
-            })
-            .url(url.clone())
+                Ok(record)
+            }
         })
         .submit_hook({
             let name = name.clone();
@@ -137,6 +131,7 @@ pub fn qemu_smbios_property(name: impl Into<String>, url: impl Into<String>) -> 
                 let mut base64 = false;
                 let property_name = |prop| format!("_{name}_{prop}");
 
+                // always base64 encoded properties
                 for name in PROPERTIES.iter().map(|n| property_name(*n)) {
                     if let Some(Value::String(utf8)) = value.get(&name) {
                         base64 = true;
