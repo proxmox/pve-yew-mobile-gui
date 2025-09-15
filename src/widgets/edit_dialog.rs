@@ -1,10 +1,7 @@
-use std::marker::PhantomData;
 use std::rc::Rc;
 
 use anyhow::Error;
-use derivative::Derivative;
 use pwt::touch::SideDialog;
-use serde::Serialize;
 use serde_json::Value;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -31,10 +28,9 @@ use crate::widgets::editable_property::RenderPropertyInputPanelFn;
 // - no "resizable" property
 // - no "autocenter" property
 
-#[derive(Properties, Derivative)]
-#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
+#[derive(Properties, Clone, PartialEq)]
 #[builder]
-pub struct EditDialog<T: Serialize> {
+pub struct EditDialog {
     /// Yew component key
     #[prop_or_default]
     pub key: Option<Key>,
@@ -48,9 +44,9 @@ pub struct EditDialog<T: Serialize> {
     pub renderer: Option<RenderPropertyInputPanelFn>,
 
     /// Form data loader.
-    #[builder_cb(IntoApiLoadCallback, into_api_load_callback, T)]
+    #[builder_cb(IntoApiLoadCallback, into_api_load_callback, Value)]
     #[prop_or_default]
-    pub loader: Option<ApiLoadCallback<T>>,
+    pub loader: Option<ApiLoadCallback<Value>>,
 
     /// Load hook.
     ///
@@ -117,11 +113,11 @@ pub struct EditDialog<T: Serialize> {
     pub edit: Option<bool>,
 }
 
-impl<T: Serialize> EditDialog<T> {
+impl EditDialog {
     impl_yew_std_props_builder!();
 }
 
-impl<T: Serialize> EditDialog<T> {
+impl EditDialog {
     pub fn new(title: impl Into<AttrValue>) -> Self {
         yew::props!(Self {
             title: title.into(),
@@ -156,19 +152,18 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct PwtEditDialog<T> {
+pub struct PwtEditDialog {
     loading: bool,
     form_ctx: FormContext,
     submit_error: Option<String>,
     load_data: Rc<Value>,
     load_error: Option<String>,
     async_pool: AsyncPool,
-    _phantom: PhantomData<T>,
 }
 
-impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
+impl Component for PwtEditDialog {
     type Message = Msg;
-    type Properties = EditDialog<T>;
+    type Properties = EditDialog;
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
@@ -182,7 +177,6 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
             load_error: None,
             load_data: Rc::new(Value::Null),
             async_pool: AsyncPool::new(),
-            _phantom: PhantomData,
         }
     }
 
@@ -400,10 +394,10 @@ impl<T: 'static + Serialize> Component for PwtEditDialog<T> {
     }
 }
 
-impl<T: 'static + Serialize> From<EditDialog<T>> for VNode {
-    fn from(props: EditDialog<T>) -> Self {
+impl From<EditDialog> for VNode {
+    fn from(props: EditDialog) -> Self {
         let key = props.key.clone();
-        let comp = VComp::new::<PwtEditDialog<T>>(Rc::new(props), key);
+        let comp = VComp::new::<PwtEditDialog>(Rc::new(props), key);
         VNode::from(comp)
     }
 }
