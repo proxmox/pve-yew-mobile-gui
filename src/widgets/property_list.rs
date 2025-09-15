@@ -123,6 +123,7 @@ impl PvePropertyList {
                                     .loader(loader.clone())
                                     .submit_hook(item.submit_hook.clone())
                                     .on_submit(Some(on_submit.clone()))
+                                    .on_change(item.on_change.clone())
                                     .renderer(render_input_panel);
 
                                 link.send_message(Msg::ShowDialog(dialog.into()));

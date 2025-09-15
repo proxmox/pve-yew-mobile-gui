@@ -20,6 +20,9 @@ pub use qemu_spice_enhancement_edit::qemu_spice_enhancement_property;
 mod qemu_amd_sev_edit;
 pub use qemu_amd_sev_edit::qemu_amd_sev_property;
 
+mod qemu_memory_edit;
+pub use qemu_memory_edit::qemu_memory_property;
+
 mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
