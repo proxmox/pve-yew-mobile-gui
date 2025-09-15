@@ -2,18 +2,25 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
+use proxmox_yew_comp::http_put;
+use serde_json::Value;
+
+use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Number};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use proxmox_schema::ApiType;
+
 use pwt::prelude::*;
-use pwt::widget::{Fa, List, ListTile};
+use pwt::widget::{Column, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
-use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
+use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig, QemuConfigMemory};
 
-use crate::widgets::icon_list_tile;
+use crate::form::{flatten_property_string, property_string_from_parts, pspn};
+use crate::widgets::{icon_list_tile, label_field, EditDialog};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct QemuHardwarePanel {
@@ -53,23 +60,165 @@ fn processor_text(config: &QemuConfig) -> String {
 pub enum Msg {
     Load,
     LoadResult(Result<QemuConfig, Error>),
+    Dialog(Option<Html>),
+    EditMemory,
 }
 
 pub struct PveQemuHardwarePanel {
     data: Option<Result<QemuConfig, String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
+    dialog: Option<Html>,
+}
+
+// fixme: Number field changes type to Value::String on input!!
+fn value_to_u64(value: Value) -> Option<u64> {
+    match value {
+        Value::Number(n) => n.as_u64(),
+        Value::String(s) => s.parse().ok(),
+        _ => None,
+    }
+}
+
+fn read_u64(form_ctx: &FormContext, name: &str) -> Option<u64> {
+    let value = form_ctx.read().get_field_value(name.to_string());
+    match value {
+        Some(value) => value_to_u64(value),
+        _ => None,
+    }
 }
 
 impl PveQemuHardwarePanel {
-    fn view_list(&self, _ctx: &Context<Self>, data: &QemuConfig) -> Html {
+    fn edit_memory_dialog(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        let url = get_config_url(&props.node, props.vmid);
+
+        EditDialog::new(tr!("Memory"))
+            .loader(url.clone())
+            .on_submit({
+                let url = url.clone();
+                move |data: Value| http_put(url.clone(), Some(data.clone()))
+            })
+            .submit_hook(|form_ctx: FormContext| {
+                let mut data = form_ctx.get_submit_data();
+
+                if !form_ctx.read().get_field_checked("_use_ballooning") {
+                    data["balloon"] = Value::Null;
+                    data["shares"] = Value::Null;
+                }
+
+                property_string_from_parts::<QemuConfigMemory>(&mut data, "memory", true)?;
+                data = delete_empty_values(&data, &["memory", "balloon", "shares"], false);
+                Ok(data)
+            })
+            .load_hook(|mut record| {
+                flatten_property_string(&mut record, "memory", &QemuConfigMemory::API_SCHEMA)?;
+                let current_memory_prop = pspn("memory", "current");
+
+                let use_ballooning = record["balloon"].as_u64().is_some();
+                record["_use_ballooning"] = use_ballooning.into();
+
+                if record["balloon"].is_null() {
+                    if let Some(current_memory) = record[current_memory_prop].as_u64() {
+                        record["balloon"] = current_memory.into();
+                        record["_old_memory"] = current_memory.into();
+                    }
+                }
+                Ok(record)
+            })
+            .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+            .on_change(|form_ctx: FormContext| {
+                let current_memory_prop = pspn("memory", "current");
+                let current_memory = form_ctx.read().get_field_value(current_memory_prop.clone());
+                let old_memory = form_ctx.read().get_field_value("_old_memory");
+                let balloon = form_ctx.read().get_field_value("balloon");
+
+                match (&old_memory, &current_memory, &balloon) {
+                    (Some(old_memory), Some(current_memory), Some(balloon)) => {
+                        if balloon == old_memory {
+                            form_ctx
+                                .write()
+                                .set_field_value("balloon", current_memory.clone().into());
+                        }
+                    }
+                    _ => {}
+                }
+
+                if let Some(current_memory) = current_memory {
+                    form_ctx
+                        .write()
+                        .set_field_value("_old_memory", current_memory.into());
+                }
+            })
+            .renderer(|form_ctx: FormContext, _| {
+                let current_memory_prop = pspn("memory", "current");
+                let current_memory = read_u64(&form_ctx, &current_memory_prop);
+
+                let use_ballooning = form_ctx.read().get_field_checked("_use_ballooning");
+
+                let disable_shares = {
+                    let balloon = read_u64(&form_ctx, "balloon");
+                    match (current_memory, balloon) {
+                        (Some(memory), Some(balloon)) => memory == balloon,
+                        _ => false,
+                    }
+                };
+
+                let memory_default = 512u64;
+
+                Column::new()
+                    .class(pwt::css::FlexFit)
+                    .gap(2)
+                    .with_child(label_field(
+                        tr!("Memory") + " (MiB)",
+                        Number::<u64>::new()
+                            .name(current_memory_prop)
+                            .default(memory_default)
+                            .step(32),
+                    ))
+                    .with_child(Hidden::new().name("_old_memory").submit(false))
+                    .with_child(label_field(
+                        tr!("Minimum memory") + " (MiB)",
+                        Number::<u64>::new()
+                            .name("balloon")
+                            .submit_empty(true)
+                            .disabled(!use_ballooning)
+                            .min(1)
+                            .max(current_memory)
+                            .step(32)
+                            .placeholder(current_memory.map(|n| n.to_string())),
+                    ))
+                    .with_child(label_field(
+                        tr!("Shares"),
+                        Number::<u64>::new()
+                            .name("shares")
+                            .submit_empty(true)
+                            .disabled(!use_ballooning || disable_shares)
+                            .placeholder(tr!("Default") + " (1000)")
+                            .max(50000)
+                            .step(10),
+                    ))
+                    .with_child(label_field(
+                        tr!("Ballooning Device"),
+                        Checkbox::new().name("_use_ballooning").submit(false),
+                    ))
+                    .into()
+            })
+            .into()
+    }
+
+    fn view_list(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
-        list.push(icon_list_tile(
-            Fa::new("memory"),
-            data.memory.as_deref().unwrap_or("512").to_string() + " MB",
-            tr!("Memory"),
-            (),
-        ));
+        list.push(
+            icon_list_tile(
+                Fa::new("memory"),
+                data.memory.as_deref().unwrap_or("512").to_string() + " MB",
+                tr!("Memory"),
+                (),
+            )
+            .interactive(true)
+            .on_activate(ctx.link().callback(|_| Msg::EditMemory)),
+        );
         list.push(icon_list_tile(
             Fa::new("cpu"),
             processor_text(data),
@@ -153,6 +302,7 @@ impl Component for PveQemuHardwarePanel {
             data: None,
             reload_timeout: None,
             load_guard: None,
+            dialog: None,
         }
     }
 
@@ -165,6 +315,15 @@ impl Component for PveQemuHardwarePanel {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::Dialog(dialog) => {
+                if dialog.is_none() && self.dialog.is_some() {
+                    ctx.link().send_message(Msg::Load);
+                }
+                self.dialog = dialog;
+            }
+            Msg::EditMemory => {
+                self.dialog = Some(self.edit_memory_dialog(ctx));
+            }
             Msg::Load => {
                 let link = ctx.link().clone();
                 let url = get_config_url(&props.node, props.vmid);
@@ -190,6 +349,7 @@ impl Component for PveQemuHardwarePanel {
         crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
             .min_height(200)
             .with_child(content)
+            .with_optional_child(self.dialog.clone())
             .into()
     }
 }
