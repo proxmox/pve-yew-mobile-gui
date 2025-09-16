@@ -11,23 +11,15 @@ pub use hotplug_feature_selector::{
     PveHotplugFeatureSelector,
 };
 
-mod qemu_smbios1_property;
-pub use qemu_smbios1_property::qemu_smbios_property;
-
-mod qemu_spice_enhancement_property;
-pub use qemu_spice_enhancement_property::qemu_spice_enhancement_property;
-
-mod qemu_amd_sev_property;
-pub use qemu_amd_sev_property::qemu_amd_sev_property;
-
-mod qemu_memory_property;
-pub use qemu_memory_property::qemu_memory_property;
-
-mod qemu_agent_property;
-pub use qemu_agent_property::qemu_agent_property;
-
-mod qemu_bios_property;
-pub use qemu_bios_property::qemu_bios_property;
+mod qemu_property;
+pub use qemu_property::{
+    qemu_acpi_property, qemu_agent_property, qemu_amd_sev_property, qemu_bios_property,
+    qemu_boot_property, qemu_freeze_property, qemu_hotplug_property, qemu_kvm_property,
+    qemu_localtime_property, qemu_memory_property, qemu_name_property, qemu_onboot_property,
+    qemu_ostype_property, qemu_protection_property, qemu_smbios_property,
+    qemu_spice_enhancement_property, qemu_startdate_property, qemu_startup_property,
+    qemu_tablet_property, qemu_vmstatestorage_property,
+};
 
 mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
