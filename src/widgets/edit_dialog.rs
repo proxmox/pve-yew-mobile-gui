@@ -12,7 +12,7 @@ use proxmox_client::ApiResponseData;
 use pwt::impl_yew_std_props_builder;
 use pwt::props::{IntoSubmitCallback, SubmitCallback, WidgetStyleBuilder};
 use pwt::widget::form::{Form, FormContext, Hidden, ResetButton, SubmitButton};
-use pwt::widget::{AlertDialog, Column, Progress, Row};
+use pwt::widget::{AlertDialog, Column, Container, Progress, Row};
 use pwt::{prelude::*, AsyncPool};
 
 use pwt_macros::builder;
@@ -291,12 +291,16 @@ impl Component for PwtEditDialog {
             None => html! {},
         };
 
+        let title = Container::new()
+            .class("pwt-font-size-title-large")
+            .with_child(props.title.clone());
+
         let input_panel = Column::new()
             .gap(1)
             .class(pwt::css::FlexFit)
             .class(pwt::css::AlignItems::Stretch)
             .class("pwt-font-size-title-medium")
-            .with_child(props.title.clone())
+            .with_child(title)
             .with_flex_spacer()
             .with_child(content);
 
