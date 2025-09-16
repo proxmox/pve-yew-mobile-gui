@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
+use proxmox_yew_comp::http_put;
 use serde_json::Value;
 
 use yew::prelude::*;
@@ -173,18 +174,14 @@ impl Component for PveQemuHardwarePanel {
     type Properties = QemuHardwarePanel;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
-        let url = get_config_url(&props.node, props.vmid);
-
         ctx.link().send_message(Msg::Load);
-
         Self {
             data: None,
             reload_timeout: None,
             load_guard: None,
             dialog: None,
-            memory_property: qemu_memory_property(&url),
-            bios_property: qemu_bios_property("bios", &url),
+            memory_property: qemu_memory_property(),
+            bios_property: qemu_bios_property(),
         }
     }
 
@@ -196,6 +193,7 @@ impl Component for PveQemuHardwarePanel {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
+
         match msg {
             Msg::Dialog(dialog) => {
                 if dialog.is_none() && self.dialog.is_some() {
@@ -204,8 +202,15 @@ impl Component for PveQemuHardwarePanel {
                 self.dialog = dialog;
             }
             Msg::EditProperty(property) => {
+                let url = get_config_url(&props.node, props.vmid);
+
                 let dialog = EditDialog::from(property.clone())
                     .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+                    .loader(url.clone())
+                    .on_submit({
+                        let url = url.to_owned();
+                        move |data: Value| http_put(url.clone(), Some(data.clone()))
+                    })
                     .into();
                 self.dialog = Some(dialog);
             }

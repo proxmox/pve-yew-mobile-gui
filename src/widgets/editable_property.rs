@@ -5,9 +5,8 @@ use derivative::Derivative;
 use proxmox_yew_comp::utils::render_boolean;
 use serde_json::Value;
 
-use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback, RenderKVGridRecordFn};
+use proxmox_yew_comp::RenderKVGridRecordFn;
 use pwt::prelude::*;
-use pwt::props::{IntoSubmitCallback, SubmitCallback};
 use pwt::widget::form::{Checkbox, Field, FormContext};
 use pwt::widget::Row;
 
@@ -65,14 +64,6 @@ pub struct EditableProperty {
     pub placeholder: Option<AttrValue>,
     pub renderer: Option<RenderKVGridRecordFn>,
 
-    /// Submit callback.
-    #[builder_cb(IntoSubmitCallback, into_submit_callback, Value)]
-    pub on_submit: Option<SubmitCallback<Value>>,
-
-    /// Data loader.
-    #[builder_cb(IntoApiLoadCallback, into_api_load_callback, Value)]
-    pub loader: Option<ApiLoadCallback<Value>>,
-
     /// Load hook.
     #[builder(IntoPropValue, into_prop_value)]
     pub load_hook: Option<Callback<Value, Result<Value, Error>>>,
@@ -98,10 +89,10 @@ impl EditableProperty {
             single_row: false,
             placeholder: None,
             renderer: None,
-            loader: None,
+            //loader: None,
             load_hook: None,
             submit_hook: None,
-            on_submit: None,
+            //on_submit: None,
             on_change: None,
             render_input_panel: None,
             advanced_checkbox: false,
@@ -174,8 +165,6 @@ impl From<EditableProperty> for EditDialog {
 
         EditDialog::new(property.title)
             .advanced_checkbox(property.advanced_checkbox)
-            .loader(property.loader)
-            .on_submit(property.on_submit)
             .submit_hook(property.submit_hook)
             .load_hook(property.load_hook)
             .on_change(property.on_change)

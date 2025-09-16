@@ -1,6 +1,5 @@
 use proxmox_human_byte::HumanByte;
 use proxmox_schema::property_string::PropertyString;
-use proxmox_yew_comp::http_put;
 use serde_json::Value;
 
 use proxmox_schema::ApiType;
@@ -136,14 +135,9 @@ fn render_value(_name: &str, v: &Value, record: &Value) -> Html {
     text.into()
 }
 
-pub fn qemu_memory_property(url: &str) -> EditableProperty {
+pub fn qemu_memory_property() -> EditableProperty {
     EditableProperty::new("memory", tr!("Memory"))
         .advanced_checkbox(true)
-        .loader(url)
-        .on_submit({
-            let url = url.to_owned();
-            move |data: Value| http_put(url.clone(), Some(data.clone()))
-        })
         .required(true)
         .render_input_panel(input_panel())
         .renderer(render_value)

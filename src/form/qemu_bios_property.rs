@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use proxmox_yew_comp::http_put;
 use serde_json::Value;
 
 use pwt::prelude::*;
@@ -47,8 +46,8 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     })
 }
 
-pub fn qemu_bios_property(name: &str, url: &str) -> EditableProperty {
-    let name = name.to_string();
+pub fn qemu_bios_property() -> EditableProperty {
+    let name = String::from("bios");
     EditableProperty::new(name.clone(), "BIOS")
         .placeholder(tr!("Default") + " (SeaBIOS)")
         .renderer(
@@ -68,10 +67,5 @@ pub fn qemu_bios_property(name: &str, url: &str) -> EditableProperty {
                 data = delete_empty_values(&data, &[&name], false);
                 Ok(data)
             }
-        })
-        .loader(url)
-        .on_submit({
-            let url = url.to_owned();
-            move |data: Value| http_put(url.clone(), Some(data.clone()))
         })
 }

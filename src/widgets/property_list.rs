@@ -99,21 +99,13 @@ impl PvePropertyList {
                 form_list_tile(item.title.clone(), value_text, ())
             };
 
-            let on_submit = match item.on_submit.clone() {
-                Some(on_submit) => Some(on_submit),
-                None => props.on_submit.clone(),
-            };
-
-            if let Some(on_submit) = on_submit {
+            if let Some(on_submit) = props.on_submit.clone() {
                 if item.render_input_panel.is_some() {
                     list_tile.set_interactive(true);
                     list_tile.add_onclick({
                         let link = ctx.link().clone();
                         let item = item.clone();
-                        let loader = match item.loader {
-                            Some(loader) => Some(loader),
-                            None => props.loader.clone(),
-                        };
+                        let loader = props.loader.clone();
 
                         move |_| {
                             if let Some(render_input_panel) = item.render_input_panel.clone() {
