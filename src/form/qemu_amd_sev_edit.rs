@@ -41,7 +41,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .style("display", (!sev_enabled).then(|| "none"))
+                    .class((!sev_enabled).then(|| pwt::css::Display::None))
                     .disabled(!sev_enabled)
                     .submit(false)
                     .name(pspn(&name, "debug"))
@@ -49,7 +49,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .style("display", (!sev_enabled || snp_enabled).then(|| "none"))
+                    .class((!sev_enabled || snp_enabled).then(|| pwt::css::Display::None))
                     .disabled(!sev_enabled || snp_enabled)
                     .submit(false)
                     .name(pspn(&name, "key-sharing"))
@@ -57,7 +57,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .style("display", (!snp_enabled).then(|| "none"))
+                    .class((!snp_enabled).then(|| pwt::css::Display::None))
                     .disabled(!snp_enabled)
                     .default(true)
                     .submit(false)
@@ -66,7 +66,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .style("display", (!sev_enabled).then(|| "none"))
+                    .class((!sev_enabled).then(|| pwt::css::Display::None))
                     .disabled(!sev_enabled)
                     .name(pspn(&name, "kernel-hashes"))
                     .submit(false)
