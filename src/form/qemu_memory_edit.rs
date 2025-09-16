@@ -11,7 +11,7 @@ use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Numb
 use pwt::widget::Column;
 
 use crate::form::{
-    flatten_property_string, parse_property_string, property_string_from_parts, pspn,
+    flatten_property_string, parse_optional_property_string_value, property_string_from_parts, pspn,
 };
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
 
@@ -91,17 +91,11 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 }
 
 fn render_value(_name: &str, v: &Value, record: &Value) -> Html {
-    let current = match v {
-        Value::Null => 512,
-        Value::String(s) => match parse_property_string::<QemuConfigMemory>(&s) {
-            Ok(parsed) => parsed.current,
-            Err(err) => {
-                log::error!("qemu_memory_property renderer: {err}");
-                return v.into();
-            }
-        },
-        _ => {
-            log::error!("qemu_memory_property renderer: got unexpected type");
+    let current = match parse_optional_property_string_value::<QemuConfigMemory>(v) {
+        Ok(None) => 512,
+        Ok(Some(parsed)) => parsed.current,
+        Err(err) => {
+            log::error!("qemu_memory_property renderer: {err}");
             return v.into();
         }
     };

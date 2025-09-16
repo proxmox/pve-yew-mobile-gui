@@ -35,6 +35,7 @@ use serde_json::{json, Value};
 use proxmox_client::ApiResponseData;
 use proxmox_schema::ObjectSchemaType;
 use proxmox_yew_comp::ApiLoadCallback;
+
 use yew::Callback;
 
 // fixme: move to proxmox-yew-comp::form
@@ -170,6 +171,16 @@ pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
         Ok(())
     } else {
         bail!("property_string_from_parts: data is no Object");
+    }
+}
+
+pub fn parse_optional_property_string_value<T: ApiType + DeserializeOwned>(
+    value: &Value,
+) -> Result<Option<T>, Error> {
+    if value == &Value::Null {
+        Ok(None)
+    } else {
+        Ok(Some(parse_property_string_value(value)?))
     }
 }
 
