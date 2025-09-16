@@ -12,16 +12,16 @@ use yew::virtual_dom::{VComp, VNode};
 use proxmox_schema::{ApiType, ObjectSchema, Schema};
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, FormContext, Number};
-use pwt::widget::{Column, Container};
+use pwt::widget::form::{delete_empty_values, Field, Number};
+use pwt::widget::Column;
 
 use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component, SchemaValidation};
 
-use pve_api_types::{QemuConfig, QemuConfigAgent, StorageContent};
+use pve_api_types::{QemuConfig, StorageContent};
 
 use crate::form::{
     format_hotplug_feature, format_qemu_ostype, property_string_load_hook,
-    property_string_submit_hook, qemu_amd_sev_property, qemu_smbios_property,
+    property_string_submit_hook, qemu_agent_property, qemu_amd_sev_property, qemu_smbios_property,
     qemu_spice_enhancement_property, typed_load, BootDeviceList, HotplugFeatureSelector,
     PveStorageSelector, QemuOstypeSelector,
 };
@@ -181,11 +181,21 @@ impl PveQemuConfigPanel {
                         .into()
                 })
                 .load_hook(property_string_load_hook::<QemuConfigStartup>("startup"))
-                .submit_hook(property_string_submit_hook::<QemuConfigStartup>("startup", true)),
+                .submit_hook(property_string_submit_hook::<QemuConfigStartup>(
+                    "startup", true,
+                )),
             EditableProperty::new("boot", tr!("Boot Order"))
-                .placeholder(format!("{}, {}, {}", tr!("first Disk"), tr!("any CD-ROM"), tr!("any net")))
+                .placeholder(format!(
+                    "{}, {}, {}",
+                    tr!("first Disk"),
+                    tr!("any CD-ROM"),
+                    tr!("any net")
+                ))
                 .render_input_panel(move |_, record: Rc<Value>| {
-                    BootDeviceList::new(record.clone()).name("boot").submit_empty(true).into()
+                    BootDeviceList::new(record.clone())
+                        .name("boot")
+                        .submit_empty(true)
+                        .into()
                 })
                 .required(true),
             EditableProperty::new("hotplug", tr!("Hotplug"))
@@ -224,75 +234,7 @@ impl PveQemuConfigPanel {
                 })
                 .required(true),
             qemu_smbios_property("smbios1"),
-            EditableProperty::new("agent", tr!("QEMU Guest Agent"))
-                .advanced_checkbox(true)
-                .required(true)
-                .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
-                .render_input_panel(|form_ctx: FormContext, _| {
-                    let advanced = form_ctx.get_show_advanced();
-                    let enabled = form_ctx.read().get_field_checked("_agent_enabled");
-                    let ffob_enabled = form_ctx
-                        .read()
-                        .get_field_checked("_agent_freeze-fs-on-backup");
-
-                    let warning = |msg: String| {
-                        Container::new()
-                            .class("pwt-color-warning")
-                            .padding(1)
-                            .with_child(msg)
-                    };
-
-                    Column::new()
-                        .class(pwt::css::FlexFit)
-                        .with_child(
-                            Checkbox::new()
-                                .name("_agent_enabled")
-                                .box_label(tr!("Use QEMU Guest Agent")),
-                        )
-                        .with_child(
-                            Checkbox::new()
-                                .name("_agent_fstrim_cloned_disks")
-                                .box_label(tr!("Run guest-trim after a disk move or VM migration"))
-                                .disabled(!enabled),
-                        )
-                        .with_child(
-                            Checkbox::new()
-                                .name("_agent_freeze-fs-on-backup")
-                                .box_label(tr!(
-                                    "Freeze/thaw guest filesystems on backup for consistency"
-                                ))
-                                .disabled(!enabled),
-                        )
-                        .with_child(
-                            crate::widgets::label_field(
-                                tr!("Type"),
-                                Combobox::new()
-                                    .name("_agent_type")
-                                    .placeholder(tr!("Default") + " (VirtIO)")
-                                    .with_item("virtio")
-                                    .with_item("isa")
-                                    .render_value(|value: &AttrValue| {
-                                        match value.as_str() {
-                                            "virtio" => "VirtIO",
-                                            "isa" => "ISA",
-                                            _ => value,
-                                        }
-                                        .into()
-                                    }),
-                            ).class((!advanced).then(|| pwt::css::Display::None))
-                            .padding_top(2)
-                            .padding_bottom(1)
-                        )
-                        .with_optional_child((!ffob_enabled).then(|| warning(tr!(
-                            "Freeze/thaw for guest filesystems disabled. This can lead to inconsistent disk backups."
-                        ))))
-                        .with_optional_child(enabled.then(|| warning(tr!(
-                            "Make sure the QEMU Guest Agent is installed in the VM"
-                        ))))
-                        .into()
-                })
-                .load_hook(property_string_load_hook::<QemuConfigAgent>("agent"))
-                .submit_hook(property_string_submit_hook::<QemuConfigAgent>("agent", true)),
+            qemu_agent_property("agent"),
             qemu_spice_enhancement_property("spice_enhancements"),
             EditableProperty::new("vmstatestorage", tr!("VM State storage"))
                 .required(true)
