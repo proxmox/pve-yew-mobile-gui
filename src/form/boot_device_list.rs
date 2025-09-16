@@ -91,7 +91,7 @@ impl PveBootDeviceField {
             }
         };
 
-        let boot: PveQmBoot = match crate::form::parse_property_string(&value) {
+        let boot: PveQmBoot = match proxmox_schema::property_string::parse(&value) {
             Ok(boot) => boot,
             Err(err) => {
                 log::error!("unable to parse boot option value: {err}");

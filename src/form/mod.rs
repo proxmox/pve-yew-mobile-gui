@@ -1,5 +1,5 @@
 mod boot_device_list;
-use anyhow::{bail, format_err, Error};
+use anyhow::{bail, Error};
 pub use boot_device_list::{BootDeviceList, PveBootDeviceList};
 
 mod qemu_ostype_selector;
@@ -171,36 +171,5 @@ pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
         Ok(())
     } else {
         bail!("property_string_from_parts: data is no Object");
-    }
-}
-
-pub fn parse_optional_property_string_value<T: ApiType + DeserializeOwned>(
-    value: &Value,
-) -> Result<Option<T>, Error> {
-    if value == &Value::Null {
-        Ok(None)
-    } else {
-        Ok(Some(parse_property_string_value(value)?))
-    }
-}
-
-pub fn parse_property_string_value<T: ApiType + DeserializeOwned>(
-    value: &Value,
-) -> Result<T, Error> {
-    if let Value::String(value_str) = value {
-        parse_property_string(value_str)
-    } else {
-        Err(format_err!(
-            "parse_property_string: value is no string type"
-        ))
-    }
-}
-
-pub fn parse_property_string<T: ApiType + DeserializeOwned>(
-    value_str: impl AsRef<str>,
-) -> Result<T, Error> {
-    match T::API_SCHEMA.parse_property_string(value_str.as_ref()) {
-        Ok(props) => return serde_json::from_value::<T>(props).map_err(|e| e.into()),
-        Err(e) => return Err(e),
     }
 }

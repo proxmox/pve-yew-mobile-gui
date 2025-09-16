@@ -21,7 +21,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
 
         let mut show_spice_hint = true;
         if let Some(Value::String(vga)) = record.get("vga") {
-            if let Ok(vga) = crate::form::parse_property_string::<QemuConfigVga>(vga) {
+            if let Ok(vga) = proxmox_schema::property_string::parse::<QemuConfigVga>(vga) {
                 match vga.ty {
                     Some(QemuConfigVgaType::Qxl)
                     | Some(QemuConfigVgaType::Qxl2)

@@ -1,4 +1,5 @@
 use proxmox_human_byte::HumanByte;
+use proxmox_schema::property_string::PropertyString;
 use proxmox_yew_comp::http_put;
 use serde_json::Value;
 
@@ -10,9 +11,7 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Number};
 use pwt::widget::Column;
 
-use crate::form::{
-    flatten_property_string, parse_optional_property_string_value, property_string_from_parts, pspn,
-};
+use crate::form::{flatten_property_string, property_string_from_parts, pspn};
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
 
 // fixme: Number field changes type to Value::String on input!!
@@ -91,14 +90,15 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 }
 
 fn render_value(_name: &str, v: &Value, record: &Value) -> Html {
-    let current = match parse_optional_property_string_value::<QemuConfigMemory>(v) {
-        Ok(None) => 512,
-        Ok(Some(parsed)) => parsed.current,
-        Err(err) => {
-            log::error!("qemu_memory_property renderer: {err}");
-            return v.into();
-        }
-    };
+    let current =
+        match serde_json::from_value::<Option<PropertyString<QemuConfigMemory>>>(v.clone()) {
+            Ok(None) => 512,
+            Ok(Some(parsed)) => parsed.current,
+            Err(err) => {
+                log::error!("qemu_memory_property renderer: {err}");
+                return v.into();
+            }
+        };
 
     let balloon = record["balloon"].as_u64().unwrap_or(0);
 

@@ -122,7 +122,8 @@ impl PveQemuHardwarePanel {
         ));
 
         for (n, disk_config) in &data.ide {
-            if let Ok(config) = crate::form::parse_property_string::<PveQmIde>(disk_config.as_str())
+            if let Ok(config) =
+                proxmox_schema::property_string::parse::<PveQmIde>(disk_config.as_str())
             {
                 if config.media == Some(PveQmIdeMedia::Cdrom) {
                     list.push(icon_list_tile(

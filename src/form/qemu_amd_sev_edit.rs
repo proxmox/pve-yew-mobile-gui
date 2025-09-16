@@ -1,3 +1,4 @@
+use proxmox_schema::property_string::PropertyString;
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
@@ -94,17 +95,17 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
         .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
         .render_input_panel(input_panel(name.clone()))
         .renderer(|_, v, _| {
-            if let serde_json::Value::String(v) = v {
-                if let Ok(data) = crate::form::parse_property_string::<PveQemuSevFmt>(v) {
+            match serde_json::from_value::<Option<PropertyString<PveQemuSevFmt>>>(v.clone()) {
+                Ok(Some(data)) => {
                     let text = match data.ty {
                         PveQemuSevFmtType::Std => "AMD SEV",
                         PveQemuSevFmtType::Es => "AMD SEV-ES",
                         PveQemuSevFmtType::Snp => "AMD SEV-SNP",
                     };
-                    return format!("{text} ({v})").into();
+                    format!("{text} ({v})").into()
                 }
+                _ => v.into(),
             }
-            v.into()
         })
         .load_hook({
             let name = name.clone();
