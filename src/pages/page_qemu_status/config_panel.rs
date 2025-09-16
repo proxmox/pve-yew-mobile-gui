@@ -225,9 +225,11 @@ impl PveQemuConfigPanel {
                 .required(true),
             qemu_smbios_property("smbios1"),
             EditableProperty::new("agent", tr!("QEMU Guest Agent"))
+                .advanced_checkbox(true)
                 .required(true)
                 .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
                 .render_input_panel(|form_ctx: FormContext, _| {
+                    let advanced = form_ctx.get_show_advanced();
                     let enabled = form_ctx.read().get_field_checked("_agent_enabled");
                     let ffob_enabled = form_ctx
                         .read()
@@ -277,7 +279,7 @@ impl PveQemuConfigPanel {
                                         }
                                         .into()
                                     }),
-                            )
+                            ).class((!advanced).then(|| pwt::css::Display::None))
                             .padding_top(2)
                             .padding_bottom(1)
                         )
