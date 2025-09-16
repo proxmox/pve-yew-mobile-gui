@@ -6,7 +6,7 @@ use regex::Regex;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{Field, Number};
+use pwt::widget::form::{delete_empty_values, Field, FormContext, Number};
 use pwt::widget::Column;
 
 use proxmox_yew_comp::SchemaValidation;
@@ -110,6 +110,10 @@ pub fn qemu_name_property(vmid: u32) -> EditableProperty {
         .required(true)
         .placeholder(format!("VM {}", vmid))
         .render_input_panel(render_string_input_panel("name"))
+        .submit_hook(|form_ctx: FormContext| {
+            let data = form_ctx.get_submit_data();
+            Ok(delete_empty_values(&data, &["name"], false))
+        })
 }
 
 pub fn qemu_ostype_property() -> EditableProperty {
@@ -126,6 +130,10 @@ pub fn qemu_ostype_property() -> EditableProperty {
                 .name("ostype")
                 .submit_empty(true)
                 .into()
+        })
+        .submit_hook(|form_ctx: FormContext| {
+            let data = form_ctx.get_submit_data();
+            Ok(delete_empty_values(&data, &["ostype"], false))
         })
 }
 
@@ -179,6 +187,10 @@ pub fn qemu_boot_property() -> EditableProperty {
                 .into()
         })
         .required(true)
+        .submit_hook(|form_ctx: FormContext| {
+            let data = form_ctx.get_submit_data();
+            Ok(delete_empty_values(&data, &["boot"], false))
+        })
 }
 
 pub fn qemu_hotplug_property() -> EditableProperty {
@@ -196,6 +208,10 @@ pub fn qemu_hotplug_property() -> EditableProperty {
                 .into()
         })
         .required(true)
+        .submit_hook(|form_ctx: FormContext| {
+            let data = form_ctx.get_submit_data();
+            Ok(delete_empty_values(&data, &["hotplug"], false))
+        })
 }
 
 pub fn qemu_startdate_property() -> EditableProperty {
@@ -220,6 +236,10 @@ pub fn qemu_startdate_property() -> EditableProperty {
                 .into()
         })
         .required(true)
+        .submit_hook(|form_ctx: FormContext| {
+            let data = form_ctx.get_submit_data();
+            Ok(delete_empty_values(&data, &["startdate"], false))
+        })
 }
 
 pub fn qemu_vmstatestorage_property(node: &str) -> EditableProperty {
@@ -237,5 +257,9 @@ pub fn qemu_vmstatestorage_property(node: &str) -> EditableProperty {
                     .placeholder(tr!("Automatic (Storage used by the VM, or 'local')"))
                     .into()
             }
+        })
+        .submit_hook(|form_ctx: FormContext| {
+            let data = form_ctx.get_submit_data();
+            Ok(delete_empty_values(&data, &["vmstatestorage"], false))
         })
 }

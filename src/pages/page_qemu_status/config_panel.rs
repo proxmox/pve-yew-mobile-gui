@@ -2,12 +2,9 @@ use std::rc::Rc;
 
 use serde_json::Value;
 
-use pwt::props::SubmitCallback;
-
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::form::delete_empty_values;
 
 use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component};
 
@@ -46,26 +43,6 @@ pub struct PveQemuConfigPanel {
 }
 
 impl PveQemuConfigPanel {
-    fn default_submit(props: &QemuConfigPanel) -> SubmitCallback<Value> {
-        let url = get_config_url(&props.node, props.vmid);
-        SubmitCallback::new(move |value: Value| {
-            let value = delete_empty_values(
-                &value,
-                &[
-                    "name",
-                    "boot",
-                    "ostype",
-                    "startup",
-                    "hotplug",
-                    "startdate",
-                    "vmstatestorage",
-                ],
-                false,
-            );
-            http_put(url.clone(), Some(value))
-        })
-    }
-
     fn properties(ctx: &Context<Self>) -> Rc<Vec<EditableProperty>> {
         let props = ctx.props();
 
@@ -105,11 +82,10 @@ impl Component for PveQemuConfigPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         let url = get_config_url(&props.node, props.vmid);
-        let default_submit = Self::default_submit(props);
 
         PropertyList::new(Rc::clone(&self.properties))
-            .loader(typed_load::<QemuConfig>(url))
-            .on_submit(Some(default_submit))
+            .loader(typed_load::<QemuConfig>(url.clone()))
+            .on_submit(move |value: Value| http_put(url.clone(), Some(value)))
             .into()
     }
 }
