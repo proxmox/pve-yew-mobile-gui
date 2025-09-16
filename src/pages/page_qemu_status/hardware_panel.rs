@@ -15,7 +15,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
 use crate::form::qemu_memory_property;
-use crate::widgets::{icon_list_tile, EditDialog};
+use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct QemuHardwarePanel {
@@ -56,7 +56,7 @@ pub enum Msg {
     Load,
     LoadResult(Result<QemuConfig, Error>),
     Dialog(Option<Html>),
-    EditMemory,
+    EditProperty(EditableProperty),
 }
 
 pub struct PveQemuHardwarePanel {
@@ -64,17 +64,10 @@ pub struct PveQemuHardwarePanel {
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     dialog: Option<Html>,
+    memory_property: EditableProperty,
 }
 
 impl PveQemuHardwarePanel {
-    fn edit_memory_dialog(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-        let url = get_config_url(&props.node, props.vmid);
-        EditDialog::from(qemu_memory_property(url))
-            .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
-            .into()
-    }
-
     fn view_list(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let mut list: Vec<ListTile> = Vec::new();
         list.push(
@@ -85,7 +78,10 @@ impl PveQemuHardwarePanel {
                 (),
             )
             .interactive(true)
-            .on_activate(ctx.link().callback(|_| Msg::EditMemory)),
+            .on_activate(ctx.link().callback({
+                let property = self.memory_property.clone();
+                move |_| Msg::EditProperty(property.clone())
+            })),
         );
         list.push(icon_list_tile(
             Fa::new("cpu"),
@@ -165,12 +161,17 @@ impl Component for PveQemuHardwarePanel {
     type Properties = QemuHardwarePanel;
 
     fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+        let url = get_config_url(&props.node, props.vmid);
+
         ctx.link().send_message(Msg::Load);
+
         Self {
             data: None,
             reload_timeout: None,
             load_guard: None,
             dialog: None,
+            memory_property: qemu_memory_property(url),
         }
     }
 
@@ -189,8 +190,11 @@ impl Component for PveQemuHardwarePanel {
                 }
                 self.dialog = dialog;
             }
-            Msg::EditMemory => {
-                self.dialog = Some(self.edit_memory_dialog(ctx));
+            Msg::EditProperty(property) => {
+                let dialog = EditDialog::from(property.clone())
+                    .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+                    .into();
+                self.dialog = Some(dialog);
             }
             Msg::Load => {
                 let link = ctx.link().clone();
