@@ -11,20 +11,20 @@ pub use hotplug_feature_selector::{
     PveHotplugFeatureSelector,
 };
 
-mod qemu_smbios1_edit;
-pub use qemu_smbios1_edit::qemu_smbios_property;
+mod qemu_smbios1_property;
+pub use qemu_smbios1_property::qemu_smbios_property;
 
-mod qemu_spice_enhancement_edit;
-pub use qemu_spice_enhancement_edit::qemu_spice_enhancement_property;
+mod qemu_spice_enhancement_property;
+pub use qemu_spice_enhancement_property::qemu_spice_enhancement_property;
 
-mod qemu_amd_sev_edit;
-pub use qemu_amd_sev_edit::qemu_amd_sev_property;
+mod qemu_amd_sev_property;
+pub use qemu_amd_sev_property::qemu_amd_sev_property;
 
-mod qemu_memory_edit;
-pub use qemu_memory_edit::qemu_memory_property;
+mod qemu_memory_property;
+pub use qemu_memory_property::qemu_memory_property;
 
-mod qemu_agent_editor;
-pub use qemu_agent_editor::qemu_agent_property;
+mod qemu_agent_property;
+pub use qemu_agent_property::qemu_agent_property;
 
 mod qemu_bios_property;
 pub use qemu_bios_property::qemu_bios_property;
