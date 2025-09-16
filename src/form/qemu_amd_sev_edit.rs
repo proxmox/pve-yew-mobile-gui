@@ -14,6 +14,8 @@ use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _| {
+        let advanced = form_ctx.get_show_advanced();
+
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
         let amd_sev_type = form_ctx.read().get_field_text(pspn(&name, "type"));
@@ -42,7 +44,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .class((!sev_enabled).then(|| pwt::css::Display::None))
+                    .class((!advanced || !sev_enabled).then(|| pwt::css::Display::None))
                     .disabled(!sev_enabled)
                     .submit(false)
                     .name(pspn(&name, "debug"))
@@ -50,7 +52,9 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .class((!sev_enabled || snp_enabled).then(|| pwt::css::Display::None))
+                    .class(
+                        (!advanced || !sev_enabled || snp_enabled).then(|| pwt::css::Display::None),
+                    )
                     .disabled(!sev_enabled || snp_enabled)
                     .submit(false)
                     .name(pspn(&name, "key-sharing"))
@@ -58,7 +62,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .class((!snp_enabled).then(|| pwt::css::Display::None))
+                    .class((!advanced || !snp_enabled).then(|| pwt::css::Display::None))
                     .disabled(!snp_enabled)
                     .default(true)
                     .submit(false)
@@ -67,7 +71,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             )
             .with_child(
                 Checkbox::new()
-                    .class((!sev_enabled).then(|| pwt::css::Display::None))
+                    .class((!advanced || !sev_enabled).then(|| pwt::css::Display::None))
                     .disabled(!sev_enabled)
                     .name(pspn(&name, "kernel-hashes"))
                     .submit(false)
@@ -91,6 +95,7 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
     let name = name.into();
 
     EditableProperty::new("amd-sev", tr!("AMD SEV"))
+        .advanced_checkbox(true)
         .required(true)
         .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
         .render_input_panel(input_panel(name.clone()))
