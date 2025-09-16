@@ -49,6 +49,7 @@ impl Component for PveQemuOstypeSelector {
         Combobox::new()
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
+            .placeholder("Other")
             .show_filter(false)
             .default(&props.default)
             .items(ITEM_KEYS.with(Rc::clone))

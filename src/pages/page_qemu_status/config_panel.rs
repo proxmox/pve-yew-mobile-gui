@@ -140,6 +140,7 @@ impl PveQemuConfigPanel {
                 .render_input_panel(render_string_input_panel("name")),
             EditableProperty::new("ostype", tr!("OS Type"))
                 .required(true)
+                .placeholder("Other")
                 .renderer(|_, v, _| match v.as_str() {
                     Some(s) => format_qemu_ostype(s).into(),
                     None => v.into(),
