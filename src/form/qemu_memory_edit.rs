@@ -11,7 +11,7 @@ use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Numb
 use pwt::widget::Column;
 
 use crate::form::{
-    flatten_property_string, parse_property_string_value, property_string_from_parts, pspn,
+    flatten_property_string, parse_property_string, property_string_from_parts, pspn,
 };
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
 
@@ -56,7 +56,8 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 tr!("Memory") + " (MiB)",
                 Number::<u64>::new()
                     .name(current_memory_prop)
-                    .default(memory_default)
+                    .placeholder(memory_default.to_string())
+                    .min(16)
                     .step(32),
             ))
             .with_child(Hidden::new().name("_old_memory").submit(false))
@@ -101,7 +102,7 @@ pub fn qemu_memory_property(url: String) -> EditableProperty {
         .renderer(|_, v, record| {
             let current = match v {
                 Value::Null => 512,
-                Value::String(s) => match parse_property_string_value::<QemuConfigMemory>(v) {
+                Value::String(s) => match parse_property_string::<QemuConfigMemory>(&s) {
                     Ok(parsed) => parsed.current,
                     Err(err) => {
                         log::error!("qemu_memory_property renderer: {err}");
