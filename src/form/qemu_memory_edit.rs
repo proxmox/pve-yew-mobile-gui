@@ -90,6 +90,40 @@ fn input_panel() -> RenderPropertyInputPanelFn {
     })
 }
 
+fn render_value(_name: &str, v: &Value, record: &Value) -> Html {
+    let current = match v {
+        Value::Null => 512,
+        Value::String(s) => match parse_property_string::<QemuConfigMemory>(&s) {
+            Ok(parsed) => parsed.current,
+            Err(err) => {
+                log::error!("qemu_memory_property renderer: {err}");
+                return v.into();
+            }
+        },
+        _ => {
+            log::error!("qemu_memory_property renderer: got unexpected type");
+            return v.into();
+        }
+    };
+
+    let balloon = record["balloon"].as_u64().unwrap_or(0);
+
+    let current_hb = HumanByte::new_binary((current * 1024 * 1024) as f64);
+
+    let text = if balloon == 0 {
+        format!("{current_hb} [balloon=0]")
+    } else {
+        let balloon_hb = HumanByte::new_binary((balloon * 1024 * 1024) as f64);
+        if current > balloon {
+            format!("{balloon_hb}/{current_hb}")
+        } else {
+            current_hb.to_string()
+        }
+    };
+
+    text.into()
+}
+
 pub fn qemu_memory_property(url: String) -> EditableProperty {
     EditableProperty::new("memory", tr!("Memory"))
         .loader(url.clone())
@@ -99,39 +133,7 @@ pub fn qemu_memory_property(url: String) -> EditableProperty {
         })
         .required(true)
         .render_input_panel(input_panel())
-        .renderer(|_, v, record| {
-            let current = match v {
-                Value::Null => 512,
-                Value::String(s) => match parse_property_string::<QemuConfigMemory>(&s) {
-                    Ok(parsed) => parsed.current,
-                    Err(err) => {
-                        log::error!("qemu_memory_property renderer: {err}");
-                        return v.into();
-                    }
-                },
-                _ => {
-                    log::error!("qemu_memory_property renderer: got unexpected type");
-                    return v.into();
-                }
-            };
-
-            let balloon = record["balloon"].as_u64().unwrap_or(0);
-
-            let current_hb = HumanByte::new_binary((current * 1024 * 1024) as f64);
-
-            let text = if balloon == 0 {
-                format!("{current_hb} [balloon=0]")
-            } else {
-                let balloon_hb = HumanByte::new_binary((balloon * 1024 * 1024) as f64);
-                if current > balloon {
-                    format!("{balloon_hb}/{current_hb}")
-                } else {
-                    current_hb.to_string()
-                }
-            };
-
-            text.into()
-        })
+        .renderer(render_value)
         .submit_hook(|form_ctx: FormContext| {
             let mut data = form_ctx.get_submit_data();
 
