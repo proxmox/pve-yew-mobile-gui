@@ -136,12 +136,12 @@ fn render_value(_name: &str, v: &Value, record: &Value) -> Html {
     text.into()
 }
 
-pub fn qemu_memory_property(url: String) -> EditableProperty {
+pub fn qemu_memory_property(url: &str) -> EditableProperty {
     EditableProperty::new("memory", tr!("Memory"))
         .advanced_checkbox(true)
-        .loader(url.clone())
+        .loader(url)
         .on_submit({
-            let url = url.clone();
+            let url = url.to_owned();
             move |data: Value| http_put(url.clone(), Some(data.clone()))
         })
         .required(true)

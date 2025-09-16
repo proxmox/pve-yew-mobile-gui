@@ -15,7 +15,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
-use crate::form::qemu_memory_property;
+use crate::form::{qemu_bios_property, qemu_memory_property};
 use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
 
 #[derive(Clone, PartialEq, Properties)]
@@ -66,6 +66,7 @@ pub struct PveQemuHardwarePanel {
     load_guard: Option<AsyncAbortGuard>,
     dialog: Option<Html>,
     memory_property: EditableProperty,
+    bios_property: EditableProperty,
 }
 
 impl PveQemuHardwarePanel {
@@ -75,38 +76,38 @@ impl PveQemuHardwarePanel {
 
         let mut property_tile = |property: &EditableProperty, icon: Fa| {
             let name = &property.name.as_str();
-            let title =
-                self.memory_property
+
+            let title = match &record[name] {
+                Value::Null => property
+                    .placeholder
+                    .clone()
+                    .unwrap_or(AttrValue::Static("-"))
+                    .to_string()
+                    .into(),
+                other => property
                     .renderer
                     .clone()
                     .unwrap()
-                    .apply(name, &record[name], &record);
+                    .apply(name, other, &record),
+            };
+
             list.push(
                 icon_list_tile(icon, title, property.title.clone(), ())
                     .interactive(true)
                     .on_activate(ctx.link().callback({
-                        let property = self.memory_property.clone();
+                        let property = property.clone();
                         move |_| Msg::EditProperty(property.clone())
                     })),
             );
         };
 
         property_tile(&self.memory_property, Fa::new("memory"));
+        property_tile(&self.bios_property, Fa::new("microchip"));
 
         list.push(icon_list_tile(
             Fa::new("cpu"),
             processor_text(data),
             tr!("Processor"),
-            (),
-        ));
-
-        list.push(icon_list_tile(
-            Fa::new("microchip"),
-            data.bios
-                .as_ref()
-                .map(|b| b.to_string())
-                .unwrap_or(format!("{} (SeaBIOS)", tr!("Default"))),
-            tr!("Bios"),
             (),
         ));
 
@@ -182,7 +183,8 @@ impl Component for PveQemuHardwarePanel {
             reload_timeout: None,
             load_guard: None,
             dialog: None,
-            memory_property: qemu_memory_property(url),
+            memory_property: qemu_memory_property(&url),
+            bios_property: qemu_bios_property("bios", &url),
         }
     }
 

@@ -26,6 +26,9 @@ pub use qemu_memory_edit::qemu_memory_property;
 mod qemu_agent_editor;
 pub use qemu_agent_editor::qemu_agent_property;
 
+mod qemu_bios_property;
+pub use qemu_bios_property::qemu_bios_property;
+
 mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
