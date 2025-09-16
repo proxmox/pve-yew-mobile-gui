@@ -9,7 +9,7 @@ use pve_api_types::QemuConfigMemory;
 
 use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Number};
-use pwt::widget::Column;
+use pwt::widget::{Column, Row};
 
 use crate::form::{flatten_property_string, property_string_from_parts, pspn};
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
@@ -90,11 +90,18 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 .class((!advanced).then(|| pwt::css::Display::None)),
             )
             .with_child(
-                label_field(
-                    tr!("Ballooning Device"),
-                    Checkbox::new().name("_use_ballooning").submit(false),
-                )
-                .class((!advanced).then(|| pwt::css::Display::None)),
+                Row::new()
+                    .padding_top(1)
+                    .class(pwt::css::AlignItems::Center)
+                    .with_child(tr!("Ballooning Device"))
+                    .with_flex_spacer()
+                    .with_child(
+                        Checkbox::new()
+                            .name("_use_ballooning")
+                            .switch(true)
+                            .submit(false),
+                    )
+                    .class((!advanced).then(|| pwt::css::Display::None)),
             )
             .into()
     })
