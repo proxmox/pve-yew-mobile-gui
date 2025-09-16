@@ -197,7 +197,11 @@ impl ManagedField for PveBootDeviceField {
                     .map(|item| item.name)
                     .collect::<Vec<String>>()
                     .join(";");
-                Value::from(format!("order={list}"))
+                if list.is_empty() {
+                    Value::Null
+                } else {
+                    Value::from(format!("order={list}"))
+                }
             }
             _ => value.clone(),
         };

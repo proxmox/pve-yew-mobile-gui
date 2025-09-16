@@ -94,6 +94,7 @@ impl PveQemuConfigPanel {
                 &value,
                 &[
                     "name",
+                    "boot",
                     "ostype",
                     "startup",
                     "hotplug",
@@ -181,8 +182,9 @@ impl PveQemuConfigPanel {
                 .load_hook(property_string_load_hook::<QemuConfigStartup>("startup"))
                 .submit_hook(property_string_submit_hook::<QemuConfigStartup>("startup", true)),
             EditableProperty::new("boot", tr!("Boot Order"))
+                .placeholder(format!("{}, {}, {}", tr!("first Disk"), tr!("any CD-ROM"), tr!("any net")))
                 .render_input_panel(move |_, record: Rc<Value>| {
-                    BootDeviceList::new(record.clone()).name("boot").into()
+                    BootDeviceList::new(record.clone()).name("boot").submit_empty(true).into()
                 })
                 .required(true),
             EditableProperty::new("hotplug", tr!("Hotplug"))
