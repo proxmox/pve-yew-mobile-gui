@@ -33,6 +33,8 @@ fn read_u64(form_ctx: &FormContext, name: &str) -> Option<u64> {
 
 fn input_panel() -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _| {
+        let advanced = form_ctx.get_show_advanced();
+
         let current_memory_prop = pspn("memory", "current");
         let current_memory = read_u64(&form_ctx, &current_memory_prop);
 
@@ -60,31 +62,40 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     .step(32),
             ))
             .with_child(Hidden::new().name("_old_memory").submit(false))
-            .with_child(label_field(
-                tr!("Minimum memory") + " (MiB)",
-                Number::<u64>::new()
-                    .name("balloon")
-                    .submit_empty(true)
-                    .disabled(!use_ballooning)
-                    .min(1)
-                    .max(current_memory)
-                    .step(32)
-                    .placeholder(current_memory.map(|n| n.to_string())),
-            ))
-            .with_child(label_field(
-                tr!("Shares"),
-                Number::<u64>::new()
-                    .name("shares")
-                    .submit_empty(true)
-                    .disabled(!use_ballooning || disable_shares)
-                    .placeholder(tr!("Default") + " (1000)")
-                    .max(50000)
-                    .step(10),
-            ))
-            .with_child(label_field(
-                tr!("Ballooning Device"),
-                Checkbox::new().name("_use_ballooning").submit(false),
-            ))
+            .with_child(
+                label_field(
+                    tr!("Minimum memory") + " (MiB)",
+                    Number::<u64>::new()
+                        .name("balloon")
+                        .submit_empty(true)
+                        .disabled(!use_ballooning)
+                        .min(1)
+                        .max(current_memory)
+                        .step(32)
+                        .placeholder(current_memory.map(|n| n.to_string())),
+                )
+                .class((!advanced).then(|| pwt::css::Display::None)),
+            )
+            .with_child(
+                label_field(
+                    tr!("Shares"),
+                    Number::<u64>::new()
+                        .name("shares")
+                        .submit_empty(true)
+                        .disabled(!use_ballooning || disable_shares)
+                        .placeholder(tr!("Default") + " (1000)")
+                        .max(50000)
+                        .step(10),
+                )
+                .class((!advanced).then(|| pwt::css::Display::None)),
+            )
+            .with_child(
+                label_field(
+                    tr!("Ballooning Device"),
+                    Checkbox::new().name("_use_ballooning").submit(false),
+                )
+                .class((!advanced).then(|| pwt::css::Display::None)),
+            )
             .into()
     })
 }
@@ -120,6 +131,7 @@ fn render_value(_name: &str, v: &Value, record: &Value) -> Html {
 
 pub fn qemu_memory_property(url: String) -> EditableProperty {
     EditableProperty::new("memory", tr!("Memory"))
+        .advanced_checkbox(true)
         .loader(url.clone())
         .on_submit({
             let url = url.clone();

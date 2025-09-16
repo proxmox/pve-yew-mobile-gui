@@ -50,11 +50,16 @@ pub struct EditableProperty {
     pub title: AttrValue,
     #[builder]
     pub required: bool,
+
     /// Use single line layout (title/value in one row).
     ///
     /// Only used for the mobile list layout.
     #[builder]
     pub single_row: bool,
+
+    /// Show advanced checkbox
+    #[builder]
+    pub advanced_checkbox: bool,
 
     #[builder(IntoPropValue, into_prop_value)]
     pub placeholder: Option<AttrValue>,
@@ -99,6 +104,7 @@ impl EditableProperty {
             on_submit: None,
             on_change: None,
             render_input_panel: None,
+            advanced_checkbox: false,
         }
     }
 
@@ -167,6 +173,7 @@ impl From<EditableProperty> for EditDialog {
         };
 
         EditDialog::new(property.title)
+            .advanced_checkbox(property.advanced_checkbox)
             .loader(property.loader)
             .on_submit(property.on_submit)
             .submit_hook(property.submit_hook)

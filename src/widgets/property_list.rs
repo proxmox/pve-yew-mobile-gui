@@ -118,6 +118,7 @@ impl PvePropertyList {
                         move |_| {
                             if let Some(render_input_panel) = item.render_input_panel.clone() {
                                 let dialog = EditDialog::new(item.title.clone())
+                                    .advanced_checkbox(item.advanced_checkbox)
                                     .on_done(link.callback(|_| Msg::CloseDialog))
                                     .load_hook(item.load_hook.clone())
                                     .loader(loader.clone())

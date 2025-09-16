@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
+use pwt::state::PersistentState;
 use pwt::touch::SideDialog;
 use serde_json::Value;
 
@@ -11,7 +12,7 @@ use proxmox_client::ApiResponseData;
 
 use pwt::impl_yew_std_props_builder;
 use pwt::props::{IntoSubmitCallback, SubmitCallback, WidgetStyleBuilder};
-use pwt::widget::form::{Form, FormContext, Hidden, ResetButton, SubmitButton};
+use pwt::widget::form::{Checkbox, Form, FormContext, Hidden, ResetButton, SubmitButton};
 use pwt::widget::{AlertDialog, Column, Container, Progress, Row};
 use pwt::{prelude::*, AsyncPool};
 
@@ -38,6 +39,11 @@ pub struct EditDialog {
     /// Window title
     #[prop_or_default]
     pub title: AttrValue,
+
+    /// Show advanced checkbox
+    #[prop_or_default]
+    #[builder]
+    pub advanced_checkbox: bool,
 
     // Form renderer.
     #[prop_or_default]
@@ -149,6 +155,7 @@ pub enum Msg {
     ClearSubmitError,
     Load,
     LoadResult(Result<ApiResponseData<Value>, Error>),
+    ShowAdvanced(bool),
 }
 
 #[doc(hidden)]
@@ -159,6 +166,7 @@ pub struct PwtEditDialog {
     load_data: Rc<Value>,
     load_error: Option<String>,
     async_pool: AsyncPool,
+    show_advanced: PersistentState<bool>,
 }
 
 impl Component for PwtEditDialog {
@@ -170,6 +178,9 @@ impl Component for PwtEditDialog {
 
         let form_ctx = FormContext::new().on_change(ctx.link().callback(|_| Msg::FormDataChange));
 
+        let show_advanced = PersistentState::new("proxmox-form-show-advanced");
+        form_ctx.set_show_advanced(*show_advanced);
+
         Self {
             form_ctx,
             loading: false,
@@ -177,12 +188,18 @@ impl Component for PwtEditDialog {
             load_error: None,
             load_data: Rc::new(Value::Null),
             async_pool: AsyncPool::new(),
+            show_advanced,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::ShowAdvanced(show_advanced) => {
+                self.form_ctx.set_show_advanced(show_advanced);
+                self.show_advanced.update(show_advanced);
+                true
+            }
             Msg::ClearSubmitError => {
                 self.submit_error = None;
                 true
@@ -304,7 +321,18 @@ impl Component for PwtEditDialog {
             .with_flex_spacer()
             .with_child(content);
 
-        let mut toolbar = Row::new().gap(2).with_flex_spacer();
+        let mut toolbar = Row::new().gap(2);
+
+        if props.advanced_checkbox {
+            let advanced = Checkbox::new()
+                .checked(*self.show_advanced)
+                .on_change(ctx.link().callback(Msg::ShowAdvanced))
+                .box_label(tr!("Advanced"));
+
+            toolbar.add_child(advanced);
+        }
+
+        toolbar.add_flex_spacer();
 
         if edit_mode {
             toolbar.add_child(
