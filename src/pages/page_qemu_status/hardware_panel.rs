@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
+use serde_json::Value;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -69,20 +70,29 @@ pub struct PveQemuHardwarePanel {
 
 impl PveQemuHardwarePanel {
     fn view_list(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
+        let record: Value = serde_json::to_value(data).unwrap();
         let mut list: Vec<ListTile> = Vec::new();
-        list.push(
-            icon_list_tile(
-                Fa::new("memory"),
-                data.memory.as_deref().unwrap_or("512").to_string() + " MB",
-                tr!("Memory"),
-                (),
-            )
-            .interactive(true)
-            .on_activate(ctx.link().callback({
-                let property = self.memory_property.clone();
-                move |_| Msg::EditProperty(property.clone())
-            })),
-        );
+
+        let mut property_tile = |property: &EditableProperty, icon: Fa| {
+            let name = &property.name.as_str();
+            let title =
+                self.memory_property
+                    .renderer
+                    .clone()
+                    .unwrap()
+                    .apply(name, &record[name], &record);
+            list.push(
+                icon_list_tile(icon, title, property.title.clone(), ())
+                    .interactive(true)
+                    .on_activate(ctx.link().callback({
+                        let property = self.memory_property.clone();
+                        move |_| Msg::EditProperty(property.clone())
+                    })),
+            );
+        };
+
+        property_tile(&self.memory_property, Fa::new("memory"));
+
         list.push(icon_list_tile(
             Fa::new("cpu"),
             processor_text(data),

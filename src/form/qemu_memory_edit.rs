@@ -1,3 +1,4 @@
+use proxmox_human_byte::HumanByte;
 use proxmox_yew_comp::http_put;
 use serde_json::Value;
 
@@ -9,7 +10,9 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Number};
 use pwt::widget::Column;
 
-use crate::form::{flatten_property_string, property_string_from_parts, pspn};
+use crate::form::{
+    flatten_property_string, parse_property_string_value, property_string_from_parts, pspn,
+};
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
 
 // fixme: Number field changes type to Value::String on input!!
@@ -95,6 +98,39 @@ pub fn qemu_memory_property(url: String) -> EditableProperty {
         })
         .required(true)
         .render_input_panel(input_panel())
+        .renderer(|_, v, record| {
+            let current = match v {
+                Value::Null => 512,
+                Value::String(s) => match parse_property_string_value::<QemuConfigMemory>(v) {
+                    Ok(parsed) => parsed.current,
+                    Err(err) => {
+                        log::error!("qemu_memory_property renderer: {err}");
+                        return v.into();
+                    }
+                },
+                _ => {
+                    log::error!("qemu_memory_property renderer: got unexpected type");
+                    return v.into();
+                }
+            };
+
+            let balloon = record["balloon"].as_u64().unwrap_or(0);
+
+            let current_hb = HumanByte::new_binary((current * 1024 * 1024) as f64);
+
+            let text = if balloon == 0 {
+                format!("{current_hb} [balloon=0]")
+            } else {
+                let balloon_hb = HumanByte::new_binary((balloon * 1024 * 1024) as f64);
+                if current > balloon {
+                    format!("{balloon_hb}/{current_hb}")
+                } else {
+                    current_hb.to_string()
+                }
+            };
+
+            text.into()
+        })
         .submit_hook(|form_ctx: FormContext| {
             let mut data = form_ctx.get_submit_data();
 
