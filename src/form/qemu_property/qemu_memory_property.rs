@@ -13,19 +13,10 @@ use pwt::widget::{Column, Row};
 use crate::form::{flatten_property_string, property_string_from_parts, pspn};
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
 
-// fixme: Number field changes type to Value::String on input!!
-fn value_to_u64(value: Value) -> Option<u64> {
-    match value {
-        Value::Number(n) => n.as_u64(),
-        Value::String(s) => s.parse().ok(),
-        _ => None,
-    }
-}
-
 fn read_u64(form_ctx: &FormContext, name: &str) -> Option<u64> {
-    let value = form_ctx.read().get_field_value(name.to_string());
+    let value = form_ctx.read().get_last_valid_value(name.to_string());
     match value {
-        Some(value) => value_to_u64(value),
+        Some(Value::Number(n)) => n.as_u64(),
         _ => None,
     }
 }
@@ -170,13 +161,15 @@ pub fn qemu_memory_property() -> EditableProperty {
         })
         .on_change(|form_ctx: FormContext| {
             let current_memory_prop = pspn("memory", "current");
-            let current_memory = form_ctx.read().get_field_value(current_memory_prop.clone());
+            let current_memory = form_ctx
+                .read()
+                .get_last_valid_value(current_memory_prop.clone());
             let old_memory = form_ctx.read().get_field_value("_old_memory");
-            let balloon = form_ctx.read().get_field_value("balloon");
+            let balloon = form_ctx.read().get_last_valid_value("balloon");
 
             match (&old_memory, &current_memory, &balloon) {
                 (Some(old_memory), Some(current_memory), Some(balloon)) => {
-                    if balloon == old_memory {
+                    if balloon == old_memory && old_memory != current_memory {
                         form_ctx
                             .write()
                             .set_field_value("balloon", current_memory.clone().into());

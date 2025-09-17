@@ -209,19 +209,7 @@ impl ManagedField for PveBootDeviceField {
         Ok(value)
     }
     fn setup(_props: &BootDeviceList) -> ManagedFieldState {
-        //let input_props = props.as_input_props();
-        let value = Value::Null;
-        let default = Value::Null;
-
-        let valid = Ok(());
-
-        ManagedFieldState {
-            value,
-            valid,
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(Value::Null, Value::Null)
     }
 
     fn create(ctx: &ManagedFieldContext<Self>) -> Self {
