@@ -2,6 +2,7 @@ use anyhow::Error;
 use proxmox_schema::property_string::PropertyString;
 use proxmox_schema::ApiType;
 
+use proxmox_yew_comp::utils::render_boolean;
 use serde_json::Value;
 
 use pwt::prelude::*;
@@ -32,12 +33,31 @@ fn renderer(_name: &str, value: &Value, record: &Value) -> Html {
     let cores = record["cores"].as_u64().unwrap_or(1);
     let sockets = record["sockets"].as_u64().unwrap_or(1);
     let count = sockets * cores;
-    format!(
+
+    let mut text = format!(
         "{count} ({}, {}) [{cputype}]",
         tr!("1 Core" | "{n} Cores" % cores),
         tr!("1 Socket" | "{n} Sockets" % sockets)
-    )
-    .into()
+    );
+
+    if let Value::Bool(true) = record["numa"] {
+        text += " [numa]";
+    }
+
+    if let Value::Number(n) = &record["vcpus"] {
+        text += &format!(" [vcpus={n}]");
+    }
+    if let Value::Number(n) = &record["cpulimit"] {
+        text += &format!(" [cpulimit={n}]");
+    }
+    if let Value::Number(n) = &record["cpuunits"] {
+        text += &format!(" [cpuunits={n}]");
+    }
+    if let Value::String(s) = &record["affinity"] {
+        text += &format!(" [affinity={s}]");
+    }
+
+    text.into()
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
