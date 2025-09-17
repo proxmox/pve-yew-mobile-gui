@@ -95,8 +95,8 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     })
 }
 
-pub fn qemu_smbios_property(name: impl Into<String>) -> EditableProperty {
-    let name = name.into();
+pub fn qemu_smbios_property() -> EditableProperty {
+    let name = String::from("smbios1");
     EditableProperty::new(name.clone(), tr!("SMBIOS settings (type1)"))
         .required(true)
         .render_input_panel(input_panel(name.clone()))

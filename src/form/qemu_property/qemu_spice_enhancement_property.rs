@@ -66,8 +66,8 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     })
 }
 
-pub fn qemu_spice_enhancement_property(name: impl Into<String>) -> EditableProperty {
-    let name = name.into();
+pub fn qemu_spice_enhancement_property() -> EditableProperty {
+    let name = String::from("spice_enhancements");
     EditableProperty::new(name.clone(), tr!("Spice Enhancements"))
         .required(true)
         .placeholder(tr!("none"))

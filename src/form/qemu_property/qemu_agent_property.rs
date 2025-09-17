@@ -74,8 +74,8 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     })
 }
 
-pub fn qemu_agent_property(name: impl Into<String>) -> EditableProperty {
-    let name = name.into();
+pub fn qemu_agent_property() -> EditableProperty {
+    let name = String::from("agent");
     EditableProperty::new(name.clone(), tr!("QEMU Guest Agent"))
         .advanced_checkbox(true)
         .required(true)

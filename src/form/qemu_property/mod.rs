@@ -39,6 +39,9 @@ pub use qemu_agent_property::qemu_agent_property;
 mod qemu_bios_property;
 pub use qemu_bios_property::qemu_bios_property;
 
+mod qemu_processor_property;
+pub use qemu_processor_property::qemu_processor_property;
+
 fn lookup_schema(name: &str) -> Option<(bool, &'static Schema)> {
     let allof_schema = QemuConfig::API_SCHEMA.unwrap_all_of_schema();
 

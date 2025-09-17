@@ -16,7 +16,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
-use crate::form::{qemu_bios_property, qemu_memory_property};
+use crate::form::{qemu_bios_property, qemu_memory_property, qemu_processor_property};
 use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
 
 #[derive(Clone, PartialEq, Properties)]
@@ -41,19 +41,6 @@ fn get_config_url(node: &str, vmid: u32) -> String {
         vmid
     )
 }
-
-fn processor_text(config: &QemuConfig) -> String {
-    let cpu = config.cpu.as_deref().unwrap_or("kvm");
-    let cores = config.cores.unwrap_or(1);
-    let sockets = config.sockets.unwrap_or(1);
-    let count = sockets * cores;
-    format!(
-        "{count} ({}, {}) [{cpu}]",
-        tr!("1 Core" | "{n} Cores" % cores),
-        tr!("1 Socket" | "{n} Sockets" % sockets)
-    )
-}
-
 pub enum Msg {
     Load,
     LoadResult(Result<QemuConfig, Error>),
@@ -68,6 +55,7 @@ pub struct PveQemuHardwarePanel {
     dialog: Option<Html>,
     memory_property: EditableProperty,
     bios_property: EditableProperty,
+    processor_property: EditableProperty,
 }
 
 impl PveQemuHardwarePanel {
@@ -103,14 +91,8 @@ impl PveQemuHardwarePanel {
         };
 
         property_tile(&self.memory_property, Fa::new("memory"));
+        property_tile(&self.processor_property, Fa::new("cpu"));
         property_tile(&self.bios_property, Fa::new("microchip"));
-
-        list.push(icon_list_tile(
-            Fa::new("cpu"),
-            processor_text(data),
-            tr!("Processor"),
-            (),
-        ));
 
         list.push(icon_list_tile(
             Fa::new("gears"),
@@ -182,6 +164,7 @@ impl Component for PveQemuHardwarePanel {
             dialog: None,
             memory_property: qemu_memory_property(),
             bios_property: qemu_bios_property(),
+            processor_property: qemu_processor_property(),
         }
     }
 

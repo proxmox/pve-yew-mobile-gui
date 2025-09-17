@@ -60,9 +60,9 @@ impl PveQemuConfigPanel {
             crate::form::qemu_boot_property(),
             crate::form::qemu_hotplug_property(),
             crate::form::qemu_startdate_property(),
-            crate::form::qemu_smbios_property("smbios1"),
-            crate::form::qemu_agent_property("agent"),
-            crate::form::qemu_spice_enhancement_property("spice_enhancements"),
+            crate::form::qemu_smbios_property(),
+            crate::form::qemu_agent_property(),
+            crate::form::qemu_spice_enhancement_property(),
             crate::form::qemu_vmstatestorage_property(&props.node),
             crate::form::qemu_amd_sev_property("amd-sev"),
         ])

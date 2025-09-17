@@ -16,7 +16,7 @@ pub use qemu_property::{
     qemu_acpi_property, qemu_agent_property, qemu_amd_sev_property, qemu_bios_property,
     qemu_boot_property, qemu_freeze_property, qemu_hotplug_property, qemu_kvm_property,
     qemu_localtime_property, qemu_memory_property, qemu_name_property, qemu_onboot_property,
-    qemu_ostype_property, qemu_protection_property, qemu_smbios_property,
+    qemu_ostype_property, qemu_processor_property, qemu_protection_property, qemu_smbios_property,
     qemu_spice_enhancement_property, qemu_startdate_property, qemu_startup_property,
     qemu_tablet_property, qemu_vmstatestorage_property,
 };
