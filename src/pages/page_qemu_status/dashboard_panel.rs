@@ -189,10 +189,7 @@ impl PveQemuDashboardPanel {
             }
         }
 
-        let status = List::new(tiles.len() as u64, move |pos| {
-            tiles[pos as usize].clone().into()
-        })
-        .grid_template_columns("auto 1fr auto");
+        let status = List::from_tiles(tiles).grid_template_columns("auto 1fr auto");
 
         crate::widgets::standard_card(tr!("Status"), None::<&str>)
             .with_child(status)

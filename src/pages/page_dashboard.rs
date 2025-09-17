@@ -164,7 +164,7 @@ impl PvePageDashboard {
                     ),
                 );
 
-                List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
+                List::from_tiles(tiles)
                     .grid_template_columns("auto 1fr")
                     .into()
             })

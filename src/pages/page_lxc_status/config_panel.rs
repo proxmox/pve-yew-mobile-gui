@@ -157,7 +157,7 @@ impl PveLxcConfigPanel {
             .class(pwt::css::FlexFit)
             .form_context(self.form_context.clone())
             .with_child(
-                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+                List::from_tiles(list)
                     .class(pwt::css::FlexFit)
                     .grid_template_columns("1fr auto"),
             )

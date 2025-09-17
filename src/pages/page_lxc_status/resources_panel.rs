@@ -80,10 +80,7 @@ impl PveLxcResourcesPanel {
         ));
 
         crate::widgets::standard_card(tr!("Resources"), None::<&str>)
-            .with_child(
-                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-                    .grid_template_columns("auto 1fr auto"),
-            )
+            .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }
 
@@ -100,10 +97,7 @@ impl PveLxcResourcesPanel {
         }
 
         crate::widgets::standard_card(tr!("Network"), None::<&str>)
-            .with_child(
-                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-                    .grid_template_columns("auto 1fr auto"),
-            )
+            .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }
 
@@ -127,10 +121,7 @@ impl PveLxcResourcesPanel {
         ));
 
         crate::widgets::standard_card(tr!("DNS"), None::<&str>)
-            .with_child(
-                List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-                    .grid_template_columns("auto 1fr auto"),
-            )
+            .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }
 }

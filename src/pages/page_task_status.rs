@@ -152,11 +152,7 @@ impl PvePageTaskStatus {
 
                 tiles.push(status_list_tile(tr!("Unique task ID"), status.upid.clone()));
 
-                List::new(tiles.len() as u64, move |pos| {
-                    tiles[pos as usize].clone().into()
-                })
-                .class(pwt::css::FlexFit)
-                .into()
+                List::from_tiles(tiles).class(pwt::css::FlexFit).into()
             }
             Err(err) => pwt::widget::error_message(&err.to_string()).into(),
         }

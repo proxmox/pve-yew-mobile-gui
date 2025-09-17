@@ -245,12 +245,10 @@ impl PvePageResources {
                 .with_child("List is empty.")
                 .into()
         } else {
-            List::new(children.len() as u64, move |pos| {
-                children[pos as usize].clone()
-            })
-            .grid_template_columns("auto 1fr auto")
-            .class("pwt-fit")
-            .into()
+            List::from_tiles(children)
+                .grid_template_columns("auto 1fr auto")
+                .class("pwt-fit")
+                .into()
         }
     }
 

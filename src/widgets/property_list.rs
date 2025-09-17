@@ -134,7 +134,7 @@ impl PvePropertyList {
         Column::new()
             .class(pwt::css::FlexFit)
             .with_child(
-                List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
+                List::from_tiles(tiles)
                     .virtual_scroll(Some(false))
                     //fixme: .separator(props.separator)
                     .grid_template_columns("1fr auto")

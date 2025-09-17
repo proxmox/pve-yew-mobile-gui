@@ -318,7 +318,7 @@ impl ManagedField for PveBootDeviceField {
                 .key(item.name.clone())
             })
             .collect();
-        List::new(tiles.len() as u64, move |pos| tiles[pos as usize].clone())
+        List::from_tiles(tiles)
             .class(pwt::css::FlexFit)
             .grid_template_columns("auto 1fr auto")
             .into()

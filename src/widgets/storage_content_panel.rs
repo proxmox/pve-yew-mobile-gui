@@ -112,7 +112,7 @@ impl PveStorageContentPanel {
             );
         }
 
-        List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+        List::from_tiles(list)
             .class(pwt::css::FlexFit)
             .grid_template_columns("auto 1fr auto")
             .border_top(true)
