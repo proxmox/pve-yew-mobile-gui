@@ -40,7 +40,7 @@ fn renderer(_name: &str, _value: &Value, record: &Value) -> Html {
     if let Some(n) = &record["vcpus"].as_u64() {
         text += &format!(" [vcpus={n}]");
     }
-    if let Some(n) = &record["cpulimit"].as_u64() {
+    if let Some(n) = &record["cpulimit"].as_f64() {
         text += &format!(" [cpulimit={n}]");
     }
     if let Some(n) = &record["cpuunits"].as_u64() {
@@ -290,10 +290,11 @@ fn kernel_scheduler_input_panel() -> RenderPropertyInputPanelFn {
             ))
             .with_child(label_field(
                 tr!("CPU limit"),
-                Number::<u64>::new()
+                Number::<f64>::new()
                     .name("cpulimit")
                     .placeholder(tr!("unlimited"))
-                    .max(128) // api maximum
+                    .min(0.0)
+                    .max(128.0) // api maximum
                     .submit_empty(true),
             ))
             .with_child(label_field(
@@ -321,13 +322,19 @@ pub fn qemu_kernel_scheduler_property() -> EditableProperty {
         .renderer(renderer)
         .render_input_panel(kernel_scheduler_input_panel())
         .submit_hook(|form_ctx: FormContext| {
-            let value = form_ctx.get_submit_data();
-            let value = delete_empty_values(
-                &value,
+            let mut record = form_ctx.get_submit_data();
+
+            if let Some(cpulimit) = record["cpulimit"].as_f64() {
+                if cpulimit == 0.0 {
+                    record["cpulimit"] = Value::Null;
+                }
+            }
+
+            let record = delete_empty_values(
+                &record,
                 &["vcpus", "cpuunits", "cpulimit", "affinity", "numa"],
                 false,
             );
-            log::info!("LOAD {value}");
-            Ok(value)
+            Ok(record)
         })
 }
