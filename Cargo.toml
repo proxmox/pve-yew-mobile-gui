@@ -28,6 +28,7 @@ proxmox-time = "2"
 proxmox-uuid = "1"
 proxmox-human-byte = "1.0"
 proxmox-base64 = "1"
+proxmox-serde = "1"
 
 pwt = "0.7.0"
 pwt-macros = "0.5"

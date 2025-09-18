@@ -5,6 +5,9 @@ pub use boot_device_list::{BootDeviceList, PveBootDeviceList};
 mod qemu_ostype_selector;
 pub use qemu_ostype_selector::{format_qemu_ostype, QemuOstypeSelector};
 
+mod qemu_cpu_model_selector;
+pub use qemu_cpu_model_selector::QemuCpuModelSelector;
+
 mod hotplug_feature_selector;
 pub use hotplug_feature_selector::{
     format_hotplug_feature, normalize_hotplug_value, HotplugFeatureSelector,

@@ -9,7 +9,7 @@ use pwt::props::PwtSpace;
 use pwt::widget::form::{delete_empty_values, Checkbox, Field, FormContext, Hidden, Number};
 use pwt::widget::{Column, Container, Row};
 
-use crate::form::{property_string_from_parts, pspn};
+use crate::form::{property_string_from_parts, pspn, QemuCpuModelSelector};
 use crate::{
     form::flatten_property_string,
     widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn},
@@ -94,11 +94,18 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .gap(2)
             .padding_top(2)
             .padding_bottom(1) // avoid scrollbar
+            // QemuCpuModelSelector is scrollable, so we Diasble the SideDialog gesture detecture..
+            .onpointerdown(|event: PointerEvent| {
+                event.stop_propagation();
+            })
+            .ontouchstart(|event: TouchEvent| {
+                event.stop_propagation();
+            })
             .with_child(label_field(
                 tr!("Type"),
-                Field::new()
+                QemuCpuModelSelector::new()
                     .name(pspn("cpu", "cputype"))
-                    .placeholder("kvm64"),
+                    .mobile(true),
             ))
             .with_child(Hidden::new().name("cpu")) // store original cpu settings
             .with_child(label_field(
