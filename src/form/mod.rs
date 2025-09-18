@@ -8,6 +8,9 @@ pub use qemu_ostype_selector::{format_qemu_ostype, QemuOstypeSelector};
 mod qemu_cpu_model_selector;
 pub use qemu_cpu_model_selector::QemuCpuModelSelector;
 
+mod qemu_display_type_selector;
+pub use qemu_display_type_selector::{format_qemu_display_type, QemuDisplayTypeSelector};
+
 mod hotplug_feature_selector;
 pub use hotplug_feature_selector::{
     format_hotplug_feature, normalize_hotplug_value, HotplugFeatureSelector,
