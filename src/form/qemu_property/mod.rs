@@ -40,7 +40,9 @@ mod qemu_bios_property;
 pub use qemu_bios_property::qemu_bios_property;
 
 mod qemu_processor_property;
-pub use qemu_processor_property::qemu_processor_property;
+pub use qemu_processor_property::{
+    qemu_cpu_flags_property, qemu_kernel_scheduler_property, qemu_sockets_cores_property,
+};
 
 fn lookup_schema(name: &str) -> Option<(bool, &'static Schema)> {
     let allof_schema = QemuConfig::API_SCHEMA.unwrap_all_of_schema();

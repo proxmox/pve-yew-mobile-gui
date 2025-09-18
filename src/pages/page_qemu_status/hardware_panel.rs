@@ -3,12 +3,14 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::http_put;
+use pwt::props::IntoOptionalInlineHtml;
 use serde_json::Value;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
+use pwt::widget::menu::{Menu, MenuButton, MenuItem};
 use pwt::widget::{Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
@@ -16,7 +18,10 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
-use crate::form::{qemu_bios_property, qemu_memory_property, qemu_processor_property};
+use crate::form::{
+    qemu_bios_property, qemu_cpu_flags_property, qemu_kernel_scheduler_property,
+    qemu_memory_property, qemu_sockets_cores_property, typed_load,
+};
 use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
 
 #[derive(Clone, PartialEq, Properties)]
@@ -55,44 +60,91 @@ pub struct PveQemuHardwarePanel {
     dialog: Option<Html>,
     memory_property: EditableProperty,
     bios_property: EditableProperty,
-    processor_property: EditableProperty,
+    sockets_cores_property: EditableProperty,
+    cpu_flags_property: EditableProperty,
+    kernel_scheduler_property: EditableProperty,
 }
 
 impl PveQemuHardwarePanel {
+    fn property_tile(
+        &self,
+        ctx: &Context<Self>,
+        record: &Value,
+        property: &EditableProperty,
+        icon: Fa,
+        trailing: impl IntoOptionalInlineHtml,
+    ) -> ListTile {
+        let name = &property.name.as_str();
+
+        let title = match &record[name] {
+            Value::Null => property
+                .placeholder
+                .clone()
+                .unwrap_or(AttrValue::Static("-"))
+                .to_string()
+                .into(),
+            other => property
+                .renderer
+                .clone()
+                .unwrap()
+                .apply(name, other, &record),
+        };
+
+        icon_list_tile(icon, title, property.title.clone(), trailing)
+            .interactive(true)
+            .on_activate(ctx.link().callback({
+                let property = property.clone();
+                move |_| Msg::EditProperty(property.clone())
+            }))
+    }
+
+    fn processor_list_tile(&self, ctx: &Context<Self>, record: &Value) -> ListTile {
+        let menu = Menu::new()
+            .with_item(MenuItem::new(&self.sockets_cores_property.title).on_select(
+                ctx.link().callback({
+                    let property = self.sockets_cores_property.clone();
+                    move |_| Msg::EditProperty(property.clone())
+                }),
+            ))
+            .with_item(
+                MenuItem::new(&self.kernel_scheduler_property.title).on_select(
+                    ctx.link().callback({
+                        let property = self.kernel_scheduler_property.clone();
+                        move |_| Msg::EditProperty(property.clone())
+                    }),
+                ),
+            )
+            .with_item(MenuItem::new(&self.cpu_flags_property.title).on_select(
+                ctx.link().callback({
+                    let property = self.cpu_flags_property.clone();
+                    move |_| Msg::EditProperty(property.clone())
+                }),
+            ));
+
+        let menu_button: Html = MenuButton::new("")
+            .class(pwt::css::ColorScheme::Neutral)
+            .icon_class("fa fa-ellipsis-v fa-lg")
+            .menu(menu)
+            .into();
+
+        let tile = self.property_tile(
+            ctx,
+            record,
+            &self.sockets_cores_property,
+            Fa::new("cpu"),
+            menu_button,
+        );
+
+        tile
+    }
+
     fn view_list(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
         let record: Value = serde_json::to_value(data).unwrap();
         let mut list: Vec<ListTile> = Vec::new();
 
-        let mut property_tile = |property: &EditableProperty, icon: Fa| {
-            let name = &property.name.as_str();
-
-            let title = match &record[name] {
-                Value::Null => property
-                    .placeholder
-                    .clone()
-                    .unwrap_or(AttrValue::Static("-"))
-                    .to_string()
-                    .into(),
-                other => property
-                    .renderer
-                    .clone()
-                    .unwrap()
-                    .apply(name, other, &record),
-            };
-
-            list.push(
-                icon_list_tile(icon, title, property.title.clone(), ())
-                    .interactive(true)
-                    .on_activate(ctx.link().callback({
-                        let property = property.clone();
-                        move |_| Msg::EditProperty(property.clone())
-                    })),
-            );
-        };
-
-        property_tile(&self.memory_property, Fa::new("memory"));
-        property_tile(&self.processor_property, Fa::new("cpu"));
-        property_tile(&self.bios_property, Fa::new("microchip"));
+        list.push(self.property_tile(ctx, &record, &self.memory_property, Fa::new("memory"), ()));
+        list.push(self.processor_list_tile(ctx, &record));
+        list.push(self.property_tile(ctx, &record, &self.bios_property, Fa::new("microchip"), ()));
 
         list.push(icon_list_tile(
             Fa::new("gears"),
@@ -164,7 +216,9 @@ impl Component for PveQemuHardwarePanel {
             dialog: None,
             memory_property: qemu_memory_property(),
             bios_property: qemu_bios_property(),
-            processor_property: qemu_processor_property(),
+            sockets_cores_property: qemu_sockets_cores_property(),
+            kernel_scheduler_property: qemu_kernel_scheduler_property(),
+            cpu_flags_property: qemu_cpu_flags_property(),
         }
     }
 
@@ -189,7 +243,7 @@ impl Component for PveQemuHardwarePanel {
 
                 let dialog = EditDialog::from(property.clone())
                     .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
-                    .loader(url.clone())
+                    .loader(typed_load::<QemuConfig>(url.clone()))
                     .on_submit({
                         let url = url.to_owned();
                         move |data: Value| http_put(url.clone(), Some(data.clone()))

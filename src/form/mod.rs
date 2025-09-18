@@ -14,9 +14,10 @@ pub use hotplug_feature_selector::{
 mod qemu_property;
 pub use qemu_property::{
     qemu_acpi_property, qemu_agent_property, qemu_amd_sev_property, qemu_bios_property,
-    qemu_boot_property, qemu_freeze_property, qemu_hotplug_property, qemu_kvm_property,
-    qemu_localtime_property, qemu_memory_property, qemu_name_property, qemu_onboot_property,
-    qemu_ostype_property, qemu_processor_property, qemu_protection_property, qemu_smbios_property,
+    qemu_boot_property, qemu_cpu_flags_property, qemu_freeze_property, qemu_hotplug_property,
+    qemu_kernel_scheduler_property, qemu_kvm_property, qemu_localtime_property,
+    qemu_memory_property, qemu_name_property, qemu_onboot_property, qemu_ostype_property,
+    qemu_protection_property, qemu_smbios_property, qemu_sockets_cores_property,
     qemu_spice_enhancement_property, qemu_startdate_property, qemu_startup_property,
     qemu_tablet_property, qemu_vmstatestorage_property,
 };
@@ -126,12 +127,14 @@ pub fn flatten_property_string(
 /// Property string data is removed from the original data, and re-added as assembled
 /// property string with name `name`.
 ///
+/// Returns the parsed rust type.
+///
 /// Uses [pspn] for property names like [flatten_property_string].
 pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
     data: &mut Value,
     name: &str,
     skip_empty_values: bool,
-) -> Result<(), Error> {
+) -> Result<Option<T>, Error> {
     let props = match T::API_SCHEMA {
         Schema::Object(object_schema) => object_schema.properties(),
         _ => bail!("property_string_from_parts: internal error - got unsupported schema type"),
@@ -156,17 +159,17 @@ pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
 
         if !has_parts {
             data[name] = "".into();
-            return Ok(());
+            return Ok(None);
         }
 
         let option: Option<T> = serde_json::from_value(value)?;
         data[name] = match option {
-            Some(parsed) => proxmox_schema::property_string::print::<T>(&parsed)?,
+            Some(ref parsed) => proxmox_schema::property_string::print::<T>(parsed)?,
             None => String::new(),
         }
         .into();
 
-        Ok(())
+        Ok(option)
     } else {
         bail!("property_string_from_parts: data is no Object");
     }
