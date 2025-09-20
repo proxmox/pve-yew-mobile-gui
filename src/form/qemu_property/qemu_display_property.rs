@@ -66,6 +66,14 @@ fn input_panel() -> RenderPropertyInputPanelFn {
         let show_default_hint = !is_vnc && has_gui;
         let show_vnc_hint = is_vnc && has_gui;
 
+        let memory_placeholder = match vga_type.as_str() {
+            "cirrus" => 4.to_string(),
+            "std" | "qxl" | "qxl2" | "qxl3" | "qxl4" | "vmware" => 16.to_string(),
+            "virtio" | "virtio-gl" => 256.to_string(),
+            _ if !has_gui => "N/A".into(),
+            _ => tr!("Default"),
+        };
+
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
         let vnc_hint =
@@ -93,6 +101,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 tr!("Memory") + " (MiB)",
                 Number::<u64>::new()
                     .name(pspn("vga", "memory"))
+                    .placeholder(memory_placeholder)
                     .disabled(!has_gui)
                     .min(4)
                     .max(512)
