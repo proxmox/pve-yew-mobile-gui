@@ -6,7 +6,7 @@ use proxmox_schema::ApiType;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, FormContext, Number};
+use pwt::widget::form::{delete_empty_values, Combobox, FormContext, Number};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigVga, QemuConfigVgaClipboard};
@@ -51,6 +51,7 @@ fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
         }
     }
 }
+
 fn input_panel() -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |_form_ctx: FormContext, _record: Rc<Value>| {
         //let show_efi_disk_hint =
@@ -75,10 +76,22 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     .min(4)
                     .max(512),
             ))
-            //.with_child(label_field(
-            //    tr!("Clipboard"),
-            //    TODO
-            //))
+            .with_child(label_field(
+                tr!("Clipboard"),
+                Combobox::new()
+                    .name(pspn("vga", "clipboard"))
+                    //.placeholder(tr!("Default"))
+                    .with_item("")
+                    .with_item("vnc")
+                    .render_value(|v: &AttrValue| {
+                        match v.as_str() {
+                            "" => tr!("Default"),
+                            "vnc" => "VNC".into(),
+                            v => v.into(),
+                        }
+                        .into()
+                    }),
+            ))
             .with_optional_child(vnc_hint.then(|| {
                 hint(
                     tr!(
