@@ -56,12 +56,30 @@ fn input_panel() -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _record: Rc<Value>| {
         let advanced = form_ctx.get_show_advanced();
 
-        //let show_efi_disk_hint =
-        //    form_ctx.read().get_field_text("bios") == "ovmf" && record["efidisk0"].is_null();
+        let clipboard_prop_name = pspn("vga", "clipboard");
+        let vga_type_prop_name = pspn("vga", "type");
 
-        let vnc_hint = true; // fixme
+        let vga_type = form_ctx.read().get_field_text(vga_type_prop_name.clone());
+        let is_vnc = form_ctx.read().get_field_text(clipboard_prop_name.clone()) == "vnc";
+        let no_gui = vga_type == "none" || vga_type.starts_with("serial");
+
+        let hide_default_hint = is_vnc || no_gui;
+        let hide_vnc_hint = !is_vnc || no_gui;
 
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
+
+        let vnc_hint =
+            tr!("You cannot use the default SPICE clipboard if the VNC clipboard is selected.")
+                + " "
+                + &tr!("VNC clipboard requires spice-tools installed in the Guest-VM.");
+
+        let migration_hint = tr!("You cannot live-migrate while using the VNC clipboard.");
+
+        let default_hint = tr!("This option depends on your display type.")
+            + " "
+            + &tr!(
+                "If the display type uses SPICE you are able to use the default SPICE clipboard."
+            );
 
         Column::new()
             .class(pwt::css::FlexFit)
@@ -69,20 +87,23 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .padding_bottom(1) // avoid scrollbar ?!
             .with_child(label_field(
                 tr!("Graphic card"),
-                QemuDisplayTypeSelector::new().name(pspn("vga", "type")),
+                QemuDisplayTypeSelector::new().name(vga_type_prop_name.clone()),
             ))
             .with_child(label_field(
                 tr!("Memory") + " (MiB)",
                 Number::<u64>::new()
                     .name(pspn("vga", "memory"))
+                    .disabled(no_gui)
                     .min(4)
-                    .max(512),
+                    .max(512)
+                    .step(4),
             ))
             .with_child(
                 label_field(
                     tr!("Clipboard"),
                     Combobox::new()
-                        .name(pspn("vga", "clipboard"))
+                        .name(clipboard_prop_name.clone())
+                        .disabled(no_gui)
                         .with_item("")
                         .with_item("vnc")
                         .render_value(|v: &AttrValue| {
@@ -96,13 +117,9 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 )
                 .class((!advanced).then(|| pwt::css::Display::None)),
             )
-            .with_optional_child(vnc_hint.then(|| {
-                hint(
-                    tr!(
-                    "You cannot use the default SPICE clipboard if the VNC clipboard is selected."
-                ) + " " + &tr!("VNC clipboard requires spice-tools installed in the Guest-VM."),
-                )
-            }))
+            .with_optional_child((!hide_vnc_hint).then(|| hint(vnc_hint)))
+            .with_optional_child((!hide_vnc_hint).then(|| hint(migration_hint)))
+            .with_optional_child((!hide_default_hint).then(|| hint(default_hint)))
             .into()
     })
 }
