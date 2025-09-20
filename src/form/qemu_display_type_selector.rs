@@ -64,7 +64,8 @@ impl Component for PveQemuDisplayTypeSelector {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let drivers = kvm_vga_drivers();
-        let keys: Vec<AttrValue> = drivers.keys().map(|s| AttrValue::from(*s)).collect();
+        let mut keys: Vec<AttrValue> = drivers.keys().map(|s| AttrValue::from(*s)).collect();
+        keys.sort();
 
         Self {
             drivers,
