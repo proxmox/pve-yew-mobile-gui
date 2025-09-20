@@ -53,7 +53,7 @@ fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _record: Rc<Value>| {
+    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
         let advanced = form_ctx.get_show_advanced();
 
         let clipboard_prop_name = pspn("vga", "clipboard");
@@ -89,13 +89,23 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 "If the display type uses SPICE you are able to use the default SPICE clipboard."
             );
 
+        let mut serial_device_list = Vec::new();
+        for i in 0..3 {
+            let name = format!("serial{i}");
+            if record[&name].as_str().is_some() {
+                serial_device_list.push(AttrValue::from(name));
+            }
+        }
+
         Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
             .padding_bottom(1) // avoid scrollbar ?!
             .with_child(label_field(
                 tr!("Graphic card"),
-                QemuDisplayTypeSelector::new().name(vga_type_prop_name.clone()),
+                QemuDisplayTypeSelector::new()
+                    .name(vga_type_prop_name.clone())
+                    .serial_device_list(Some(Rc::new(serial_device_list))),
             ))
             .with_child(label_field(
                 tr!("Memory") + " (MiB)",
