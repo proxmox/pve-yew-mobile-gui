@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use yew::html::IntoPropValue;
-
 use pwt::prelude::*;
 use pwt::widget::form::Combobox;
 

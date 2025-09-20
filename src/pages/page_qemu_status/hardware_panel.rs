@@ -19,8 +19,8 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
 use crate::form::{
-    qemu_bios_property, qemu_cpu_flags_property, qemu_kernel_scheduler_property,
-    qemu_memory_property, qemu_sockets_cores_property, typed_load,
+    qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
+    qemu_kernel_scheduler_property, qemu_memory_property, qemu_sockets_cores_property, typed_load,
 };
 use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
 
@@ -63,6 +63,7 @@ pub struct PveQemuHardwarePanel {
     sockets_cores_property: EditableProperty,
     cpu_flags_property: EditableProperty,
     kernel_scheduler_property: EditableProperty,
+    display_property: EditableProperty,
 }
 
 impl PveQemuHardwarePanel {
@@ -142,9 +143,14 @@ impl PveQemuHardwarePanel {
         let record: Value = serde_json::to_value(data).unwrap();
         let mut list: Vec<ListTile> = Vec::new();
 
-        list.push(self.property_tile(ctx, &record, &self.memory_property, Fa::new("memory"), ()));
+        let push_property_tile = |list: &mut Vec<_>, property, icon| {
+            list.push(self.property_tile(ctx, &record, property, icon, ()));
+        };
+
+        push_property_tile(&mut list, &self.memory_property, Fa::new("memory"));
         list.push(self.processor_list_tile(ctx, &record));
-        list.push(self.property_tile(ctx, &record, &self.bios_property, Fa::new("microchip"), ()));
+        push_property_tile(&mut list, &self.bios_property, Fa::new("microchip"));
+        push_property_tile(&mut list, &self.display_property, Fa::new("desktop"));
 
         list.push(icon_list_tile(
             Fa::new("gears"),
@@ -219,6 +225,7 @@ impl Component for PveQemuHardwarePanel {
             sockets_cores_property: qemu_sockets_cores_property(),
             kernel_scheduler_property: qemu_kernel_scheduler_property(),
             cpu_flags_property: qemu_cpu_flags_property(),
+            display_property: qemu_display_property(),
         }
     }
 

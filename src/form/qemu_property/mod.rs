@@ -22,6 +22,7 @@ use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
 
 mod qemu_display_property;
+pub use qemu_display_property::qemu_display_property;
 
 mod qemu_smbios1_property;
 pub use qemu_smbios1_property::qemu_smbios_property;
