@@ -6,16 +6,17 @@ use proxmox_schema::ApiType;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext, Number};
+use pwt::widget::form::{delete_empty_values, Combobox, FormContext, FormContextObserver, Number};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigVga, QemuConfigVgaClipboard};
+use yew::virtual_dom::VComp;
 
 use crate::form::{
     flatten_property_string, format_qemu_display_type, property_string_from_parts, pspn,
     QemuDisplayTypeSelector,
 };
-use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{label_field, EditableProperty};
 
 fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
     let vga: Result<PropertyString<QemuConfigVga>, _> = serde_json::from_value(value.clone());
@@ -52,8 +53,42 @@ fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
     }
 }
 
-fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
+#[derive(Properties, Clone, PartialEq)]
+struct StatefulPanel {
+    record: Rc<Value>,
+    form_ctx: FormContext,
+}
+struct StatefulPanelComp {
+    serial_device_list: Rc<Vec<AttrValue>>,
+    _form_ctx_observer: FormContextObserver,
+}
+
+impl Component for StatefulPanelComp {
+    type Message = ();
+    type Properties = StatefulPanel;
+
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+        let record = &props.record;
+        let mut serial_device_list = Vec::new();
+        for i in 0..3 {
+            let name = format!("serial{i}");
+            if record[&name].as_str().is_some() {
+                serial_device_list.push(AttrValue::from(name));
+            }
+        }
+        // trigger re-draw on form context changes
+        let _form_ctx_observer = props.form_ctx.add_listener(ctx.link().callback(|_| ()));
+        Self {
+            serial_device_list: Rc::new(serial_device_list),
+            _form_ctx_observer,
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        let form_ctx = &props.form_ctx;
+
         let advanced = form_ctx.get_show_advanced();
 
         let clipboard_prop_name = pspn("vga", "clipboard");
@@ -89,14 +124,6 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 "If the display type uses SPICE you are able to use the default SPICE clipboard."
             );
 
-        let mut serial_device_list = Vec::new();
-        for i in 0..3 {
-            let name = format!("serial{i}");
-            if record[&name].as_str().is_some() {
-                serial_device_list.push(AttrValue::from(name));
-            }
-        }
-
         Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
@@ -105,7 +132,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 tr!("Graphic card"),
                 QemuDisplayTypeSelector::new()
                     .name(vga_type_prop_name.clone())
-                    .serial_device_list(Some(Rc::new(serial_device_list))),
+                    .serial_device_list(Some(self.serial_device_list.clone())),
             ))
             .with_child(label_field(
                 tr!("Memory") + " (MiB)",
@@ -140,7 +167,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .with_optional_child(show_vnc_hint.then(|| hint(migration_hint)))
             .with_optional_child(show_default_hint.then(|| hint(default_hint)))
             .into()
-    })
+    }
 }
 
 pub fn qemu_display_property() -> EditableProperty {
@@ -148,7 +175,10 @@ pub fn qemu_display_property() -> EditableProperty {
         .advanced_checkbox(true)
         .placeholder(tr!("Default"))
         .renderer(renderer)
-        .render_input_panel(input_panel())
+        .render_input_panel(|form_ctx, record| {
+            let props = StatefulPanel { form_ctx, record };
+            VComp::new::<StatefulPanelComp>(Rc::new(props), None).into()
+        })
         .load_hook(move |mut record: Value| {
             flatten_property_string(&mut record, "vga", &QemuConfigVga::API_SCHEMA)?;
             Ok(record)
