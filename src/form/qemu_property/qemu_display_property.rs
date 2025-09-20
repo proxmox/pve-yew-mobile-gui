@@ -53,7 +53,9 @@ fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |_form_ctx: FormContext, _record: Rc<Value>| {
+    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _record: Rc<Value>| {
+        let advanced = form_ctx.get_show_advanced();
+
         //let show_efi_disk_hint =
         //    form_ctx.read().get_field_text("bios") == "ovmf" && record["efidisk0"].is_null();
 
@@ -76,22 +78,24 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     .min(4)
                     .max(512),
             ))
-            .with_child(label_field(
-                tr!("Clipboard"),
-                Combobox::new()
-                    .name(pspn("vga", "clipboard"))
-                    //.placeholder(tr!("Default"))
-                    .with_item("")
-                    .with_item("vnc")
-                    .render_value(|v: &AttrValue| {
-                        match v.as_str() {
-                            "" => tr!("Default"),
-                            "vnc" => "VNC".into(),
-                            v => v.into(),
-                        }
-                        .into()
-                    }),
-            ))
+            .with_child(
+                label_field(
+                    tr!("Clipboard"),
+                    Combobox::new()
+                        .name(pspn("vga", "clipboard"))
+                        .with_item("")
+                        .with_item("vnc")
+                        .render_value(|v: &AttrValue| {
+                            match v.as_str() {
+                                "" => tr!("Default"),
+                                "vnc" => "VNC".into(),
+                                v => v.into(),
+                            }
+                            .into()
+                        }),
+                )
+                .class((!advanced).then(|| pwt::css::Display::None)),
+            )
             .with_optional_child(vnc_hint.then(|| {
                 hint(
                     tr!(
@@ -105,6 +109,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 
 pub fn qemu_display_property() -> EditableProperty {
     EditableProperty::new("vga", tr!("Display"))
+        .advanced_checkbox(true)
         .placeholder(tr!("Default"))
         .renderer(renderer)
         .render_input_panel(input_panel())
