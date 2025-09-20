@@ -1,11 +1,12 @@
 use std::rc::Rc;
 
 use proxmox_human_byte::HumanByte;
+use proxmox_schema::property_string::PropertyString;
 use proxmox_schema::ApiType;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext, Number};
+use pwt::widget::form::{delete_empty_values, FormContext, Number};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigVga, QemuConfigVgaClipboard};
@@ -16,8 +17,42 @@ use crate::form::{
 };
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
 
+fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
+    let vga: Result<PropertyString<QemuConfigVga>, _> = serde_json::from_value(value.clone());
+    match vga {
+        Ok(vga) => {
+            let mut text = match vga.ty {
+                Some(ty) => format_qemu_display_type(&ty.to_string()),
+                None => tr!("Default"),
+            };
+
+            let mut inner = Vec::new();
+            if let Some(mb) = vga.memory {
+                let bytes = (mb as f64) * 1024.0 * 1024.0;
+                let memory = HumanByte::new_binary(bytes);
+                inner.push(format!("memory={memory}"));
+            };
+
+            if let Some(QemuConfigVgaClipboard::Vnc) = vga.clipboard {
+                inner.push(format!("clipboard=vnc"));
+            };
+            if !inner.is_empty() {
+                let inner = inner.join(", ");
+                text += &format!(" ({inner})");
+            }
+            text.into()
+        }
+        Err(err) => {
+            log::error!("failed to parse qemu vga property: {err}");
+            match value {
+                Value::String(s) => s.into(),
+                _ => value.into(),
+            }
+        }
+    }
+}
 fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
+    RenderPropertyInputPanelFn::new(move |_form_ctx: FormContext, _record: Rc<Value>| {
         //let show_efi_disk_hint =
         //    form_ctx.read().get_field_text("bios") == "ovmf" && record["efidisk0"].is_null();
 
@@ -58,33 +93,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 pub fn qemu_display_property() -> EditableProperty {
     EditableProperty::new("vga", tr!("Display"))
         .placeholder(tr!("Default"))
-        .renderer(
-            |_, v, _| match serde_json::from_value::<QemuConfigVga>(v.clone()) {
-                Ok(vga) => {
-                    let mut text = match vga.ty {
-                        Some(ty) => format_qemu_display_type(&ty.to_string()),
-                        None => tr!("Default"),
-                    };
-
-                    let mut inner = Vec::new();
-                    if let Some(mb) = vga.memory {
-                        let bytes = (mb as f64) * 1024.0 * 1024.0;
-                        let memory = HumanByte::new_binary(bytes);
-                        inner.push(format!("memory={memory}"));
-                    };
-
-                    if let Some(QemuConfigVgaClipboard::Vnc) = vga.clipboard {
-                        inner.push(format!("clipboard=vnc"));
-                    };
-                    if !inner.is_empty() {
-                        let inner = inner.join(", ");
-                        text += &format!(" ({inner})");
-                    }
-                    text.into()
-                }
-                Err(_) => v.into(),
-            },
-        )
+        .renderer(renderer)
         .render_input_panel(input_panel())
         .load_hook(move |mut record: Value| {
             flatten_property_string(&mut record, "vga", &QemuConfigVga::API_SCHEMA)?;
