@@ -61,10 +61,10 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 
         let vga_type = form_ctx.read().get_field_text(vga_type_prop_name.clone());
         let is_vnc = form_ctx.read().get_field_text(clipboard_prop_name.clone()) == "vnc";
-        let no_gui = vga_type == "none" || vga_type.starts_with("serial");
+        let has_gui = vga_type != "none" && !vga_type.starts_with("serial");
 
-        let hide_default_hint = is_vnc || no_gui;
-        let hide_vnc_hint = !is_vnc || no_gui;
+        let show_default_hint = !is_vnc && has_gui;
+        let show_vnc_hint = is_vnc && has_gui;
 
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
@@ -93,7 +93,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 tr!("Memory") + " (MiB)",
                 Number::<u64>::new()
                     .name(pspn("vga", "memory"))
-                    .disabled(no_gui)
+                    .disabled(!has_gui)
                     .min(4)
                     .max(512)
                     .step(4),
@@ -103,7 +103,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     tr!("Clipboard"),
                     Combobox::new()
                         .name(clipboard_prop_name.clone())
-                        .disabled(no_gui)
+                        .disabled(!has_gui)
                         .with_item("")
                         .with_item("vnc")
                         .render_value(|v: &AttrValue| {
@@ -117,9 +117,9 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 )
                 .class((!advanced).then(|| pwt::css::Display::None)),
             )
-            .with_optional_child((!hide_vnc_hint).then(|| hint(vnc_hint)))
-            .with_optional_child((!hide_vnc_hint).then(|| hint(migration_hint)))
-            .with_optional_child((!hide_default_hint).then(|| hint(default_hint)))
+            .with_optional_child(show_vnc_hint.then(|| hint(vnc_hint)))
+            .with_optional_child(show_vnc_hint.then(|| hint(migration_hint)))
+            .with_optional_child(show_default_hint.then(|| hint(default_hint)))
             .into()
     })
 }
