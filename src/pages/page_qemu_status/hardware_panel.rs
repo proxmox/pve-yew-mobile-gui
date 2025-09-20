@@ -77,7 +77,7 @@ impl PveQemuHardwarePanel {
     ) -> ListTile {
         let name = &property.name.as_str();
 
-        let title = match &record[name] {
+        let value = match &record[name] {
             Value::Null => property
                 .placeholder
                 .clone()
@@ -91,7 +91,7 @@ impl PveQemuHardwarePanel {
                 .apply(name, other, &record),
         };
 
-        icon_list_tile(icon, title, property.title.clone(), trailing)
+        icon_list_tile(icon, property.title.clone(), value, trailing)
             .interactive(true)
             .on_activate(ctx.link().callback({
                 let property = property.clone();
@@ -154,12 +154,12 @@ impl PveQemuHardwarePanel {
 
         list.push(icon_list_tile(
             Fa::new("gears"),
+            tr!("Machine Type"),
             data.machine
                 .as_ref()
                 .map(|b| b.to_string())
                 .unwrap_or(format!("{} (i440fx)", tr!("Default")))
                 .to_string(),
-            tr!("Machine Type"),
             (),
         ));
 
@@ -170,15 +170,15 @@ impl PveQemuHardwarePanel {
                 if config.media == Some(PveQmIdeMedia::Cdrom) {
                     list.push(icon_list_tile(
                         Fa::new("cdrom"),
-                        disk_config.to_string(),
                         tr!("CD/DVD Drive") + &format!(" (ide{n})"),
+                        disk_config.to_string(),
                         (),
                     ));
                 } else {
                     list.push(icon_list_tile(
                         Fa::new("hdd-o"),
-                        disk_config.to_string(),
                         tr!("Hard Disk") + &format!(" (ide{n})"),
+                        disk_config.to_string(),
                         (),
                     ));
                 }
@@ -188,8 +188,8 @@ impl PveQemuHardwarePanel {
         for (n, disk_config) in &data.scsi {
             list.push(icon_list_tile(
                 Fa::new("hdd-o"),
-                disk_config.to_string(),
                 tr!("Hard Disk") + &format!(" (scsi{n})"),
+                disk_config.to_string(),
                 (),
             ));
         }
@@ -197,8 +197,8 @@ impl PveQemuHardwarePanel {
         for (n, net_config) in &data.net {
             list.push(icon_list_tile(
                 Fa::new("exchange"),
-                net_config.to_string(),
                 tr!("Network Device") + &format!(" (net{n})"),
+                net_config.to_string(),
                 (),
             ));
         }
