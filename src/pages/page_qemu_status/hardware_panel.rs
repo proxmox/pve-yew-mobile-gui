@@ -20,7 +20,8 @@ use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
 use crate::form::{
     qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
-    qemu_kernel_scheduler_property, qemu_memory_property, qemu_sockets_cores_property, typed_load,
+    qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
+    qemu_sockets_cores_property, typed_load,
 };
 use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
 
@@ -64,6 +65,7 @@ pub struct PveQemuHardwarePanel {
     cpu_flags_property: EditableProperty,
     kernel_scheduler_property: EditableProperty,
     display_property: EditableProperty,
+    machine_property: EditableProperty,
 }
 
 impl PveQemuHardwarePanel {
@@ -151,17 +153,7 @@ impl PveQemuHardwarePanel {
         list.push(self.processor_list_tile(ctx, &record));
         push_property_tile(&mut list, &self.bios_property, Fa::new("microchip"));
         push_property_tile(&mut list, &self.display_property, Fa::new("desktop"));
-
-        list.push(icon_list_tile(
-            Fa::new("gears"),
-            tr!("Machine Type"),
-            data.machine
-                .as_ref()
-                .map(|b| b.to_string())
-                .unwrap_or(format!("{} (i440fx)", tr!("Default")))
-                .to_string(),
-            (),
-        ));
+        push_property_tile(&mut list, &self.machine_property, Fa::new("cogs"));
 
         for (n, disk_config) in &data.ide {
             if let Ok(config) =
@@ -226,6 +218,7 @@ impl Component for PveQemuHardwarePanel {
             kernel_scheduler_property: qemu_kernel_scheduler_property(),
             cpu_flags_property: qemu_cpu_flags_property(),
             display_property: qemu_display_property(),
+            machine_property: qemu_machine_property(),
         }
     }
 
