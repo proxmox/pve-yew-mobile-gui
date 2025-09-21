@@ -9,7 +9,7 @@ use pwt::props::PwtSpace;
 use pwt::widget::form::{delete_empty_values, Checkbox, Field, FormContext, Hidden, Number};
 use pwt::widget::{Column, Container, Row};
 
-use crate::form::{property_string_from_parts, pspn, QemuCpuModelSelector};
+use crate::form::{property_string_from_parts, pspn, QemuCpuFlags, QemuCpuModelSelector};
 use crate::{
     form::flatten_property_string,
     widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn},
@@ -60,7 +60,6 @@ fn add_hidden_cpu_properties(column: &mut Column, exclude: &[&str]) {
             let props = object_schema.properties();
             for (part, _, _) in props {
                 if !exclude.contains(part) {
-                    log::info!("ADD PART {part}");
                     column.add_child(Hidden::new().name(pspn("cpu", part)));
                 }
             }
@@ -240,7 +239,7 @@ fn cpu_flags_input_panel() -> RenderPropertyInputPanelFn {
             .gap(2)
             .padding_top(2)
             .padding_bottom(1) // avoid scrollbar
-            .with_child(Field::new().name(pspn("cpu", "flags")));
+            .with_child(QemuCpuFlags::new().name(pspn("cpu", "flags")));
 
         // add unused cpu property - we want to keep them!
         add_hidden_cpu_properties(&mut column, &["flags"]);
