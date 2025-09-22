@@ -1,10 +1,11 @@
 use std::rc::Rc;
 
+use anyhow::bail;
 use proxmox_schema::ApiType;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext};
+use pwt::widget::form::{delete_empty_values, Combobox, FormContext, ValidateFn};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
@@ -75,7 +76,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             let name = format!("{ty}-version");
             let field = label_field(
                 tr!("Version"),
-                QemuMachineVersionSelector::new(QemuMachineType::I440fx)
+                QemuMachineVersionSelector::new(ty)
                     .name(pspn("machine", &name))
                     .required(ostype_is_windows(&ostype))
                     .disabled(disabled)
@@ -115,6 +116,41 @@ fn input_panel() -> RenderPropertyInputPanelFn {
         add_version_selector(&mut column, QemuMachineType::I440fx);
         add_version_selector(&mut column, QemuMachineType::Q35);
         add_version_selector(&mut column, QemuMachineType::Virt);
+
+        let items = if machine_type == QemuMachineType::Q35 {
+            vec![AttrValue::Static("intel"), AttrValue::Static("virtio")]
+        } else {
+            vec![AttrValue::Static("virtio")]
+        };
+        let validate = {
+            let items = items.clone();
+            move |(v, _store): &(String, _)| {
+                if !items.contains(&AttrValue::from(v.to_string())) {
+                    bail!(tr!(
+                        "Invalid vIOMMU mode for machine type '{0}'",
+                        machine_type
+                    ));
+                } else {
+                    Ok(())
+                }
+            }
+        };
+        column.add_child(label_field(
+            "vIOMMU",
+            Combobox::new()
+                .name(pspn("machine", "viommu"))
+                .items(Rc::new(items))
+                .validate(ValidateFn::new(validate))
+                .placeholder(tr!("Default") + " (" + &tr!("None") + ")")
+                .render_value(|v: &AttrValue| {
+                    match v.as_str() {
+                        "intel" => tr!("Intel (AMD Compatible)"),
+                        "virtio" => tr!("VirtIO"),
+                        _ => v.to_string(),
+                    }
+                    .into()
+                }),
+        ));
 
         column.add_child(hint(tr!(
             "Machine version change may affect hardware layout and settings in the guest OS."
