@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
 use anyhow::bail;
-use proxmox_schema::ApiType;
+use proxmox_schema::{ApiType, ObjectSchemaType, Schema};
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext, ValidateFn};
+use pwt::widget::form::{delete_empty_values, Combobox, FormContext, Hidden, ValidateFn};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
@@ -50,6 +50,25 @@ fn extract_machine_type(id: &str) -> QemuMachineType {
 
 fn placeholder() -> String {
     tr!("Default") + &format!(" ({})", QemuMachineType::I440fx)
+}
+
+fn add_hidden_machine_properties(column: &mut Column, exclude: &[&str]) {
+    // add unused machine property - we want to keep them!
+    match QemuConfigMachine::API_SCHEMA {
+        Schema::Object(object_schema) => {
+            let props = object_schema.properties();
+            for (part, _, _) in props {
+                if !exclude.contains(part) {
+                    column.add_child(Hidden::new().name(pspn("machine", part)));
+                }
+            }
+        }
+        _ => {
+            log::error!(
+                "add_hidden_machine_properties: internal error - got unsupported schema type"
+            )
+        }
+    };
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
@@ -156,6 +175,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             "Machine version change may affect hardware layout and settings in the guest OS."
         )));
 
+        add_hidden_machine_properties(&mut column, &["type", "viommu"]);
         column.into()
     })
 }

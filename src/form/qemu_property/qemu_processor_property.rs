@@ -65,7 +65,7 @@ fn add_hidden_cpu_properties(column: &mut Column, exclude: &[&str]) {
             }
         }
         _ => {
-            log::error!("property_string_from_parts: internal error - got unsupported schema type")
+            log::error!("add_hidden_cpu_properties: internal error - got unsupported schema type")
         }
     };
 }
