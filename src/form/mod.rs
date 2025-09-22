@@ -14,6 +14,9 @@ pub use qemu_cpu_model_selector::QemuCpuModelSelector;
 mod qemu_display_type_selector;
 pub use qemu_display_type_selector::{format_qemu_display_type, QemuDisplayTypeSelector};
 
+mod qemu_machine_version_selector;
+pub use qemu_machine_version_selector::QemuMachineVersionSelector;
+
 mod hotplug_feature_selector;
 pub use hotplug_feature_selector::{
     format_hotplug_feature, normalize_hotplug_value, HotplugFeatureSelector,

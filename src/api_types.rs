@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use proxmox_schema::api;
+use proxmox_schema::{api, ApiStringFormat};
 
 // fixme: define all those types in pve-api-types
 
@@ -68,4 +68,46 @@ pub struct QemuCpuModel {
     pub name: String,
     /// CPU vendor visible to the guest when this model is selected. Vendor of 'reported-model' in case of custom models.
     pub vendor: String,
+}
+
+#[api]
+/// Qemu Machine Type (q35 or pc)
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+pub enum QemuMachineType {
+    #[serde(rename = "q35")]
+    /// Q35
+    Q35,
+    #[serde(rename = "i440fx")]
+    /// I440FX
+    I440fx,
+    #[serde(rename = "virt")]
+    /// Virt (Arm)
+    ///
+    /// Note: Not returned by the api for now.
+    Virt,
+}
+serde_plain::derive_display_from_serialize!(QemuMachineType);
+serde_plain::derive_fromstr_from_deserialize!(QemuMachineType);
+
+#[api(
+    properties: {
+        type: {
+            format: &ApiStringFormat::PropertyString(&QemuMachineType::API_SCHEMA),
+            type: String,
+        }
+    }
+)]
+#[derive(Deserialize, Serialize, PartialEq, Clone)]
+/// Machine type info (GET /api2/json/nodes/{node}/capabilities/qemu/machines
+pub struct QemuMachineInfo {
+    /// Full name of machine type and version.
+    pub id: String,
+    /// Machine type
+    #[serde(rename = "type")]
+    pub ty: QemuMachineType,
+    /// The machine version.
+    pub version: String,
+    /// Notable changes of a version, currently only set for +pveX versions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub changes: Option<String>,
 }

@@ -9,8 +9,11 @@ use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
 
-use crate::form::{flatten_property_string, pspn};
+use crate::form::{
+    flatten_property_string, property_string_from_parts, pspn, QemuMachineVersionSelector,
+};
 use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
+use crate::QemuMachineType;
 
 fn ostype_is_windows(ostype: &QemuConfigOstype) -> bool {
     match ostype {
@@ -30,39 +33,93 @@ fn ostype_is_windows(ostype: &QemuConfigOstype) -> bool {
     }
 }
 
-fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _record: Rc<Value>| {
-        let show_hint = false;
+fn extract_machine_type(id: &str) -> QemuMachineType {
+    if id == "q35" || id.starts_with("pc-q35-") {
+        return QemuMachineType::Q35;
+    }
+    if id.is_empty() || id == "pc" || id.starts_with("pc-i440fx-") || id.starts_with("pc-") {
+        return QemuMachineType::I440fx;
+    }
+    if id.starts_with("virt-") {
+        return QemuMachineType::Virt;
+    }
+    log::error!("extract_machine_type failed: got '{id}'");
+    QemuMachineType::I440fx
+}
 
+fn placeholder() -> String {
+    tr!("Default") + &format!(" ({})", QemuMachineType::I440fx)
+}
+
+fn input_panel() -> RenderPropertyInputPanelFn {
+    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
-        Column::new()
+        let ostype: Option<QemuConfigOstype> =
+            serde_json::from_value(record["ostype"].clone()).ok();
+        let ostype = ostype.unwrap_or(QemuConfigOstype::Other);
+
+        let extracted_type_prop_name = pspn("machine", "extracted-type");
+
+        let machine_type = form_ctx
+            .read()
+            .get_field_value(extracted_type_prop_name.clone())
+            .unwrap_or(Value::Null);
+        let machine_type: QemuMachineType = serde_json::from_value(machine_type)
+            .ok()
+            .flatten()
+            .unwrap_or(QemuMachineType::I440fx);
+
+        let add_version_selector = |column: &mut Column, ty| {
+            let disabled = machine_type != ty;
+            let name = format!("{ty}-version");
+            let field = label_field(
+                tr!("Version"),
+                QemuMachineVersionSelector::new(QemuMachineType::I440fx)
+                    .name(pspn("machine", &name))
+                    .required(ostype_is_windows(&ostype))
+                    .disabled(disabled)
+                    .submit(false),
+            )
+            .class(disabled.then(|| pwt::css::Display::None));
+
+            column.add_child(field);
+        };
+
+        let mut column = Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
             .padding_bottom(1) // avoid scrollbar ?!
             .with_child(label_field(
                 tr!("Type"),
                 Combobox::new()
-                    .name(pspn("machine", "extracted_type"))
-                    .placeholder(tr!("Default") + " (i440fx)"),
-            ))
-            .with_child(label_field(
-                tr!("Version"),
-                Combobox::new()
-                    .name(pspn("machine", "version"))
-                    .placeholder(tr!("Latest")),
-            ))
-            .with_child(hint(tr!(
-                "Machine version change may affect hardware layout and settings in the guest OS."
-            )))
-            .into()
+                    .name(extracted_type_prop_name.clone())
+                    .required(true)
+                    .submit(false)
+                    .with_item("i440fx")
+                    .with_item("q35")
+                    .render_value(|v: &AttrValue| match v.as_str() {
+                        "i440fx" => placeholder().into(),
+                        "q35" => "Q35".into(),
+                        _ => v.into(),
+                    }),
+            ));
+
+        add_version_selector(&mut column, QemuMachineType::I440fx);
+        add_version_selector(&mut column, QemuMachineType::Q35);
+        add_version_selector(&mut column, QemuMachineType::Virt);
+
+        column.add_child(hint(tr!(
+            "Machine version change may affect hardware layout and settings in the guest OS."
+        )));
+
+        column.into()
     })
 }
 
 pub fn qemu_machine_property() -> EditableProperty {
-    let placeholder = tr!("Default") + " (i440fx)";
     EditableProperty::new("machine", tr!("Machine"))
-        .placeholder(placeholder.clone())
+        .placeholder(placeholder())
         .renderer(move |_, v, record| {
             let ostype: Option<QemuConfigOstype> =
                 serde_json::from_value(record["ostype"].clone()).ok();
@@ -71,17 +128,44 @@ pub fn qemu_machine_property() -> EditableProperty {
                 (None | Some("pc"), true) => "pc-i440fx-5.1".into(),
                 (Some("q35"), true) => "pc-q35-5.1".into(),
                 (Some(machine), _) => machine.into(),
-                (None, _) => placeholder.clone().into(),
+                (None, _) => placeholder().into(),
             }
         })
         .render_input_panel(input_panel())
         .load_hook(move |mut record: Value| {
             flatten_property_string(&mut record, "machine", &QemuConfigMachine::API_SCHEMA)?;
+
+            let machine_type_prop_name = pspn("machine", "type");
+            let machine_type = record[&machine_type_prop_name].as_str().unwrap_or("");
+            let machine_type = extract_machine_type(machine_type);
+
+            let name = format!("{machine_type}-version");
+            record[pspn("machine", &name)] = record[&machine_type_prop_name].take();
+
+            let extracted_type_prop_name = pspn("machine", "extracted-type");
+            record[extracted_type_prop_name] = machine_type.to_string().into();
+
             Ok(record)
         })
         .submit_hook({
             move |form_ctx: FormContext| {
                 let mut data = form_ctx.get_submit_data();
+
+                let machine_type_prop_name = pspn("machine", "type");
+                let extracted_type_prop_name = pspn("machine", "extracted-type");
+
+                let machine_type = form_ctx
+                    .read()
+                    .get_field_text(extracted_type_prop_name.clone());
+                let name = pspn("machine", &format!("{machine_type}-version"));
+
+                data[machine_type_prop_name] = form_ctx
+                    .read()
+                    .get_field_value(name.clone())
+                    .unwrap_or(Value::Null);
+
+                property_string_from_parts::<QemuConfigMachine>(&mut data, "machine", true)?;
+
                 data = delete_empty_values(&data, &["machine"], false);
                 Ok(data)
             }
