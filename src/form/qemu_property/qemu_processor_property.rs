@@ -93,13 +93,6 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .gap(2)
             .padding_top(2)
             .padding_bottom(1) // avoid scrollbar
-            // QemuCpuModelSelector is scrollable, so we Diasble the SideDialog gesture detecture..
-            .onpointerdown(|event: PointerEvent| {
-                event.stop_propagation();
-            })
-            .ontouchstart(|event: TouchEvent| {
-                event.stop_propagation();
-            })
             .with_child(label_field(
                 tr!("Type"),
                 QemuCpuModelSelector::new()
@@ -239,13 +232,6 @@ fn cpu_flags_input_panel() -> RenderPropertyInputPanelFn {
             .gap(2)
             .padding_top(2)
             .padding_bottom(1) // avoid scrollbar
-            // This is scrollable, so we Diasble the SideDialog gesture detecture..
-            .onpointerdown(|event: PointerEvent| {
-                event.stop_propagation();
-            })
-            .ontouchstart(|event: TouchEvent| {
-                event.stop_propagation();
-            })
             .with_child(QemuCpuFlags::new().name(pspn("cpu", "flags")));
 
         // add unused cpu property - we want to keep them!

@@ -32,13 +32,6 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
         let field_height = "2em";
         Column::new()
                     .gap(2)
-                    // This is scrollable, so we Diasble the SideDialog gesture detecture..
-                    .onpointerdown(|event: PointerEvent| {
-                        event.stop_propagation();
-                    })
-                    .ontouchstart(|event: TouchEvent| {
-                        event.stop_propagation();
-                    })
                     .class(pwt::css::FlexFit)
                     .class(pwt::css::AlignItems::Stretch)
                     .with_child(crate::widgets::label_field(

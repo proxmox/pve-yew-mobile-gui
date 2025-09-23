@@ -319,7 +319,18 @@ impl Component for PwtEditDialog {
             .class("pwt-font-size-title-medium")
             .with_child(title)
             .with_flex_spacer()
-            .with_child(content);
+            .with_child(
+                Container::new()
+                    .class(pwt::css::FlexFit)
+                    // This may have scrollable elements, so we Diasble the SideDialog gesture detecture..
+                    .onpointerdown(|event: PointerEvent| {
+                        event.stop_propagation();
+                    })
+                    .ontouchstart(|event: TouchEvent| {
+                        event.stop_propagation();
+                    })
+                    .with_child(content),
+            );
 
         let mut toolbar = Row::new().gap(2);
 
