@@ -35,12 +35,11 @@ proxmox-serde = "1"
 pwt = "0.7.0"
 pwt-macros = "0.5"
 
+pve-api-types = "8"
 proxmox-yew-comp = "0.6.0"
 
 proxmox-login = "1.0"
 proxmox-client = { version = "1.0", features = ["perl-api-path-builder"] }
-
-pve-api-types = { path = "proxmox-api-types/pve-api-types" }
 
 [patch.crates-io]
 #proxmox-client = { path = "../proxmox/proxmox-client" }

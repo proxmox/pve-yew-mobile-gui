@@ -1,6 +1,3 @@
 [submodule "pwt-assets"]
 	path = pwt-assets
 	url = git://git.proxmox.com/git/ui/proxmox-yew-widget-toolkit-assets.git
-[submodule "proxmox-api-types"]
-	path = proxmox-api-types
-	url = git://git.proxmox.com/git/proxmox-api-types.git
