@@ -27,6 +27,9 @@ pub use qemu_display_property::qemu_display_property;
 mod qemu_machine_property;
 pub use qemu_machine_property::qemu_machine_property;
 
+mod qemu_scsihw_property;
+pub use qemu_scsihw_property::qemu_scsihw_property;
+
 mod qemu_smbios1_property;
 pub use qemu_smbios1_property::qemu_smbios_property;
 

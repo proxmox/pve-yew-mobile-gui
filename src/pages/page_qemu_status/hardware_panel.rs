@@ -21,7 +21,7 @@ use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 use crate::form::{
     qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
     qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
-    qemu_sockets_cores_property, typed_load,
+    qemu_scsihw_property, qemu_sockets_cores_property, typed_load,
 };
 use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
 
@@ -66,6 +66,7 @@ pub struct PveQemuHardwarePanel {
     kernel_scheduler_property: EditableProperty,
     display_property: EditableProperty,
     machine_property: EditableProperty,
+    scsihw_property: EditableProperty,
 }
 
 impl PveQemuHardwarePanel {
@@ -154,6 +155,7 @@ impl PveQemuHardwarePanel {
         push_property_tile(&mut list, &self.bios_property, Fa::new("microchip"));
         push_property_tile(&mut list, &self.display_property, Fa::new("desktop"));
         push_property_tile(&mut list, &self.machine_property, Fa::new("cogs"));
+        push_property_tile(&mut list, &self.scsihw_property, Fa::new("database"));
 
         for (n, disk_config) in &data.ide {
             if let Ok(config) =
@@ -219,6 +221,7 @@ impl Component for PveQemuHardwarePanel {
             cpu_flags_property: qemu_cpu_flags_property(),
             display_property: qemu_display_property(),
             machine_property: qemu_machine_property(),
+            scsihw_property: qemu_scsihw_property(),
         }
     }
 
