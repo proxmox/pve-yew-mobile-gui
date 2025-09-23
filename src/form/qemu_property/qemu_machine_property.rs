@@ -74,6 +74,8 @@ fn input_panel() -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
+        let advanced = form_ctx.get_show_advanced();
+
         let ostype: Option<QemuConfigOstype> =
             serde_json::from_value(record["ostype"].clone()).ok();
         let ostype = ostype.unwrap_or(QemuConfigOstype::Other);
@@ -89,6 +91,19 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .flatten()
             .unwrap_or(QemuMachineType::I440fx);
 
+        let version_prop_name = pspn("machine", &format!("{machine_type}-version"));
+        let show_version = match form_ctx.read().get_field_data(version_prop_name) {
+            Some((Value::String(version), Ok(_), _)) => {
+                if version.is_empty() || version == "pc" || version == "q35" {
+                    advanced
+                } else {
+                    // avoid hiding a pinned version
+                    true
+                }
+            }
+            _ => true, // show field if we have errors
+        };
+
         let add_version_selector = |column: &mut Column, ty| {
             let disabled = machine_type != ty;
             let name = format!("{ty}-version");
@@ -100,7 +115,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     .disabled(disabled)
                     .submit(false),
             )
-            .class(disabled.then(|| pwt::css::Display::None));
+            .class((disabled || !show_version).then(|| pwt::css::Display::None));
 
             column.add_child(field);
         };
@@ -134,25 +149,30 @@ fn input_panel() -> RenderPropertyInputPanelFn {
         }
         items.push(("virtio", tr!("VirtIO")));
 
-        column.add_child(label_field(
-            "vIOMMU",
-            Combobox::from_key_value_pairs(items)
-                .name(pspn("machine", "viommu"))
-                .force_selection(true)
-                .placeholder(tr!("Default") + " (" + &tr!("None") + ")")
-                .render_value(|v: &AttrValue| {
-                    match v.as_str() {
-                        "intel" => tr!("Intel (AMD Compatible)"),
-                        "virtio" => tr!("VirtIO"),
-                        _ => v.to_string(),
-                    }
-                    .into()
-                }),
-        ));
+        column.add_child(
+            label_field(
+                "vIOMMU",
+                Combobox::from_key_value_pairs(items)
+                    .name(pspn("machine", "viommu"))
+                    .force_selection(true)
+                    .placeholder(tr!("Default") + " (" + &tr!("None") + ")")
+                    .render_value(|v: &AttrValue| {
+                        match v.as_str() {
+                            "intel" => tr!("Intel (AMD Compatible)"),
+                            "virtio" => tr!("VirtIO"),
+                            _ => v.to_string(),
+                        }
+                        .into()
+                    }),
+            )
+            .class((!advanced).then(|| pwt::css::Display::None)),
+        );
 
-        column.add_child(hint(tr!(
-            "Machine version change may affect hardware layout and settings in the guest OS."
-        )));
+        column.add_optional_child(show_version.then(|| {
+            hint(tr!(
+                "Machine version change may affect hardware layout and settings in the guest OS."
+            ))
+        }));
 
         add_hidden_machine_properties(&mut column, &["type", "viommu"]);
         column.into()
@@ -161,6 +181,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 
 pub fn qemu_machine_property() -> EditableProperty {
     EditableProperty::new("machine", tr!("Machine"))
+        .advanced_checkbox(true)
         .placeholder(placeholder())
         .renderer(move |_, v, record| {
             let ostype: Option<QemuConfigOstype> =
