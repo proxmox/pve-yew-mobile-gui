@@ -64,24 +64,16 @@ impl PveGuestBackupPanel {
             .with_item("suspend")
             .with_item("stop");
 
-        let comp_selector = Combobox::new()
-            .name("compress")
-            .required(true)
-            .default("zstd")
-            .with_item("0")
-            .with_item("gzip")
-            .with_item("lzo")
-            .with_item("zstd")
-            .render_value(|comp: &AttrValue| {
-                let text = match comp.as_str() {
-                    "0" => "none",
-                    "gzip" => "GZIP (good)",
-                    "lzo" => "LZO (fast)",
-                    "zstd" => "ZSTD (fast & good)",
-                    _ => panic!("unknown compression mode - internal error"),
-                };
-                text.into()
-            });
+        let comp_selector = Combobox::from_key_value_pairs([
+            ("0", tr!("none")),
+            ("gzip", format!("GZIP ({})", tr!("good"))),
+            ("lzo", format!("LZO ({})", tr!("fast"))),
+            ("zstd", format!("ZSTD ({} & {})", tr!("fast"), tr!("good"))),
+        ])
+        .name("compress")
+        .required(true)
+        .force_selection(true)
+        .default("zstd");
 
         Form::new()
             .form_context(self.form_context.clone())
