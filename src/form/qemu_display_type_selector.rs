@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use anyhow::format_err;
+use indexmap::IndexMap;
 
 use pwt::prelude::*;
 use pwt::state::Store;
@@ -28,12 +28,11 @@ impl QemuDisplayTypeSelector {
 }
 
 pub struct PveQemuDisplayTypeSelector {
-    drivers: Rc<HashMap<AttrValue, String>>,
-    keys: Rc<Vec<AttrValue>>,
+    drivers: Rc<IndexMap<AttrValue, String>>,
 }
 
-fn kvm_vga_drivers() -> Rc<HashMap<AttrValue, String>> {
-    let mut map: HashMap<AttrValue, String> = HashMap::new();
+fn kvm_vga_drivers() -> Rc<IndexMap<AttrValue, String>> {
+    let mut map: IndexMap<AttrValue, String> = IndexMap::new();
 
     map.extend([
         (AttrValue::Static("std"), tr!("Standard VGA")),
@@ -56,10 +55,6 @@ fn kvm_vga_drivers() -> Rc<HashMap<AttrValue, String>> {
 
 pub fn format_qemu_display_type(value: &str) -> String {
     let map = kvm_vga_drivers();
-    render_map_value(&map, value)
-}
-
-fn render_map_value(map: &HashMap<AttrValue, String>, value: &str) -> String {
     match map.get(value).cloned() {
         Some(text) => text.clone(),
         None => value.to_string(),
@@ -97,26 +92,18 @@ impl Component for PveQemuDisplayTypeSelector {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let drivers = kvm_vga_drivers();
-        let mut keys: Vec<AttrValue> = drivers.keys().cloned().collect();
-        keys.sort();
 
-        Self {
-            drivers,
-            keys: Rc::new(keys),
-        }
+        Self { drivers }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let map = self.drivers.clone();
-        Combobox::new()
+        Combobox::from_key_value_pairs(self.drivers.as_ref().clone())
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .validate(Self::create_validator(props.serial_device_list.clone()))
             .placeholder(tr!("Default"))
             .show_filter(false)
-            .items(Rc::clone(&self.keys))
-            .render_value(move |v: &AttrValue| render_map_value(&map, &*v).into())
             .into()
     }
 }
