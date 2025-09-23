@@ -1,5 +1,6 @@
-use std::collections::HashMap;
 use std::rc::Rc;
+
+use indexmap::IndexMap;
 
 use yew::html::IntoPropValue;
 
@@ -76,9 +77,9 @@ macro_rules! item_list {
     };
 }
 thread_local! {
-    static ITEM_MAP: HashMap<String, String> = {
+    static ITEM_MAP: IndexMap<String, String> = {
         let item_list = item_list!();
-        let mut map = HashMap::new();
+        let mut map = IndexMap::new();
         for (key, value) in item_list.iter() {
             map.insert(key.to_string(), value.to_string());
         }
