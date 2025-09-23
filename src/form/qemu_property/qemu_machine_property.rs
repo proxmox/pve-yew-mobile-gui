@@ -1,11 +1,10 @@
 use std::rc::Rc;
 
-use anyhow::bail;
 use proxmox_schema::{ApiType, ObjectSchemaType, Schema};
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext, Hidden, ValidateFn};
+use pwt::widget::form::{delete_empty_values, Combobox, FormContext, Hidden};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
@@ -136,30 +135,17 @@ fn input_panel() -> RenderPropertyInputPanelFn {
         add_version_selector(&mut column, QemuMachineType::Q35);
         add_version_selector(&mut column, QemuMachineType::Virt);
 
-        let items = if machine_type == QemuMachineType::Q35 {
-            vec![AttrValue::Static("intel"), AttrValue::Static("virtio")]
-        } else {
-            vec![AttrValue::Static("virtio")]
-        };
-        let validate = {
-            let items = items.clone();
-            move |(v, _store): &(String, _)| {
-                if !items.contains(&AttrValue::from(v.to_string())) {
-                    bail!(tr!(
-                        "Invalid vIOMMU mode for machine type '{0}'",
-                        machine_type
-                    ));
-                } else {
-                    Ok(())
-                }
-            }
-        };
+        let mut items = Vec::new();
+        if machine_type == QemuMachineType::Q35 {
+            items.push(("intel", tr!("Intel (AMD Compatible)")));
+        }
+        items.push(("virtio", tr!("VirtIO")));
+
         column.add_child(label_field(
             "vIOMMU",
-            Combobox::new()
+            Combobox::from_key_value_pairs(items)
                 .name(pspn("machine", "viommu"))
-                .items(Rc::new(items))
-                .validate(ValidateFn::new(validate))
+                .force_selection(true)
                 .placeholder(tr!("Default") + " (" + &tr!("None") + ")")
                 .render_value(|v: &AttrValue| {
                     match v.as_str() {

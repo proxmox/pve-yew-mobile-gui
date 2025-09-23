@@ -147,19 +147,9 @@ impl Component for StatefulPanelComp {
             .with_child(
                 label_field(
                     tr!("Clipboard"),
-                    Combobox::new()
+                    Combobox::from_key_value_pairs([("", tr!("Default")), ("vnc", "VNC".into())])
                         .name(clipboard_prop_name.clone())
-                        .disabled(!has_gui)
-                        .with_item("")
-                        .with_item("vnc")
-                        .render_value(|v: &AttrValue| {
-                            match v.as_str() {
-                                "" => tr!("Default"),
-                                "vnc" => "VNC".into(),
-                                v => v.into(),
-                            }
-                            .into()
-                        }),
+                        .disabled(!has_gui),
                 )
                 .class((!advanced).then(|| pwt::css::Display::None)),
             )

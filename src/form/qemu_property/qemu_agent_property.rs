@@ -47,19 +47,12 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                         .with_child(
                             crate::widgets::label_field(
                                 tr!("Type"),
-                                Combobox::new()
+                                Combobox::from_key_value_pairs([
+                                        ("virtio", "VirtIO"),
+                                        ("isa", "ISA"),
+                                ])
                                     .name(pspn(&name, "type"))
                                     .placeholder(tr!("Default") + " (VirtIO)")
-                                    .with_item("virtio")
-                                    .with_item("isa")
-                                    .render_value(|value: &AttrValue| {
-                                        match value.as_str() {
-                                            "virtio" => "VirtIO",
-                                            "isa" => "ISA",
-                                            _ => value,
-                                        }
-                                        .into()
-                                    }),
                             ).class((!advanced).then(|| pwt::css::Display::None))
                             .padding_top(2)
                             .padding_bottom(1)

@@ -22,20 +22,13 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             .gap(2)
             .padding_bottom(1) // avoid scrollbar ?!
             .with_child(
-                Combobox::new()
+                Combobox::from_key_value_pairs([
+                        ("ovmf", "OVMF (UEFI)"),
+                        ("seabios", "SeaBIOS"),
+                ])
                     .name(name.clone())
                     .submit_empty(true)
-                    .with_item("ovmf")
-                    .with_item("seabios")
                     .placeholder("SeaBIOS")
-                    .render_value(|v: &AttrValue| {
-                        match v.as_str() {
-                            "ovmf" => "OVMF (UEFI)",
-                            "seabios" => "SeaBIOS",
-                            _ => v,
-                        }
-                        .into()
-                    }),
             )
             .with_optional_child(show_efi_disk_hint.then(|| {
                 hint(tr!(

@@ -26,21 +26,14 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             .gap(2)
             .padding_bottom(1) // avoid scrollbar ?!
             .with_child(
-                Combobox::new()
-                    .name(pspn(&name, "type"))
-                    .with_item("std")
-                    .with_item("es")
-                    .with_item("snp")
-                    .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
-                    .render_value(|v: &AttrValue| {
-                        match v.as_str() {
-                            "std" => "AMD SEV",
-                            "es" => "AMD SEV-ES (highly experimental)",
-                            "snp" => "AMD SEV-SNP (highly experimental)",
-                            _ => v,
-                        }
-                        .into()
-                    }),
+                Combobox::from_key_value_pairs([
+                    ("std", "AMD SEV"),
+                    ("es", "AMD SEV-ES (highly experimental)"),
+                    ("snp", "AMD SEV-SNP (highly experimental)"),
+                ])
+                .name(pspn(&name, "type"))
+                .force_selection(true)
+                .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled"))),
             )
             .with_child(
                 Checkbox::new()
