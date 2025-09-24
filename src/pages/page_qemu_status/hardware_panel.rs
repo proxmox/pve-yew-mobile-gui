@@ -8,11 +8,11 @@ use pwt::props::IntoOptionalInlineHtml;
 use serde_json::{Map, Value};
 
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VList, VNode};
+use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
-use pwt::widget::{Container, Fa, List, ListTile};
+use pwt::widget::{Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -186,7 +186,7 @@ impl PveQemuHardwarePanel {
     fn view_list(
         &self,
         ctx: &Context<Self>,
-        (data, pending, changes): &(QemuConfig, QemuConfig, HashSet<String>),
+        (data, pending, _changes): &(QemuConfig, QemuConfig, HashSet<String>),
     ) -> Html {
         let record: Value = serde_json::to_value(data).unwrap();
         let pending: Value = serde_json::to_value(pending).unwrap();
