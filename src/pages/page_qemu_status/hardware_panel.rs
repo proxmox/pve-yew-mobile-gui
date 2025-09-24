@@ -5,7 +5,7 @@ use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::http_put;
 use pwt::props::IntoOptionalInlineHtml;
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -25,7 +25,9 @@ use crate::form::{
     qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
     qemu_scsihw_property, qemu_sockets_cores_property, typed_load,
 };
-use crate::widgets::{icon_list_tile, EditDialog, EditableProperty};
+use crate::widgets::{
+    icon_list_tile, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
+};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct QemuHardwarePanel {
@@ -40,6 +42,14 @@ impl QemuHardwarePanel {
             vmid,
         }
     }
+}
+pub fn qemu_pending_config_array_to_rust(
+    data: Vec<QemuPendingConfigValue>,
+) -> Result<(QemuConfig, QemuConfig, HashSet<String>), Error> {
+    let (current, pending, changes) = pve_pending_config_array_to_objects(data)?;
+    let current = serde_json::from_value(current)?;
+    let pending = serde_json::from_value(pending)?;
+    Ok((current, pending, changes))
 }
 
 pub enum Msg {
@@ -62,35 +72,6 @@ pub struct PveQemuHardwarePanel {
     display_property: EditableProperty,
     machine_property: EditableProperty,
     scsihw_property: EditableProperty,
-}
-
-fn qemu_pending_config_array_to_objects(
-    data: Vec<QemuPendingConfigValue>,
-) -> Result<(QemuConfig, QemuConfig, HashSet<String>), Error> {
-    let mut current = Map::new();
-    let mut pending = Map::new();
-    let mut changes = HashSet::new();
-
-    for item in data.iter() {
-        if let Some(value) = item.value.clone() {
-            current.insert(item.key.clone(), value);
-        }
-        if matches!(item.delete, Some(1) | Some(2)) {
-            changes.insert(item.key.clone());
-            continue;
-        }
-        if let Some(value) = item.pending.clone() {
-            changes.insert(item.key.clone());
-            pending.insert(item.key.clone(), value);
-        } else if let Some(value) = item.value.clone() {
-            pending.insert(item.key.clone(), value);
-        }
-    }
-
-    let current = serde_json::from_value(Value::Object(current))?;
-    let pending: QemuConfig = serde_json::from_value(Value::Object(pending))?;
-
-    Ok((current, pending, changes))
 }
 
 impl PveQemuHardwarePanel {
@@ -318,9 +299,9 @@ impl Component for PveQemuHardwarePanel {
             }
             Msg::LoadResult(result) => {
                 self.data = match result {
-                    Ok(data) => Some(
-                        qemu_pending_config_array_to_objects(data).map_err(|err| err.to_string()),
-                    ),
+                    Ok(data) => {
+                        Some(qemu_pending_config_array_to_rust(data).map_err(|err| err.to_string()))
+                    }
                     Err(err) => Some(Err(err.to_string())),
                 };
                 let link = ctx.link().clone();

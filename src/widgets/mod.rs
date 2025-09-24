@@ -25,6 +25,9 @@ pub use edit_dialog::EditDialog;
 mod property_list;
 pub use property_list::PropertyList;
 
+mod pending_property_list;
+pub use pending_property_list::{pve_pending_config_array_to_objects, PendingPropertyList};
+
 mod editable_property;
 pub use editable_property::{EditableProperty, RenderPropertyInputPanelFn};
 
