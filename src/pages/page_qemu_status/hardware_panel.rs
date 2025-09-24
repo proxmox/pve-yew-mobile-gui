@@ -1,23 +1,25 @@
+use std::collections::HashSet;
 use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::http_put;
 use pwt::props::IntoOptionalInlineHtml;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{VComp, VList, VNode};
 
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
-use pwt::widget::{Fa, List, ListTile};
+use pwt::widget::{Container, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
+use crate::api_types::QemuPendingConfigValue;
 use crate::form::{
     qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
     qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
@@ -40,22 +42,15 @@ impl QemuHardwarePanel {
     }
 }
 
-fn get_config_url(node: &str, vmid: u32) -> String {
-    format!(
-        "/nodes/{}/qemu/{}/config",
-        percent_encode_component(node),
-        vmid
-    )
-}
 pub enum Msg {
     Load,
-    LoadResult(Result<QemuConfig, Error>),
+    LoadResult(Result<Vec<QemuPendingConfigValue>, Error>),
     Dialog(Option<Html>),
     EditProperty(EditableProperty),
 }
 
 pub struct PveQemuHardwarePanel {
-    data: Option<Result<QemuConfig, String>>,
+    data: Option<Result<(QemuConfig, QemuConfig, HashSet<String>), String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     dialog: Option<Html>,
@@ -69,30 +64,70 @@ pub struct PveQemuHardwarePanel {
     scsihw_property: EditableProperty,
 }
 
+fn qemu_pending_config_array_to_objects(
+    data: Vec<QemuPendingConfigValue>,
+) -> Result<(QemuConfig, QemuConfig, HashSet<String>), Error> {
+    let mut current = Map::new();
+    let mut pending = Map::new();
+    let mut changes = HashSet::new();
+
+    for item in data.iter() {
+        if let Some(value) = item.value.clone() {
+            current.insert(item.key.clone(), value);
+        }
+        if matches!(item.delete, Some(1) | Some(2)) {
+            changes.insert(item.key.clone());
+            continue;
+        }
+        if let Some(value) = item.pending.clone() {
+            changes.insert(item.key.clone());
+            pending.insert(item.key.clone(), value);
+        } else if let Some(value) = item.value.clone() {
+            pending.insert(item.key.clone(), value);
+        }
+    }
+
+    let current = serde_json::from_value(Value::Object(current))?;
+    let pending: QemuConfig = serde_json::from_value(Value::Object(pending))?;
+
+    Ok((current, pending, changes))
+}
+
 impl PveQemuHardwarePanel {
     fn property_tile(
         &self,
         ctx: &Context<Self>,
-        record: &Value,
+        current: &Value,
+        pending: &Value,
         property: &EditableProperty,
         icon: Fa,
         trailing: impl IntoOptionalInlineHtml,
     ) -> ListTile {
         let name = &property.name.as_str();
 
-        let value = match &record[name] {
-            Value::Null => property
-                .placeholder
-                .clone()
-                .unwrap_or(AttrValue::Static("-"))
-                .to_string()
-                .into(),
-            other => property
-                .renderer
-                .clone()
-                .unwrap()
-                .apply(name, other, &record),
+        let render_value = |data_record: &Value| {
+            let value = &data_record[name];
+            match value {
+                Value::Null => property
+                    .placeholder
+                    .clone()
+                    .unwrap_or(AttrValue::Static("-"))
+                    .to_string()
+                    .into(),
+                other => property
+                    .renderer
+                    .clone()
+                    .unwrap()
+                    .apply(name, other, &data_record),
+            }
         };
+
+        let mut value = render_value(current);
+        let new_value = render_value(pending);
+
+        if value != new_value {
+            value = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
+        }
 
         icon_list_tile(icon, property.title.clone(), value, trailing)
             .interactive(true)
@@ -102,7 +137,12 @@ impl PveQemuHardwarePanel {
             }))
     }
 
-    fn processor_list_tile(&self, ctx: &Context<Self>, record: &Value) -> ListTile {
+    fn processor_list_tile(
+        &self,
+        ctx: &Context<Self>,
+        record: &Value,
+        pending: &Value,
+    ) -> ListTile {
         let menu = Menu::new()
             .with_item(MenuItem::new(&self.sockets_cores_property.title).on_select(
                 ctx.link().callback({
@@ -134,6 +174,7 @@ impl PveQemuHardwarePanel {
         let tile = self.property_tile(
             ctx,
             record,
+            pending,
             &self.sockets_cores_property,
             Fa::new("cpu"),
             menu_button,
@@ -142,16 +183,22 @@ impl PveQemuHardwarePanel {
         tile
     }
 
-    fn view_list(&self, ctx: &Context<Self>, data: &QemuConfig) -> Html {
+    fn view_list(
+        &self,
+        ctx: &Context<Self>,
+        (data, pending, changes): &(QemuConfig, QemuConfig, HashSet<String>),
+    ) -> Html {
         let record: Value = serde_json::to_value(data).unwrap();
+        let pending: Value = serde_json::to_value(pending).unwrap();
+
         let mut list: Vec<ListTile> = Vec::new();
 
         let push_property_tile = |list: &mut Vec<_>, property, icon| {
-            list.push(self.property_tile(ctx, &record, property, icon, ()));
+            list.push(self.property_tile(ctx, &record, &pending, property, icon, ()));
         };
 
         push_property_tile(&mut list, &self.memory_property, Fa::new("memory"));
-        list.push(self.processor_list_tile(ctx, &record));
+        list.push(self.processor_list_tile(ctx, &record, &pending));
         push_property_tile(&mut list, &self.bios_property, Fa::new("microchip"));
         push_property_tile(&mut list, &self.display_property, Fa::new("desktop"));
         push_property_tile(&mut list, &self.machine_property, Fa::new("cogs"));
@@ -242,8 +289,11 @@ impl Component for PveQemuHardwarePanel {
                 self.dialog = dialog;
             }
             Msg::EditProperty(property) => {
-                let url = get_config_url(&props.node, props.vmid);
-
+                let url = format!(
+                    "/nodes/{}/qemu/{}/config",
+                    percent_encode_component(&props.node),
+                    props.vmid
+                );
                 let dialog = EditDialog::from(property.clone())
                     .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
                     .loader(typed_load::<QemuConfig>(url.clone()))
@@ -256,14 +306,23 @@ impl Component for PveQemuHardwarePanel {
             }
             Msg::Load => {
                 let link = ctx.link().clone();
-                let url = get_config_url(&props.node, props.vmid);
+                let url = format!(
+                    "/nodes/{}/qemu/{}/pending",
+                    percent_encode_component(&props.node),
+                    props.vmid
+                );
                 self.load_guard = Some(AsyncAbortGuard::spawn(async move {
                     let result = http_get(&url, None).await;
                     link.send_message(Msg::LoadResult(result));
                 }));
             }
             Msg::LoadResult(result) => {
-                self.data = Some(result.map_err(|err| err.to_string()));
+                self.data = match result {
+                    Ok(data) => Some(
+                        qemu_pending_config_array_to_objects(data).map_err(|err| err.to_string()),
+                    ),
+                    Err(err) => Some(Err(err.to_string())),
+                };
                 let link = ctx.link().clone();
                 self.reload_timeout = Some(Timeout::new(3000, move || {
                     link.send_message(Msg::Load);
