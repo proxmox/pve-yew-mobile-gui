@@ -5,7 +5,6 @@ use derivative::Derivative;
 use proxmox_yew_comp::utils::render_boolean;
 use serde_json::Value;
 
-use proxmox_yew_comp::RenderKVGridRecordFn;
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Field, FormContext};
 use pwt::widget::Row;
@@ -14,6 +13,27 @@ use pwt_macros::builder;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::widgets::EditDialog;
+
+/// For use with [EditableProperty]
+#[derive(Derivative)]
+#[derivative(Clone, PartialEq)]
+pub struct RenderPropertyFn(
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    #[allow(clippy::type_complexity)]
+    Rc<dyn Fn(&str, &Value, &Value) -> Html>,
+);
+
+impl RenderPropertyFn {
+    /// Creates a new [`RenderKVGridRecordFn`]
+    pub fn new(renderer: impl 'static + Fn(&str, &Value, &Value) -> Html) -> Self {
+        Self(Rc::new(renderer))
+    }
+
+    /// Apply the render function
+    pub fn apply(&self, name: &str, value: &Value, record: &Value) -> Html {
+        (self.0)(name, value, record)
+    }
+}
 
 /// For use with [EditableProperty]
 #[derive(Derivative)]
@@ -62,7 +82,7 @@ pub struct EditableProperty {
 
     #[builder(IntoPropValue, into_prop_value)]
     pub placeholder: Option<AttrValue>,
-    pub renderer: Option<RenderKVGridRecordFn>,
+    pub renderer: Option<RenderPropertyFn>,
 
     /// Load hook.
     #[builder(IntoPropValue, into_prop_value)]
@@ -143,7 +163,7 @@ impl EditableProperty {
     }
 
     pub fn set_renderer(&mut self, renderer: impl 'static + Fn(&str, &Value, &Value) -> Html) {
-        self.renderer = Some(RenderKVGridRecordFn::new(renderer));
+        self.renderer = Some(RenderPropertyFn::new(renderer));
     }
 
     pub fn render_input_panel(mut self, renderer: impl Into<RenderPropertyInputPanelFn>) -> Self {
