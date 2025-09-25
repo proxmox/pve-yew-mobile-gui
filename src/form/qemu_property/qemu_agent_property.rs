@@ -1,12 +1,47 @@
+use proxmox_schema::property_string::PropertyString;
+use proxmox_yew_comp::utils::render_boolean;
 use pve_api_types::QemuConfigAgent;
 
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Combobox};
 use pwt::widget::Column;
 use pwt::widget::{form::FormContext, Container};
+use serde_json::Value;
 
 use crate::form::{property_string_load_hook, property_string_submit_hook, pspn};
 use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
+
+fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
+    let qga: Result<PropertyString<QemuConfigAgent>, _> = serde_json::from_value(value.clone());
+
+    match qga {
+        Ok(qga) => {
+            if !qga.enabled {
+                return tr!("Disabled").into();
+            }
+            let mut parts = Vec::new();
+            parts.push(tr!("Enabled"));
+
+            if let Some(ty) = qga.ty {
+                parts.push(ty.to_string());
+            }
+            if let Some(enabled) = qga.fstrim_cloned_disks {
+                parts.push(format!("fstrim-cloned-disks: {}", render_boolean(enabled)));
+            }
+            if let Some(false) = qga.freeze_fs_on_backup {
+                parts.push(format!("freeze-fs-on-backup: {}", render_boolean(false)));
+            }
+            parts.join(", ").into()
+        }
+        Err(err) => {
+            log::error!("failed to parse qemu agent property: {err}");
+            match value {
+                Value::String(s) => s.into(),
+                _ => value.into(),
+            }
+        }
+    }
+}
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _record| {
@@ -73,6 +108,7 @@ pub fn qemu_agent_property() -> EditableProperty {
         .advanced_checkbox(true)
         .required(true)
         .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
+        .renderer(renderer)
         .render_input_panel(input_panel(name.clone()))
         .load_hook(property_string_load_hook::<QemuConfigAgent>(&name))
         .submit_hook(property_string_submit_hook::<QemuConfigAgent>(&name, true))
