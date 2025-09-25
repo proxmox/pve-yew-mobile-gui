@@ -211,6 +211,14 @@ pub fn qemu_sockets_cores_property() -> EditableProperty {
         ),
     )
     .required(true)
+    .revert_keys(Rc::new(
+        [
+            "sockets", "cores", "cpu", "vcpus", "cpuunits", "cpulimit", "affinity", "numa",
+        ]
+        .into_iter()
+        .map(AttrValue::from)
+        .collect(),
+    ))
     .renderer(renderer)
     .render_input_panel(input_panel())
     .load_hook(move |mut record: Value| {

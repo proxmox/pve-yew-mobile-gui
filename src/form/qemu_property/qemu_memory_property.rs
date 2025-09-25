@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use proxmox_human_byte::HumanByte;
 use proxmox_schema::property_string::PropertyString;
 use serde_json::Value;
@@ -130,6 +132,12 @@ pub fn qemu_memory_property() -> EditableProperty {
     EditableProperty::new("memory", tr!("Memory"))
         .advanced_checkbox(true)
         .required(true)
+        .revert_keys(Rc::new(
+            ["memory", "balloon", "shares"]
+                .into_iter()
+                .map(AttrValue::from)
+                .collect(),
+        ))
         .render_input_panel(input_panel())
         .renderer(render_value)
         .submit_hook(|form_ctx: FormContext| {

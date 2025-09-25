@@ -188,6 +188,12 @@ pub fn qemu_startup_property() -> EditableProperty {
 
 pub fn qemu_boot_property() -> EditableProperty {
     EditableProperty::new("boot", tr!("Boot Order"))
+        .revert_keys(Rc::new(
+            ["boot", "bootdisk"]
+                .into_iter()
+                .map(AttrValue::from)
+                .collect(),
+        ))
         .placeholder(format!(
             "{}, {}, {}",
             tr!("first Disk"),

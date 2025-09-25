@@ -70,6 +70,12 @@ pub struct EditableProperty {
     #[builder]
     pub required: bool,
 
+    /// Key names passed to the revert function (default the 'name' of the property)
+    ///
+    /// Note: Some properties editors combines multiple properties.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub revert_keys: Option<Rc<Vec<AttrValue>>>,
+
     /// Show advanced checkbox
     #[builder]
     pub advanced_checkbox: bool,
@@ -96,8 +102,10 @@ pub struct EditableProperty {
 
 impl EditableProperty {
     pub fn new(name: impl Into<AttrValue>, title: impl Into<AttrValue>) -> Self {
+        let name = name.into();
         Self {
             name: name.into(),
+            revert_keys: None,
             title: title.into(),
             required: false,
             placeholder: None,
