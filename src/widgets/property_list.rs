@@ -43,8 +43,8 @@ impl PropertyList {
 pub enum Msg {
     Load,
     LoadResult(Result<Value, String>),
-    CloseDialog,
-    ShowDialog(Html),
+    ShowDialog(Option<Html>),
+    EditProperty(EditableProperty),
 }
 
 pub struct PvePropertyList {
@@ -55,6 +55,60 @@ pub struct PvePropertyList {
 }
 
 impl PvePropertyList {
+    fn property_tile(
+        &self,
+        ctx: &Context<Self>,
+        record: &Value,
+        property: &EditableProperty,
+    ) -> ListTile {
+        let name = &property.name.as_str();
+        let value = record.get(name);
+
+        let value_text: Html = match (value, &property.renderer) {
+            (None | Some(Value::Null), _) => {
+                let placeholder = if let Some(placeholder) = &property.placeholder {
+                    placeholder.to_string().into()
+                } else {
+                    String::from("-")
+                };
+                Container::new()
+                    .class(pwt::css::Opacity::Half)
+                    .with_child(placeholder)
+                    .into()
+            }
+
+            (Some(value), None) => match value {
+                Value::String(value) => value.clone(),
+                Value::Bool(value) => render_boolean(*value),
+                Value::Number(n) => n.to_string(),
+                v => v.to_string(),
+            }
+            .into(),
+            (Some(value), Some(renderer)) => renderer.apply(&*property.name, &value, &record),
+        };
+
+        let list_tile = if property.single_row {
+            let trailing: Html = Container::new()
+                .style("text-align", "end")
+                .with_child(value_text)
+                .into();
+            form_list_tile(property.title.clone(), (), trailing)
+        } else {
+            form_list_tile(property.title.clone(), value_text, ())
+        };
+
+        if property.render_input_panel.is_some() {
+            list_tile
+                .interactive(true)
+                .on_activate(ctx.link().callback({
+                    let property = property.clone();
+                    move |_| Msg::EditProperty(property.clone())
+                }))
+        } else {
+            list_tile
+        }
+    }
+
     fn view_property(&self, ctx: &Context<Self>, record: &Value) -> Html {
         let props = ctx.props();
 
@@ -66,66 +120,7 @@ impl PvePropertyList {
                 continue;
             }
 
-            let value_text: Html = match (value, &item.renderer) {
-                (None | Some(Value::Null), _) => {
-                    let placeholder = if let Some(placeholder) = &item.placeholder {
-                        placeholder.to_string().into()
-                    } else {
-                        String::from("-")
-                    };
-                    Container::new()
-                        .class(pwt::css::Opacity::Half)
-                        .with_child(placeholder)
-                        .into()
-                }
-
-                (Some(value), None) => match value {
-                    Value::String(value) => value.clone(),
-                    Value::Bool(value) => render_boolean(*value),
-                    Value::Number(n) => n.to_string(),
-                    v => v.to_string(),
-                }
-                .into(),
-                (Some(value), Some(renderer)) => renderer.apply(&*item.name, &value, &record),
-            };
-
-            let mut list_tile = if item.single_row {
-                let trailing: Html = Container::new()
-                    .style("text-align", "end")
-                    .with_child(value_text)
-                    .into();
-                form_list_tile(item.title.clone(), (), trailing)
-            } else {
-                form_list_tile(item.title.clone(), value_text, ())
-            };
-
-            if let Some(on_submit) = props.on_submit.clone() {
-                if item.render_input_panel.is_some() {
-                    list_tile.set_interactive(true);
-                    list_tile.add_onclick({
-                        let link = ctx.link().clone();
-                        let item = item.clone();
-                        let loader = props.loader.clone();
-
-                        move |_| {
-                            if let Some(render_input_panel) = item.render_input_panel.clone() {
-                                let dialog = EditDialog::new(item.title.clone())
-                                    .advanced_checkbox(item.advanced_checkbox)
-                                    .on_done(link.callback(|_| Msg::CloseDialog))
-                                    .load_hook(item.load_hook.clone())
-                                    .loader(loader.clone())
-                                    .submit_hook(item.submit_hook.clone())
-                                    .on_submit(Some(on_submit.clone()))
-                                    .on_change(item.on_change.clone())
-                                    .renderer(render_input_panel);
-
-                                link.send_message(Msg::ShowDialog(dialog.into()));
-                            }
-                        }
-                    });
-                }
-            }
-
+            let mut list_tile = self.property_tile(ctx, record, item);
             list_tile.set_key(item.name.clone());
 
             tiles.push(list_tile);
@@ -162,6 +157,14 @@ impl Component for PvePropertyList {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::EditProperty(property) => {
+                let dialog = EditDialog::from(property.clone())
+                    .on_done(ctx.link().callback(|_| Msg::ShowDialog(None)))
+                    .loader(props.loader.clone())
+                    .on_submit(props.on_submit.clone())
+                    .into();
+                self.edit_dialog = Some(dialog);
+            }
             Msg::Load => {
                 self.reload_timeout = None;
                 let link = ctx.link().clone();
@@ -184,14 +187,10 @@ impl Component for PvePropertyList {
                 }));
             }
             Msg::ShowDialog(dialog) => {
-                self.edit_dialog = Some(dialog);
-            }
-            Msg::CloseDialog => {
-                if self.reload_timeout.is_some() {
+                if dialog.is_none() && self.reload_timeout.is_some() {
                     ctx.link().send_message(Msg::Load);
                 }
-
-                self.edit_dialog = None;
+                self.edit_dialog = dialog;
             }
         }
         true

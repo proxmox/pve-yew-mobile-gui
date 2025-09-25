@@ -12,7 +12,6 @@ use pwt::props::{IntoSubmitCallback, SubmitCallback};
 use pwt::widget::{Column, Container, List, ListTile};
 use pwt::AsyncAbortGuard;
 
-use proxmox_yew_comp::utils::render_boolean;
 use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback};
 
 use pwt_macros::builder;
@@ -139,12 +138,16 @@ impl PvePendingPropertyList {
             form_list_tile(property.title.clone(), value, ())
         };
 
-        list_tile
-            .interactive(true)
-            .on_activate(ctx.link().callback({
-                let property = property.clone();
-                move |_| Msg::EditProperty(property.clone())
-            }))
+        if property.render_input_panel.is_some() {
+            list_tile
+                .interactive(true)
+                .on_activate(ctx.link().callback({
+                    let property = property.clone();
+                    move |_| Msg::EditProperty(property.clone())
+                }))
+        } else {
+            list_tile
+        }
     }
 
     fn view_property(
