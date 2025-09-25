@@ -3,7 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use derivative::Derivative;
 use proxmox_yew_comp::utils::render_boolean;
-use serde_json::{Number, Value};
+use serde_json::Value;
 
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Field, FormContext};

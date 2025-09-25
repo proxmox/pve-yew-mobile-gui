@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
+use proxmox_yew_comp::utils::render_boolean;
 use serde_json::{Map, Value};
 
 use yew::virtual_dom::{VComp, VNode};
@@ -51,26 +52,34 @@ impl PendingPropertyList {
         property: &EditableProperty,
     ) -> Html {
         if property.single_row {
-            let html = super::PropertyList::render_property_value(pending, property);
-            let html = html! {<div class="pwt-color-warning">{html}</div>};
-            return html;
+            let value = super::PropertyList::render_property_value(current, property);
+            let new_value = super::PropertyList::render_property_value(pending, property);
+
+            return if value != new_value {
+                html! {<div class="pwt-color-warning">{new_value}</div>}
+            } else {
+                value
+            };
         }
 
         let name = &property.name.as_str();
         let render_value = |data_record: &Value| {
             let value = &data_record[name];
-            match value {
-                Value::Null => property
+            match (value, &property.renderer) {
+                (Value::Null, _) => property
                     .placeholder
                     .clone()
                     .unwrap_or(AttrValue::Static("-"))
                     .to_string()
                     .into(),
-                other => property
-                    .renderer
-                    .clone()
-                    .unwrap()
-                    .apply(name, other, &data_record),
+                (value, None) => match value {
+                    Value::String(value) => value.clone(),
+                    Value::Bool(value) => render_boolean(*value),
+                    Value::Number(n) => n.to_string(),
+                    v => v.to_string(),
+                }
+                .into(),
+                (other, Some(renderer)) => renderer.apply(name, other, &data_record),
             }
         };
 

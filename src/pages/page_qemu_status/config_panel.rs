@@ -12,7 +12,7 @@ use pve_api_types::QemuConfig;
 
 use crate::{
     form::typed_load,
-    widgets::{EditableProperty, PropertyList},
+    widgets::{EditableProperty, PendingPropertyList},
 };
 
 #[derive(Clone, PartialEq, Properties)]
@@ -82,9 +82,14 @@ impl Component for PveQemuConfigPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         let url = get_config_url(&props.node, props.vmid);
-
-        PropertyList::new(Rc::clone(&self.properties))
-            .loader(typed_load::<QemuConfig>(url.clone()))
+        let pending_url = format!(
+            "/nodes/{}/qemu/{}/pending",
+            percent_encode_component(&props.node),
+            props.vmid
+        );
+        PendingPropertyList::new(Rc::clone(&self.properties))
+            .pending_loader(pending_url)
+            .editor_loader(typed_load::<QemuConfig>(url.clone()))
             .on_submit(move |value: Value| http_put(url.clone(), Some(value)))
             .into()
     }
