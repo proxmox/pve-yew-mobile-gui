@@ -73,7 +73,7 @@ impl Component for PveQemuConfigPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let url = format!(
+        let editor_url = format!(
             "/nodes/{}/qemu/{}/config",
             percent_encode_component(&props.node),
             props.vmid
@@ -85,8 +85,8 @@ impl Component for PveQemuConfigPanel {
         );
         PendingPropertyList::new(Rc::clone(&self.properties))
             .pending_loader(pending_url)
-            .editor_loader(typed_load::<QemuConfig>(url.clone()))
-            .on_submit(move |value: Value| http_put(url.clone(), Some(value)))
+            .editor_loader(typed_load::<QemuConfig>(editor_url.clone()))
+            .on_submit(move |value: Value| http_put(editor_url.clone(), Some(value)))
             .into()
     }
 }

@@ -5,7 +5,7 @@ use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::utils::render_boolean;
 use pwt::touch::SnackBar;
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 
 use yew::virtual_dom::{VComp, VNode};
 
@@ -200,13 +200,15 @@ pub enum Msg {
     LoadResult(Result<Vec<QemuPendingConfigValue>, String>),
     ShowDialog(Option<Html>),
     EditProperty(EditableProperty),
-    Revert(String),
+    Revert(EditableProperty),
+    RevertResult(Result<(), Error>),
 }
 
 pub struct PvePendingPropertyList {
     data: Option<Result<(Value, Value, HashSet<String>), String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
+    revert_guard: Option<AsyncAbortGuard>,
     edit_dialog: Option<Html>,
 }
 
@@ -219,9 +221,9 @@ impl PvePendingPropertyList {
         property: &EditableProperty,
     ) -> ListTile {
         let on_revert = Callback::from({
-            let name = property.name.clone();
+            let property = property.clone();
             ctx.link()
-                .callback(move |_: Event| Msg::Revert(name.to_string()))
+                .callback(move |_: Event| Msg::Revert(property.clone()))
         });
 
         let list_tile =
@@ -284,6 +286,7 @@ impl Component for PvePendingPropertyList {
             data: None,
             reload_timeout: None,
             load_guard: None,
+            revert_guard: None,
             edit_dialog: None,
         }
     }
@@ -291,11 +294,30 @@ impl Component for PvePendingPropertyList {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::Revert(name) => {
-                log::info!("Revert {name}");
-                ctx.link().show_snackbar(
-                    SnackBar::new().message(tr!("Revert property '{name}' failed - not implement")),
-                );
+            Msg::Revert(property) => {
+                let link = ctx.link().clone();
+                let keys = match property.revert_keys.as_deref() {
+                    Some(keys) => keys.iter().map(|a| a.to_string()).collect(),
+                    None => vec![property.name.to_string()],
+                };
+                if let Some(on_submit) = props.on_submit.clone() {
+                    let param = json!({ "revert": keys });
+                    self.revert_guard = Some(AsyncAbortGuard::spawn(async move {
+                        let result = on_submit.apply(param).await;
+                        link.send_message(Msg::RevertResult(result));
+                    }));
+                }
+            }
+            Msg::RevertResult(result) => {
+                if let Err(err) = result {
+                    ctx.link().show_snackbar(
+                        SnackBar::new()
+                            .message(tr!("Revert property failed") + " - " + &err.to_string()),
+                    );
+                }
+                if self.reload_timeout.is_some() {
+                    ctx.link().send_message(Msg::Load);
+                }
             }
             Msg::EditProperty(property) => {
                 let dialog = EditDialog::from(property.clone())
