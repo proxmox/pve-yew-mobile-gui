@@ -90,15 +90,7 @@ impl PvePropertyList {
         property: &EditableProperty,
     ) -> ListTile {
         let value_text = PropertyList::render_property_value(record, property);
-        let list_tile = if property.single_row {
-            let trailing: Html = Container::new()
-                .style("text-align", "end")
-                .with_child(value_text)
-                .into();
-            form_list_tile(property.title.clone(), (), trailing)
-        } else {
-            form_list_tile(property.title.clone(), value_text, ())
-        };
+        let list_tile = form_list_tile(property.title.clone(), value_text, ());
 
         if property.render_input_panel.is_some() {
             list_tile

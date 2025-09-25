@@ -85,8 +85,20 @@ impl PveQemuHardwarePanel {
         icon: Fa,
         trailing: impl IntoOptionalInlineHtml,
     ) -> ListTile {
-        let value = PendingPropertyList::render_property_value(current, pending, property);
-        icon_list_tile(icon, property.title.clone(), value, trailing)
+        let on_revert = Callback::from(|_: Event| {
+            log::info!("TEST1");
+        });
+
+        let list_tile = PendingPropertyList::render_list_tile(
+            current,
+            pending,
+            property,
+            Some(icon.into()),
+            trailing,
+            on_revert,
+        );
+
+        list_tile
             .interactive(true)
             .on_activate(ctx.link().callback({
                 let property = property.clone();
@@ -202,7 +214,7 @@ impl PveQemuHardwarePanel {
         }
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
-            .grid_template_columns("auto 1fr auto")
+            .grid_template_columns("auto 1fr")
             .into()
     }
 }

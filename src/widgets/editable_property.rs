@@ -70,12 +70,6 @@ pub struct EditableProperty {
     #[builder]
     pub required: bool,
 
-    /// Use single line layout (title/value in one row).
-    ///
-    /// Only used for the mobile list layout.
-    #[builder]
-    pub single_row: bool,
-
     /// Show advanced checkbox
     #[builder]
     pub advanced_checkbox: bool,
@@ -106,7 +100,6 @@ impl EditableProperty {
             name: name.into(),
             title: title.into(),
             required: false,
-            single_row: false,
             placeholder: None,
             renderer: None,
             //loader: None,
@@ -127,7 +120,6 @@ impl EditableProperty {
         let name = name.into();
         let default = default.into_prop_value();
         Self::new(name.clone(), title)
-            .single_row(true)
             .placeholder(default.map(|default| render_boolean(default)))
             .renderer(move |_name, value, _data| {
                 let text: String = match value {

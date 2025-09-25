@@ -4,20 +4,22 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::utils::render_boolean;
+use pwt::touch::SnackBar;
 use serde_json::{Map, Value};
 
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::props::{IntoSubmitCallback, SubmitCallback};
-use pwt::widget::{Column, Container, List, ListTile};
+use pwt::props::{IntoOptionalInlineHtml, IntoSubmitCallback, SubmitCallback};
+use pwt::touch::SnackBarContextExt;
+use pwt::widget::{ActionIcon, Column, Fa, List, ListTile, Row};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback};
 
 use pwt_macros::builder;
 
-use crate::widgets::{form_list_tile, EditDialog, EditableProperty};
+use crate::widgets::{title_subtitle_column, EditDialog, EditableProperty};
 use crate::QemuPendingConfigValue;
 
 #[derive(Properties, Clone, PartialEq)]
@@ -50,18 +52,7 @@ impl PendingPropertyList {
         current: &Value,
         pending: &Value,
         property: &EditableProperty,
-    ) -> Html {
-        if property.single_row {
-            let value = super::PropertyList::render_property_value(current, property);
-            let new_value = super::PropertyList::render_property_value(pending, property);
-
-            return if value != new_value {
-                html! {<div class="pwt-color-warning">{new_value}</div>}
-            } else {
-                value
-            };
-        }
-
+    ) -> (Html, Option<Html>) {
         let name = &property.name.as_str();
         let render_value = |data_record: &Value| {
             let value = &data_record[name];
@@ -83,13 +74,66 @@ impl PendingPropertyList {
             }
         };
 
-        let mut value = render_value(current);
+        let value = render_value(current);
         let new_value = render_value(pending);
 
         if value != new_value {
-            value = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
+            //value = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
+            (value, Some(new_value))
+        } else {
+            (value, None)
         }
-        value
+    }
+
+    pub fn render_list_tile(
+        current: &Value,
+        pending: &Value,
+        property: &EditableProperty,
+        icon: Option<Fa>,
+        trailing: impl IntoOptionalInlineHtml,
+        on_revert: Callback<Event>,
+    ) -> ListTile {
+        let (value, new_value) = Self::render_property_value(current, pending, property);
+
+        let revert: Html = ActionIcon::new("fa fa-undo")
+            .on_activate(on_revert.clone())
+            .into();
+
+        if let Some(new_value) = new_value {
+            let subtitle = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
+            let content: Html = Row::new()
+                .class(pwt::css::AlignItems::Center)
+                .class(pwt::css::JustifyContent::End)
+                .gap(1)
+                .with_child(title_subtitle_column(property.title.clone(), subtitle))
+                .with_flex_spacer()
+                .with_child(revert)
+                .with_optional_child(trailing.into_optional_inline_html())
+                .into();
+
+            ListTile::new()
+                .class(pwt::css::AlignItems::Center)
+                //.class("pwt-column-gap-2")
+                .class("pwt-gap-2")
+                .border_bottom(true)
+                .with_optional_child(icon.map(|i| i.fixed_width().large_2x()))
+                .with_child(content)
+        } else {
+            let trailing = trailing.into_optional_inline_html();
+
+            ListTile::new()
+                .class(pwt::css::AlignItems::Center)
+                //.class("pwt-column-gap-2")
+                .class("pwt-gap-2")
+                .border_bottom(true)
+                .with_optional_child(icon.map(|i| i.fixed_width().large_2x()))
+                .with_child(
+                    Row::new()
+                        .with_child(title_subtitle_column(property.title.clone(), value))
+                        .with_flex_spacer()
+                        .with_optional_child(trailing.into_optional_inline_html()),
+                )
+        }
     }
 }
 
@@ -128,6 +172,7 @@ pub enum Msg {
     LoadResult(Result<Vec<QemuPendingConfigValue>, String>),
     ShowDialog(Option<Html>),
     EditProperty(EditableProperty),
+    Revert(String),
 }
 
 pub struct PvePendingPropertyList {
@@ -145,19 +190,14 @@ impl PvePendingPropertyList {
         pending: &Value,
         property: &EditableProperty,
     ) -> ListTile {
-        let value = PendingPropertyList::render_property_value(current, pending, property);
-        // fixme: revert button?
+        let on_revert = Callback::from({
+            let name = property.name.clone();
+            ctx.link()
+                .callback(move |_: Event| Msg::Revert(name.to_string()))
+        });
 
-        let list_tile = if property.single_row {
-            // fixme: single row pending values???
-            let trailing: Html = Container::new()
-                .style("text-align", "end")
-                .with_child(value)
-                .into();
-            form_list_tile(property.title.clone(), (), trailing)
-        } else {
-            form_list_tile(property.title.clone(), value, ())
-        };
+        let list_tile =
+            PendingPropertyList::render_list_tile(current, pending, property, None, (), on_revert);
 
         if property.render_input_panel.is_some() {
             list_tile
@@ -198,7 +238,7 @@ impl PvePendingPropertyList {
                 List::from_tiles(tiles)
                     .virtual_scroll(Some(false))
                     //fixme: .separator(props.separator)
-                    .grid_template_columns("1fr auto")
+                    .grid_template_columns("1fr")
                     .class(pwt::css::FlexFit),
             )
             .with_optional_child(self.edit_dialog.clone())
@@ -223,6 +263,12 @@ impl Component for PvePendingPropertyList {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::Revert(name) => {
+                log::info!("Revert {name}");
+                ctx.link().show_snackbar(
+                    SnackBar::new().message(tr!("Revert property '{name}' failed - not implement")),
+                );
+            }
             Msg::EditProperty(property) => {
                 let dialog = EditDialog::from(property.clone())
                     .on_done(ctx.link().callback(|_| Msg::ShowDialog(None)))
