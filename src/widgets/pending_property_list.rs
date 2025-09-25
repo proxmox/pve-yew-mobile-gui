@@ -45,6 +45,43 @@ impl PendingPropertyList {
     pub fn new(properties: Rc<Vec<EditableProperty>>) -> Self {
         yew::props!(Self { properties })
     }
+    pub fn render_property_value(
+        current: &Value,
+        pending: &Value,
+        property: &EditableProperty,
+    ) -> Html {
+        if property.single_row {
+            let html = super::PropertyList::render_property_value(pending, property);
+            let html = html! {<div class="pwt-color-warning">{html}</div>};
+            return html;
+        }
+
+        let name = &property.name.as_str();
+        let render_value = |data_record: &Value| {
+            let value = &data_record[name];
+            match value {
+                Value::Null => property
+                    .placeholder
+                    .clone()
+                    .unwrap_or(AttrValue::Static("-"))
+                    .to_string()
+                    .into(),
+                other => property
+                    .renderer
+                    .clone()
+                    .unwrap()
+                    .apply(name, other, &data_record),
+            }
+        };
+
+        let mut value = render_value(current);
+        let new_value = render_value(pending);
+
+        if value != new_value {
+            value = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
+        }
+        value
+    }
 }
 
 /// Parse PVE pending configuration array
@@ -99,32 +136,7 @@ impl PvePendingPropertyList {
         pending: &Value,
         property: &EditableProperty,
     ) -> ListTile {
-        let name = &property.name.as_str();
-
-        let render_value = |data_record: &Value| {
-            let value = &data_record[name];
-            match value {
-                Value::Null => property
-                    .placeholder
-                    .clone()
-                    .unwrap_or(AttrValue::Static("-"))
-                    .to_string()
-                    .into(),
-                other => property
-                    .renderer
-                    .clone()
-                    .unwrap()
-                    .apply(name, other, &data_record),
-            }
-        };
-
-        let mut value = render_value(current);
-        let new_value = render_value(pending);
-
-        if value != new_value {
-            value = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
-        }
-
+        let value = PendingPropertyList::render_property_value(current, pending, property);
         // fixme: revert button?
 
         let list_tile = if property.single_row {

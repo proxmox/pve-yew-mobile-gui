@@ -27,6 +27,7 @@ use crate::form::{
 };
 use crate::widgets::{
     icon_list_tile, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
+    PendingPropertyList,
 };
 
 #[derive(Clone, PartialEq, Properties)]
@@ -84,32 +85,7 @@ impl PveQemuHardwarePanel {
         icon: Fa,
         trailing: impl IntoOptionalInlineHtml,
     ) -> ListTile {
-        let name = &property.name.as_str();
-
-        let render_value = |data_record: &Value| {
-            let value = &data_record[name];
-            match value {
-                Value::Null => property
-                    .placeholder
-                    .clone()
-                    .unwrap_or(AttrValue::Static("-"))
-                    .to_string()
-                    .into(),
-                other => property
-                    .renderer
-                    .clone()
-                    .unwrap()
-                    .apply(name, other, &data_record),
-            }
-        };
-
-        let mut value = render_value(current);
-        let new_value = render_value(pending);
-
-        if value != new_value {
-            value = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
-        }
-
+        let value = PendingPropertyList::render_property_value(current, pending, property);
         icon_list_tile(icon, property.title.clone(), value, trailing)
             .interactive(true)
             .on_activate(ctx.link().callback({

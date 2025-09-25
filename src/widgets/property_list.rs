@@ -38,6 +38,34 @@ impl PropertyList {
     pub fn new(properties: Rc<Vec<EditableProperty>>) -> Self {
         yew::props!(Self { properties })
     }
+
+    pub fn render_property_value(record: &Value, property: &EditableProperty) -> Html {
+        let name = &property.name.as_str();
+        let value = record.get(name);
+
+        match (value, &property.renderer) {
+            (None | Some(Value::Null), _) => {
+                let placeholder = if let Some(placeholder) = &property.placeholder {
+                    placeholder.to_string().into()
+                } else {
+                    String::from("-")
+                };
+                Container::new()
+                    .class(pwt::css::Opacity::Half)
+                    .with_child(placeholder)
+                    .into()
+            }
+
+            (Some(value), None) => match value {
+                Value::String(value) => value.clone(),
+                Value::Bool(value) => render_boolean(*value),
+                Value::Number(n) => n.to_string(),
+                v => v.to_string(),
+            }
+            .into(),
+            (Some(value), Some(renderer)) => renderer.apply(&*property.name, &value, &record),
+        }
+    }
 }
 
 pub enum Msg {
@@ -61,32 +89,7 @@ impl PvePropertyList {
         record: &Value,
         property: &EditableProperty,
     ) -> ListTile {
-        let name = &property.name.as_str();
-        let value = record.get(name);
-
-        let value_text: Html = match (value, &property.renderer) {
-            (None | Some(Value::Null), _) => {
-                let placeholder = if let Some(placeholder) = &property.placeholder {
-                    placeholder.to_string().into()
-                } else {
-                    String::from("-")
-                };
-                Container::new()
-                    .class(pwt::css::Opacity::Half)
-                    .with_child(placeholder)
-                    .into()
-            }
-
-            (Some(value), None) => match value {
-                Value::String(value) => value.clone(),
-                Value::Bool(value) => render_boolean(*value),
-                Value::Number(n) => n.to_string(),
-                v => v.to_string(),
-            }
-            .into(),
-            (Some(value), Some(renderer)) => renderer.apply(&*property.name, &value, &record),
-        };
-
+        let value_text = PropertyList::render_property_value(record, property);
         let list_tile = if property.single_row {
             let trailing: Html = Container::new()
                 .style("text-align", "end")
