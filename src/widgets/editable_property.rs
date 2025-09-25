@@ -3,7 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use derivative::Derivative;
 use proxmox_yew_comp::utils::render_boolean;
-use serde_json::Value;
+use serde_json::{Number, Value};
 
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Field, FormContext};
@@ -130,12 +130,16 @@ impl EditableProperty {
             .single_row(true)
             .placeholder(default.map(|default| render_boolean(default)))
             .renderer(move |_name, value, _data| {
-                let text: String = match value.as_bool() {
-                    Some(value) => render_boolean(value),
-                    None => match default {
+                let text: String = match value {
+                    Value::Bool(value) => render_boolean(*value),
+                    Value::Number(n) if n.as_u64() == Some(0) || n.as_u64() == Some(1) => {
+                        render_boolean(n.as_u64() == Some(1))
+                    }
+                    Value::Null => match default {
                         Some(default) => render_boolean(default),
                         None => "-".into(),
                     },
+                    _ => value.to_string(),
                 };
                 text.into()
             })
