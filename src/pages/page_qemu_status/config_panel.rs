@@ -30,14 +30,6 @@ impl QemuConfigPanel {
     }
 }
 
-fn get_config_url(node: &str, vmid: u32) -> String {
-    format!(
-        "/nodes/{}/qemu/{}/config",
-        percent_encode_component(node),
-        vmid
-    )
-}
-
 pub struct PveQemuConfigPanel {
     properties: Rc<Vec<EditableProperty>>,
 }
@@ -81,7 +73,11 @@ impl Component for PveQemuConfigPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let url = get_config_url(&props.node, props.vmid);
+        let url = format!(
+            "/nodes/{}/qemu/{}/config",
+            percent_encode_component(&props.node),
+            props.vmid
+        );
         let pending_url = format!(
             "/nodes/{}/qemu/{}/pending",
             percent_encode_component(&props.node),
