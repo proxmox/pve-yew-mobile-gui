@@ -89,13 +89,8 @@ impl PveQemuHardwarePanel {
             log::info!("TEST1");
         });
 
-        let list_tile = PendingPropertyList::render_list_tile(
-            current,
-            pending,
-            property,
-            Some(icon.into()),
-            trailing,
-            on_revert,
+        let list_tile = PendingPropertyList::render_icon_list_tile(
+            current, pending, property, icon, trailing, on_revert,
         );
 
         list_tile

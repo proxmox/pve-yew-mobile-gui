@@ -85,7 +85,35 @@ impl PendingPropertyList {
         }
     }
 
+    /// Render a ListTile with a single child.
+    ///
+    /// Suitable for a "grid-template-columns: 1fr".
     pub fn render_list_tile(
+        current: &Value,
+        pending: &Value,
+        property: &EditableProperty,
+        trailing: impl IntoOptionalInlineHtml,
+        on_revert: Callback<Event>,
+    ) -> ListTile {
+        Self::render_list_tile_internal(current, pending, property, None, trailing, on_revert)
+    }
+
+    /// Render a ListTile with a two children, icon + rest.
+    ///
+    /// Suitable for a "grid-template-columns: "auto 1fr".
+    pub fn render_icon_list_tile(
+        current: &Value,
+        pending: &Value,
+        property: &EditableProperty,
+        icon: Fa,
+        trailing: impl IntoOptionalInlineHtml,
+        on_revert: Callback<Event>,
+    ) -> ListTile {
+        Self::render_list_tile_internal(current, pending, property, Some(icon), trailing, on_revert)
+    }
+
+    // Note: We do not use 3 columns so that we do not waste space on the right side.
+    fn render_list_tile_internal(
         current: &Value,
         pending: &Value,
         property: &EditableProperty,
@@ -197,7 +225,7 @@ impl PvePendingPropertyList {
         });
 
         let list_tile =
-            PendingPropertyList::render_list_tile(current, pending, property, None, (), on_revert);
+            PendingPropertyList::render_list_tile(current, pending, property, (), on_revert);
 
         if property.render_input_panel.is_some() {
             list_tile
