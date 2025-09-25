@@ -146,7 +146,12 @@ impl EditableProperty {
             .render_input_panel(move |_form_ctx, _record| {
                 Row::new()
                     .with_flex_spacer()
-                    .with_child(Checkbox::new().name(name.to_string()).switch(true))
+                    .with_child(
+                        Checkbox::new()
+                            .default(default)
+                            .name(name.to_string())
+                            .switch(true),
+                    )
                     .into()
             })
     }
