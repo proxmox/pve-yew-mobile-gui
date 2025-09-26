@@ -24,7 +24,7 @@ use crate::api_types::QemuPendingConfigValue;
 use crate::form::{
     qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
     qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
-    qemu_scsihw_property, qemu_sockets_cores_property, typed_load,
+    qemu_network_property, qemu_scsihw_property, qemu_sockets_cores_property, typed_load,
 };
 use crate::widgets::{
     icon_list_tile, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
@@ -105,7 +105,7 @@ impl PveQemuHardwarePanel {
         ctx: &Context<Self>,
         current: &Value,
         pending: &Value,
-        property: &EditableProperty,
+        property: EditableProperty,
         icon: Fa,
         trailing: impl IntoOptionalInlineHtml,
     ) -> ListTile {
@@ -116,7 +116,7 @@ impl PveQemuHardwarePanel {
         });
 
         let list_tile = PendingPropertyList::render_icon_list_tile(
-            current, pending, property, icon, trailing, on_revert,
+            current, pending, &property, icon, trailing, on_revert,
         );
 
         list_tile
@@ -165,7 +165,7 @@ impl PveQemuHardwarePanel {
             ctx,
             record,
             pending,
-            &self.sockets_cores_property,
+            self.sockets_cores_property.clone(),
             Fa::new("cpu"),
             menu_button,
         );
@@ -178,6 +178,8 @@ impl PveQemuHardwarePanel {
         ctx: &Context<Self>,
         (data, pending, _changes): &(QemuConfig, QemuConfig, HashSet<String>),
     ) -> Html {
+        let props = ctx.props();
+
         let record: Value = serde_json::to_value(data).unwrap();
         let pending: Value = serde_json::to_value(pending).unwrap();
 
@@ -187,12 +189,12 @@ impl PveQemuHardwarePanel {
             list.push(self.property_tile(ctx, &record, &pending, property, icon, ()));
         };
 
-        push_property_tile(&mut list, &self.memory_property, Fa::new("memory"));
+        push_property_tile(&mut list, self.memory_property.clone(), Fa::new("memory"));
         list.push(self.processor_list_tile(ctx, &record, &pending));
-        push_property_tile(&mut list, &self.bios_property, Fa::new("microchip"));
-        push_property_tile(&mut list, &self.display_property, Fa::new("desktop"));
-        push_property_tile(&mut list, &self.machine_property, Fa::new("cogs"));
-        push_property_tile(&mut list, &self.scsihw_property, Fa::new("database"));
+        push_property_tile(&mut list, self.bios_property.clone(), Fa::new("microchip"));
+        push_property_tile(&mut list, self.display_property.clone(), Fa::new("desktop"));
+        push_property_tile(&mut list, self.machine_property.clone(), Fa::new("cogs"));
+        push_property_tile(&mut list, self.scsihw_property.clone(), Fa::new("database"));
 
         for (n, disk_config) in &data.ide {
             if let Ok(config) =
@@ -225,13 +227,10 @@ impl PveQemuHardwarePanel {
             ));
         }
 
-        for (n, net_config) in &data.net {
-            list.push(icon_list_tile(
-                Fa::new("exchange"),
-                tr!("Network Device") + &format!(" (net{n})"),
-                net_config.to_string(),
-                (),
-            ));
+        for (n, _net_config) in &data.net {
+            let name = format!("net{n}");
+            let property = qemu_network_property(&name, Some(props.node.clone()));
+            push_property_tile(&mut list, property, Fa::new("exchange"));
         }
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())

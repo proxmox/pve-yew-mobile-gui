@@ -1,7 +1,6 @@
 use proxmox_schema::property_string::PropertyString;
 use serde_json::{json, Value};
 
-use proxmox_schema::ApiType;
 use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType};
 
 use pwt::prelude::*;
@@ -108,7 +107,7 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
         .load_hook({
             let name = name.clone();
             move |mut record| {
-                flatten_property_string(&mut record, &name, &PveQemuSevFmt::API_SCHEMA)?;
+                flatten_property_string::<PveQemuSevFmt>(&mut record, &name)?;
 
                 let no_debug = record[pspn(&name, "no-debug")].as_bool().unwrap_or(false);
                 record[pspn(&name, "debug")] = (!no_debug).into();

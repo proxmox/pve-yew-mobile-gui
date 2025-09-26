@@ -2,8 +2,6 @@ use anyhow::bail;
 use regex::Regex;
 use serde_json::Value;
 
-use proxmox_schema::ApiType;
-
 use pve_api_types::PveQmSmbios1;
 
 use pwt::prelude::*;
@@ -97,7 +95,7 @@ pub fn qemu_smbios_property() -> EditableProperty {
             let name = name.clone();
 
             move |mut record: Value| {
-                flatten_property_string(&mut record, &name, &PveQmSmbios1::API_SCHEMA)?;
+                flatten_property_string::<PveQmSmbios1>(&mut record, &name)?;
 
                 // decode base64 encoded properties
                 if let Some(Value::Bool(true)) = record.get(pspn(&name, "base64")) {

@@ -222,7 +222,7 @@ pub fn qemu_sockets_cores_property() -> EditableProperty {
     .renderer(renderer)
     .render_input_panel(input_panel())
     .load_hook(move |mut record: Value| {
-        flatten_property_string(&mut record, "cpu", &PveVmCpuConf::API_SCHEMA)?;
+        flatten_property_string::<PveVmCpuConf>(&mut record, "cpu")?;
         Ok(record)
     })
     .submit_hook(|form_ctx: FormContext| {
@@ -255,7 +255,7 @@ pub fn qemu_cpu_flags_property() -> EditableProperty {
         .renderer(renderer)
         .render_input_panel(cpu_flags_input_panel())
         .load_hook(move |mut record: Value| {
-            flatten_property_string(&mut record, "cpu", &PveVmCpuConf::API_SCHEMA)?;
+            flatten_property_string::<PveVmCpuConf>(&mut record, "cpu")?;
             Ok(record)
         })
         .submit_hook(|form_ctx: FormContext| {

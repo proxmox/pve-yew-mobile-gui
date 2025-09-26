@@ -4,8 +4,6 @@ use proxmox_human_byte::HumanByte;
 use proxmox_schema::property_string::PropertyString;
 use serde_json::Value;
 
-use proxmox_schema::ApiType;
-
 use pve_api_types::QemuConfigMemory;
 
 use pwt::prelude::*;
@@ -153,7 +151,7 @@ pub fn qemu_memory_property() -> EditableProperty {
             Ok(data)
         })
         .load_hook(|mut record| {
-            flatten_property_string(&mut record, "memory", &QemuConfigMemory::API_SCHEMA)?;
+            flatten_property_string::<QemuConfigMemory>(&mut record, "memory")?;
             let current_memory_prop = pspn("memory", "current");
 
             let use_ballooning = record["balloon"].as_u64().is_some();

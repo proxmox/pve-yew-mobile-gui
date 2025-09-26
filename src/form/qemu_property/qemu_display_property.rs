@@ -2,7 +2,6 @@ use std::rc::Rc;
 
 use proxmox_human_byte::HumanByte;
 use proxmox_schema::property_string::PropertyString;
-use proxmox_schema::ApiType;
 use serde_json::Value;
 
 use pwt::prelude::*;
@@ -170,7 +169,7 @@ pub fn qemu_display_property() -> EditableProperty {
             VComp::new::<StatefulPanelComp>(Rc::new(props), None).into()
         })
         .load_hook(move |mut record: Value| {
-            flatten_property_string(&mut record, "vga", &QemuConfigVga::API_SCHEMA)?;
+            flatten_property_string::<QemuConfigVga>(&mut record, "vga")?;
             Ok(record)
         })
         .submit_hook({

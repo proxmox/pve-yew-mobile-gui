@@ -196,7 +196,7 @@ pub fn qemu_machine_property() -> EditableProperty {
         })
         .render_input_panel(input_panel())
         .load_hook(move |mut record: Value| {
-            flatten_property_string(&mut record, "machine", &QemuConfigMachine::API_SCHEMA)?;
+            flatten_property_string::<QemuConfigMachine>(&mut record, "machine")?;
 
             let machine_type_prop_name = pspn("machine", "type");
             let machine_type = record[&machine_type_prop_name].as_str().unwrap_or("");

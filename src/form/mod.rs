@@ -17,6 +17,9 @@ pub use qemu_display_type_selector::{format_qemu_display_type, QemuDisplayTypeSe
 mod qemu_machine_version_selector;
 pub use qemu_machine_version_selector::QemuMachineVersionSelector;
 
+mod pve_network_selector;
+pub use pve_network_selector::PveNetworkSelector;
+
 mod hotplug_feature_selector;
 pub use hotplug_feature_selector::{
     format_hotplug_feature, normalize_hotplug_value, HotplugFeatureSelector,
@@ -29,16 +32,16 @@ pub use qemu_property::{
     qemu_boot_property, qemu_cpu_flags_property, qemu_display_property, qemu_freeze_property,
     qemu_hotplug_property, qemu_kernel_scheduler_property, qemu_kvm_property,
     qemu_localtime_property, qemu_machine_property, qemu_memory_property, qemu_name_property,
-    qemu_onboot_property, qemu_ostype_property, qemu_protection_property, qemu_scsihw_property,
-    qemu_smbios_property, qemu_sockets_cores_property, qemu_spice_enhancement_property,
-    qemu_startdate_property, qemu_startup_property, qemu_tablet_property,
-    qemu_vmstatestorage_property,
+    qemu_network_property, qemu_onboot_property, qemu_ostype_property, qemu_protection_property,
+    qemu_scsihw_property, qemu_smbios_property, qemu_sockets_cores_property,
+    qemu_spice_enhancement_property, qemu_startdate_property, qemu_startup_property,
+    qemu_tablet_property, qemu_vmstatestorage_property,
 };
 
 mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
-use proxmox_schema::{ApiType, Schema};
+use proxmox_schema::{property_string::PropertyString, ApiType, Schema};
 use pwt::widget::form::{delete_empty_values, FormContext};
 
 use serde::{de::DeserializeOwned, Serialize};
@@ -76,7 +79,7 @@ pub fn property_string_load_hook<P: ApiType + Serialize + DeserializeOwned>(
 ) -> Callback<Value, Result<Value, Error>> {
     let name = name.into();
     Callback::from(move |mut record: Value| {
-        flatten_property_string(&mut record, &name, &P::API_SCHEMA)?;
+        flatten_property_string::<P>(&mut record, &name)?;
         Ok(record)
     })
 }
@@ -111,23 +114,24 @@ pub fn pspn(prop_name: &str, part: &str) -> String {
 /// Takes the `name` property from `data`, parses it as property string, and sets it back to
 /// `data` as `_{name}_{key}` (see [pspn]), so this can be used as a field. If it's not desired
 /// to expose a property to the UI, simply add a hidden field to the form.
-pub fn flatten_property_string(
+pub fn flatten_property_string<T: ApiType + Serialize + DeserializeOwned>(
     data: &mut Value,
     name: &str,
-    schema: &'static Schema,
 ) -> Result<(), Error> {
-    if let Some(prop_str) = data[name].as_str() {
-        match schema.parse_property_string(prop_str)? {
+    // Note: schema.parse_property_string does not work for schemas using KeyAliasInfo!!
+    let test: Option<PropertyString<T>> = serde_json::from_value(data[name].clone())?;
+    if let Some(test) = test {
+        let record: Value = serde_json::to_value(test.into_inner())?;
+        match record {
             Value::Object(map) => {
                 for (part, v) in map {
                     data[pspn(name, &part)] = v;
                 }
             }
-            _other => {
-                bail!("flatten_property_string {name:?} failed: result is not an Object");
-            }
+            _ => bail!("flatten_property_string {name:?} failed: result is not an Object"),
         }
     }
+
     Ok(())
 }
 
