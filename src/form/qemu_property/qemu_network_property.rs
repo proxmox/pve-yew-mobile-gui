@@ -3,7 +3,7 @@ use serde_json::Value;
 use pve_api_types::QemuConfigNet;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext};
+use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, FormContext};
 use pwt::widget::Column;
 
 use crate::form::{
@@ -44,6 +44,16 @@ fn input_panel(name: &str, node: Option<AttrValue>) -> RenderPropertyInputPanelF
             .with_child(label_field(
                 PveVlanField::get_std_label(),
                 PveVlanField::new().name(pspn(&name, "tag")),
+            ))
+            .with_child(label_field(
+                tr!("MAC address"),
+                Field::new()
+                    .name(pspn(&name, "macaddr"))
+                    .placeholder("auto"),
+            ))
+            .with_child(label_field(
+                tr!("Firewall"),
+                Checkbox::new().name(pspn(&name, "firewall")),
             ))
             .into()
     })
