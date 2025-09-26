@@ -4,18 +4,19 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_yew_comp::http_put;
-use pwt::props::IntoOptionalInlineHtml;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
+use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
 use pwt::widget::{Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
+use pwt::props::{IntoOptionalInlineHtml, SubmitCallback};
 
 use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
 
@@ -43,7 +44,24 @@ impl QemuHardwarePanel {
             vmid,
         }
     }
+
+    fn editor_url(&self) -> String {
+        format!(
+            "/nodes/{}/qemu/{}/config",
+            percent_encode_component(&self.node),
+            self.vmid
+        )
+    }
+
+    fn pending_url(&self) -> String {
+        format!(
+            "/nodes/{}/qemu/{}/pending",
+            percent_encode_component(&self.node),
+            self.vmid
+        )
+    }
 }
+
 pub fn qemu_pending_config_array_to_rust(
     data: Vec<QemuPendingConfigValue>,
 ) -> Result<(QemuConfig, QemuConfig, HashSet<String>), Error> {
@@ -58,13 +76,17 @@ pub enum Msg {
     LoadResult(Result<Vec<QemuPendingConfigValue>, Error>),
     Dialog(Option<Html>),
     EditProperty(EditableProperty),
+    Revert(EditableProperty),
+    RevertResult(Result<(), Error>),
 }
 
 pub struct PveQemuHardwarePanel {
     data: Option<Result<(QemuConfig, QemuConfig, HashSet<String>), String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
+    revert_guard: Option<AsyncAbortGuard>,
     dialog: Option<Html>,
+
     memory_property: EditableProperty,
     bios_property: EditableProperty,
     sockets_cores_property: EditableProperty,
@@ -73,6 +95,8 @@ pub struct PveQemuHardwarePanel {
     display_property: EditableProperty,
     machine_property: EditableProperty,
     scsihw_property: EditableProperty,
+
+    on_submit: SubmitCallback<Value>,
 }
 
 impl PveQemuHardwarePanel {
@@ -85,8 +109,10 @@ impl PveQemuHardwarePanel {
         icon: Fa,
         trailing: impl IntoOptionalInlineHtml,
     ) -> ListTile {
-        let on_revert = Callback::from(|_: Event| {
-            log::info!("TEST1");
+        let on_revert = Callback::from({
+            let property = property.clone();
+            ctx.link()
+                .callback(move |_: Event| Msg::Revert(property.clone()))
         });
 
         let list_tile = PendingPropertyList::render_icon_list_tile(
@@ -212,6 +238,11 @@ impl PveQemuHardwarePanel {
             .grid_template_columns("auto 1fr")
             .into()
     }
+
+    fn create_on_submit(props: &QemuHardwarePanel) -> SubmitCallback<Value> {
+        let url = props.editor_url();
+        SubmitCallback::new(move |data: Value| http_put(url.clone(), Some(data.clone())))
+    }
 }
 
 impl Component for PveQemuHardwarePanel {
@@ -224,6 +255,7 @@ impl Component for PveQemuHardwarePanel {
             data: None,
             reload_timeout: None,
             load_guard: None,
+            revert_guard: None,
             dialog: None,
             memory_property: qemu_memory_property(),
             bios_property: qemu_bios_property(),
@@ -233,11 +265,14 @@ impl Component for PveQemuHardwarePanel {
             display_property: qemu_display_property(),
             machine_property: qemu_machine_property(),
             scsihw_property: qemu_scsihw_property(),
+
+            on_submit: Self::create_on_submit(ctx.props()),
         }
     }
 
     fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         self.data = None;
+        self.on_submit = Self::create_on_submit(ctx.props());
         ctx.link().send_message(Msg::Load);
         true
     }
@@ -246,6 +281,30 @@ impl Component for PveQemuHardwarePanel {
         let props = ctx.props();
 
         match msg {
+            Msg::Revert(property) => {
+                let link = ctx.link().clone();
+                let keys = match property.revert_keys.as_deref() {
+                    Some(keys) => keys.iter().map(|a| a.to_string()).collect(),
+                    None => vec![property.name.to_string()],
+                };
+                let on_submit = self.on_submit.clone();
+                let param = json!({ "revert": keys });
+                self.revert_guard = Some(AsyncAbortGuard::spawn(async move {
+                    let result = on_submit.apply(param).await;
+                    link.send_message(Msg::RevertResult(result));
+                }));
+            }
+            Msg::RevertResult(result) => {
+                if let Err(err) = result {
+                    ctx.link().show_snackbar(
+                        SnackBar::new()
+                            .message(tr!("Revert property failed") + " - " + &err.to_string()),
+                    );
+                }
+                if self.reload_timeout.is_some() {
+                    ctx.link().send_message(Msg::Load);
+                }
+            }
             Msg::Dialog(dialog) => {
                 if dialog.is_none() && self.dialog.is_some() {
                     ctx.link().send_message(Msg::Load);
@@ -253,28 +312,17 @@ impl Component for PveQemuHardwarePanel {
                 self.dialog = dialog;
             }
             Msg::EditProperty(property) => {
-                let url = format!(
-                    "/nodes/{}/qemu/{}/config",
-                    percent_encode_component(&props.node),
-                    props.vmid
-                );
+                let url = props.editor_url();
                 let dialog = EditDialog::from(property.clone())
                     .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
                     .loader(typed_load::<QemuConfig>(url.clone()))
-                    .on_submit({
-                        let url = url.to_owned();
-                        move |data: Value| http_put(url.clone(), Some(data.clone()))
-                    })
+                    .on_submit(self.on_submit.clone())
                     .into();
                 self.dialog = Some(dialog);
             }
             Msg::Load => {
                 let link = ctx.link().clone();
-                let url = format!(
-                    "/nodes/{}/qemu/{}/pending",
-                    percent_encode_component(&props.node),
-                    props.vmid
-                );
+                let url = props.pending_url();
                 self.load_guard = Some(AsyncAbortGuard::spawn(async move {
                     let result = http_get(&url, None).await;
                     link.send_message(Msg::LoadResult(result));
