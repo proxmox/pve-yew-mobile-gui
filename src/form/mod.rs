@@ -20,6 +20,9 @@ pub use qemu_machine_version_selector::QemuMachineVersionSelector;
 mod pve_network_selector;
 pub use pve_network_selector::PveNetworkSelector;
 
+mod pve_vlan_field;
+pub use pve_vlan_field::PveVlanField;
+
 mod hotplug_feature_selector;
 pub use hotplug_feature_selector::{
     format_hotplug_feature, normalize_hotplug_value, HotplugFeatureSelector,
