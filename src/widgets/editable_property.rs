@@ -136,7 +136,7 @@ impl EditableProperty {
                         render_boolean(n.as_u64() == Some(1))
                     }
                     Value::Null => match default {
-                        Some(default) => render_boolean(default),
+                        Some(default) => tr!("Default") + ": " + &render_boolean(default),
                         None => "-".into(),
                     },
                     _ => value.to_string(),
