@@ -28,7 +28,7 @@ mod qemu_machine_property;
 pub use qemu_machine_property::qemu_machine_property;
 
 mod qemu_network_property;
-pub use qemu_network_property::qemu_network_property;
+pub use qemu_network_property::{qemu_network_mtu_property, qemu_network_property};
 
 mod qemu_scsihw_property;
 pub use qemu_scsihw_property::qemu_scsihw_property;

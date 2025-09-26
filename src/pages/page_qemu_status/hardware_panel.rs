@@ -24,7 +24,8 @@ use crate::api_types::QemuPendingConfigValue;
 use crate::form::{
     qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
     qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
-    qemu_network_property, qemu_scsihw_property, qemu_sockets_cores_property, typed_load,
+    qemu_network_mtu_property, qemu_network_property, qemu_scsihw_property,
+    qemu_sockets_cores_property, typed_load,
 };
 use crate::widgets::{
     icon_list_tile, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
@@ -173,13 +174,54 @@ impl PveQemuHardwarePanel {
         tile
     }
 
+    fn network_list_tile(
+        &self,
+        ctx: &Context<Self>,
+        name: &str,
+        record: &Value,
+        pending: &Value,
+    ) -> ListTile {
+        let props = ctx.props();
+        let network_property = qemu_network_property(name, Some(props.node.clone()));
+        let mtu_property = qemu_network_mtu_property(name, Some(props.node.clone()));
+
+        let menu = Menu::new()
+            .with_item(
+                MenuItem::new(&network_property.title).on_select(ctx.link().callback({
+                    let property = network_property.clone();
+                    move |_| Msg::EditProperty(property.clone())
+                })),
+            )
+            .with_item(
+                MenuItem::new(&mtu_property.title).on_select(ctx.link().callback({
+                    let property = mtu_property.clone();
+                    move |_| Msg::EditProperty(property.clone())
+                })),
+            );
+
+        let menu_button: Html = MenuButton::new("")
+            .class(pwt::css::ColorScheme::Neutral)
+            .icon_class("fa fa-ellipsis-v fa-lg")
+            .menu(menu)
+            .into();
+
+        let tile = self.property_tile(
+            ctx,
+            record,
+            pending,
+            network_property,
+            Fa::new("exchange"),
+            menu_button,
+        );
+
+        tile
+    }
+
     fn view_list(
         &self,
         ctx: &Context<Self>,
         (data, pending, _changes): &(QemuConfig, QemuConfig, HashSet<String>),
     ) -> Html {
-        let props = ctx.props();
-
         let record: Value = serde_json::to_value(data).unwrap();
         let pending: Value = serde_json::to_value(pending).unwrap();
 
@@ -229,8 +271,7 @@ impl PveQemuHardwarePanel {
 
         for (n, _net_config) in &data.net {
             let name = format!("net{n}");
-            let property = qemu_network_property(&name, Some(props.node.clone()));
-            push_property_tile(&mut list, property, Fa::new("exchange"));
+            list.push(self.network_list_tile(ctx, &name, &record, &pending));
         }
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())

@@ -29,7 +29,7 @@ impl Component for PveVlanFieldComp {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        Number::<u32>::new()
+        Number::<u16>::new()
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .placeholder(tr!("no VLAN"))
