@@ -4,7 +4,7 @@ use pve_api_types::QemuConfigNet;
 
 use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, FormContext};
-use pwt::widget::Column;
+use pwt::widget::{Column, Row};
 
 use crate::form::{
     flatten_property_string, property_string_from_parts, pspn, PveNetworkSelector, PveVlanField,
@@ -51,10 +51,19 @@ fn input_panel(name: &str, node: Option<AttrValue>) -> RenderPropertyInputPanelF
                     .name(pspn(&name, "macaddr"))
                     .placeholder("auto"),
             ))
-            .with_child(label_field(
-                tr!("Firewall"),
-                Checkbox::new().name(pspn(&name, "firewall")),
-            ))
+            .with_child(
+                Row::new()
+                    .gap(2)
+                    .with_child(label_field(
+                        tr!("Firewall"),
+                        Checkbox::new().name(pspn(&name, "firewall")),
+                    ))
+                    // .with_flex_spacer()
+                    .with_child(label_field(
+                        tr!("Disconnect"),
+                        Checkbox::new().name(pspn(&name, "link_down")),
+                    )),
+            )
             .into()
     })
 }
