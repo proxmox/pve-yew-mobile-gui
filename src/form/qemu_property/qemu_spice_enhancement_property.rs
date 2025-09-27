@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use serde_json::{json, Value};
 
 use proxmox_schema::ApiType;
@@ -7,20 +5,21 @@ use proxmox_schema::ApiType;
 use pve_api_types::{QemuConfigSpiceEnhancements, QemuConfigVga, QemuConfigVgaType};
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
+use pwt::widget::form::{delete_empty_values, Checkbox, Combobox};
 use pwt::widget::{Column, Container};
 
 use crate::form::{property_string_from_parts, property_string_load_hook, pspn};
-use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let form_ctx = state.form_ctx;
         let folder_sharing = form_ctx
             .read()
             .get_field_checked(pspn(&name, "foldersharing"));
 
         let mut show_spice_hint = true;
-        if let Some(Value::String(vga)) = record.get("vga") {
+        if let Some(Value::String(vga)) = state.record.get("vga") {
             if let Ok(vga) = proxmox_schema::property_string::parse::<QemuConfigVga>(vga) {
                 match vga.ty {
                     Some(QemuConfigVgaType::Qxl)
@@ -100,8 +99,8 @@ pub fn qemu_spice_enhancement_property() -> EditableProperty {
         ))
         .submit_hook({
             let name = name.clone();
-            move |ctx: FormContext| {
-                let form_data = ctx.get_submit_data();
+            move |state: PropertyEditorState| {
+                let form_data = state.get_submit_data();
 
                 let mut value = json!({});
 

@@ -4,12 +4,11 @@ use pve_api_types::QemuConfigAgent;
 
 use pwt::prelude::*;
 use pwt::widget::form::{Checkbox, Combobox};
-use pwt::widget::Column;
-use pwt::widget::{form::FormContext, Container};
+use pwt::widget::{Column, Container};
 use serde_json::Value;
 
 use crate::form::{property_string_load_hook, property_string_submit_hook, pspn};
-use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
 fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
     let qga: Result<PropertyString<QemuConfigAgent>, _> = serde_json::from_value(value.clone());
@@ -44,7 +43,8 @@ fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
 }
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _record| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let form_ctx = state.form_ctx;
         let advanced = form_ctx.get_show_advanced();
         let enabled = form_ctx.read().get_field_checked(pspn(&name, "enabled"));
         let ffob_enabled = form_ctx

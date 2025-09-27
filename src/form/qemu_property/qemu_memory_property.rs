@@ -11,7 +11,9 @@ use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Numb
 use pwt::widget::{Column, Row};
 
 use crate::form::{flatten_property_string, property_string_from_parts, pspn};
-use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{
+    label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
+};
 
 fn read_u64(form_ctx: &FormContext, name: &str) -> Option<u64> {
     let value = form_ctx.read().get_last_valid_value(name.to_string());
@@ -22,7 +24,8 @@ fn read_u64(form_ctx: &FormContext, name: &str) -> Option<u64> {
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let form_ctx = state.form_ctx;
         let advanced = form_ctx.get_show_advanced();
 
         let current_memory_prop = pspn("memory", "current");
@@ -138,7 +141,8 @@ pub fn qemu_memory_property() -> EditableProperty {
         ))
         .render_input_panel(input_panel())
         .renderer(render_value)
-        .submit_hook(|form_ctx: FormContext| {
+        .submit_hook(|state: PropertyEditorState| {
+            let form_ctx = state.form_ctx;
             let mut data = form_ctx.get_submit_data();
 
             if !form_ctx.read().get_field_checked("_use_ballooning") {
@@ -165,7 +169,8 @@ pub fn qemu_memory_property() -> EditableProperty {
             }
             Ok(record)
         })
-        .on_change(|form_ctx: FormContext| {
+        .on_change(|state: PropertyEditorState| {
+            let form_ctx = state.form_ctx;
             let current_memory_prop = pspn("memory", "current");
             let current_memory = form_ctx
                 .read()

@@ -4,15 +4,15 @@ use serde_json::Value;
 use pve_api_types::QemuConfigNet;
 
 use pwt::prelude::*;
-use pwt::widget::form::{
-    delete_empty_values, Checkbox, Combobox, Field, FormContext, Hidden, Number,
-};
+use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, Hidden, Number};
 use pwt::widget::{Column, Row};
 
 use crate::form::{
     flatten_property_string, property_string_from_parts, pspn, PveNetworkSelector, PveVlanField,
 };
-use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{
+    label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
+};
 
 fn add_hidden_net_properties(column: &mut Column, name: &str, parts: &[&str]) {
     for part in parts {
@@ -22,7 +22,7 @@ fn add_hidden_net_properties(column: &mut Column, name: &str, parts: &[&str]) {
 
 fn input_panel(name: &str, node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
     let name = name.to_string();
-    RenderPropertyInputPanelFn::new(move |_form_ctx: FormContext, _| {
+    RenderPropertyInputPanelFn::new(move |_| {
         let mut column = Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
@@ -84,8 +84,8 @@ pub fn qemu_network_property(name: &str, node: Option<AttrValue>) -> EditablePro
         .render_input_panel(input_panel(&name, node.clone()))
         .submit_hook({
             let name = name.clone();
-            move |form_ctx: FormContext| {
-                let mut data = form_ctx.get_submit_data();
+            move |state: PropertyEditorState| {
+                let mut data = state.get_submit_data();
                 property_string_from_parts::<QemuConfigNet>(&mut data, &name, true)?;
                 data = delete_empty_values(&data, &[&name], false);
                 Ok(data)
@@ -102,7 +102,7 @@ pub fn qemu_network_property(name: &str, node: Option<AttrValue>) -> EditablePro
 
 fn mtu_input_panel(name: &str) -> RenderPropertyInputPanelFn {
     let name = name.to_string();
-    RenderPropertyInputPanelFn::new(move |_form_ctx: FormContext, _| {
+    RenderPropertyInputPanelFn::new(move |_| {
         let mut column = Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)

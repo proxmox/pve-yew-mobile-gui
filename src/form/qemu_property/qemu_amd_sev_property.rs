@@ -5,14 +5,15 @@ use pve_api_types::{PveQemuSevFmt, PveQemuSevFmtType};
 
 use pwt::prelude::*;
 
-use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, FormContext};
+use pwt::widget::form::{delete_empty_values, Checkbox, Combobox};
 use pwt::widget::{Column, Container};
 
 use crate::form::{flatten_property_string, property_string_from_parts, pspn};
-use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let form_ctx = state.form_ctx;
         let advanced = form_ctx.get_show_advanced();
 
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
@@ -122,7 +123,8 @@ pub fn qemu_amd_sev_property(name: impl Into<String>) -> EditableProperty {
         })
         .submit_hook({
             let name = name.clone();
-            move |form_ctx: FormContext| {
+            move |state: PropertyEditorState| {
+                let form_ctx = state.form_ctx;
                 let mut form_data = form_ctx.get_submit_data();
                 let ty = match form_data.get(pspn(&name, "type")) {
                     Some(Value::String(ty)) => ty.clone(),

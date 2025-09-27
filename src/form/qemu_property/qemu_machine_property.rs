@@ -1,10 +1,8 @@
-use std::rc::Rc;
-
 use proxmox_schema::{ApiType, ObjectSchemaType, Schema};
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext, Hidden};
+use pwt::widget::form::{delete_empty_values, Combobox, Hidden};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
@@ -12,7 +10,9 @@ use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
 use crate::form::{
     flatten_property_string, property_string_from_parts, pspn, QemuMachineVersionSelector,
 };
-use crate::widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{
+    label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
+};
 use crate::QemuMachineType;
 
 fn ostype_is_windows(ostype: &QemuConfigOstype) -> bool {
@@ -71,13 +71,14 @@ fn add_hidden_machine_properties(column: &mut Column, exclude: &[&str]) {
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let form_ctx = state.form_ctx;
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
         let advanced = form_ctx.get_show_advanced();
 
         let ostype: Option<QemuConfigOstype> =
-            serde_json::from_value(record["ostype"].clone()).ok();
+            serde_json::from_value(state.record["ostype"].clone()).ok();
         let ostype = ostype.unwrap_or(QemuConfigOstype::Other);
 
         let extracted_type_prop_name = pspn("machine", "extracted-type");
@@ -211,7 +212,8 @@ pub fn qemu_machine_property() -> EditableProperty {
             Ok(record)
         })
         .submit_hook({
-            move |form_ctx: FormContext| {
+            move |state: PropertyEditorState| {
+                let form_ctx = state.form_ctx;
                 let mut data = form_ctx.get_submit_data();
 
                 let machine_type_prop_name = pspn("machine", "type");

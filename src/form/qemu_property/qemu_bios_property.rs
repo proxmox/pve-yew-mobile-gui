@@ -1,19 +1,16 @@
-use std::rc::Rc;
-
-use serde_json::Value;
-
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext};
+use pwt::widget::form::{delete_empty_values, Combobox};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::QemuConfigBios;
 
-use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, record: Rc<Value>| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let form_ctx = state.form_ctx;
         let show_efi_disk_hint =
-            form_ctx.read().get_field_text("bios") == "ovmf" && record["efidisk0"].is_null();
+            form_ctx.read().get_field_text("bios") == "ovmf" && state.record["efidisk0"].is_null();
 
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
@@ -55,8 +52,8 @@ pub fn qemu_bios_property() -> EditableProperty {
         .render_input_panel(input_panel(name.clone()))
         .submit_hook({
             let name = name.clone();
-            move |form_ctx: FormContext| {
-                let mut data = form_ctx.get_submit_data();
+            move |state: PropertyEditorState| {
+                let mut data = state.get_submit_data();
                 data = delete_empty_values(&data, &[&name], false);
                 Ok(data)
             }

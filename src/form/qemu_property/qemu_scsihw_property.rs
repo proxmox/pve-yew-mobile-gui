@@ -1,10 +1,10 @@
 use indexmap::IndexMap;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext};
+use pwt::widget::form::{delete_empty_values, Combobox};
 use pwt::widget::Column;
 
-use crate::widgets::EditableProperty;
+use crate::widgets::{EditableProperty, PropertyEditorState};
 
 pub fn qemu_scsihw_property() -> EditableProperty {
     const NAME: &'static str = "scsihw";
@@ -28,7 +28,7 @@ pub fn qemu_scsihw_property() -> EditableProperty {
                 None => v.into(),
             }
         })
-        .render_input_panel(move |_, _| {
+        .render_input_panel(move |_| {
             Column::new()
                 .class(pwt::css::FlexFit)
                 .gap(2)
@@ -42,8 +42,8 @@ pub fn qemu_scsihw_property() -> EditableProperty {
                 .into()
         })
         .submit_hook({
-            move |form_ctx: FormContext| {
-                let record = form_ctx.get_submit_data();
+            move |state: PropertyEditorState| {
+                let record = state.get_submit_data();
                 let record = delete_empty_values(&record, &[NAME], false);
                 Ok(record)
             }

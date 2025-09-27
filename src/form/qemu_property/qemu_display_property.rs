@@ -5,7 +5,7 @@ use proxmox_schema::property_string::PropertyString;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, FormContext, FormContextObserver, Number};
+use pwt::widget::form::{delete_empty_values, Combobox, FormContextObserver, Number};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigVga, QemuConfigVgaClipboard};
@@ -15,7 +15,7 @@ use crate::form::{
     flatten_property_string, format_qemu_display_type, property_string_from_parts, pspn,
     QemuDisplayTypeSelector,
 };
-use crate::widgets::{label_field, EditableProperty};
+use crate::widgets::{label_field, EditableProperty, PropertyEditorState};
 
 fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
     let vga: Result<PropertyString<QemuConfigVga>, _> = serde_json::from_value(value.clone());
@@ -54,8 +54,7 @@ fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
 
 #[derive(Properties, Clone, PartialEq)]
 struct StatefulPanel {
-    record: Rc<Value>,
-    form_ctx: FormContext,
+    state: PropertyEditorState,
 }
 struct StatefulPanelComp {
     serial_device_list: Rc<Vec<AttrValue>>,
@@ -68,7 +67,7 @@ impl Component for StatefulPanelComp {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        let record = &props.record;
+        let record = &props.state.record;
         let mut serial_device_list = Vec::new();
         for i in 0..3 {
             let name = format!("serial{i}");
@@ -77,7 +76,10 @@ impl Component for StatefulPanelComp {
             }
         }
         // trigger re-draw on form context changes
-        let _form_ctx_observer = props.form_ctx.add_listener(ctx.link().callback(|_| ()));
+        let _form_ctx_observer = props
+            .state
+            .form_ctx
+            .add_listener(ctx.link().callback(|_| ()));
         Self {
             serial_device_list: Rc::new(serial_device_list),
             _form_ctx_observer,
@@ -86,7 +88,7 @@ impl Component for StatefulPanelComp {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let form_ctx = &props.form_ctx;
+        let form_ctx = &props.state.form_ctx;
 
         let advanced = form_ctx.get_show_advanced();
 
@@ -164,8 +166,8 @@ pub fn qemu_display_property() -> EditableProperty {
         .advanced_checkbox(true)
         .placeholder(tr!("Default"))
         .renderer(renderer)
-        .render_input_panel(|form_ctx, record| {
-            let props = StatefulPanel { form_ctx, record };
+        .render_input_panel(|state: PropertyEditorState| {
+            let props = StatefulPanel { state };
             VComp::new::<StatefulPanelComp>(Rc::new(props), None).into()
         })
         .load_hook(move |mut record: Value| {
@@ -173,8 +175,8 @@ pub fn qemu_display_property() -> EditableProperty {
             Ok(record)
         })
         .submit_hook({
-            move |form_ctx: FormContext| {
-                let mut record = form_ctx.get_submit_data();
+            move |state: PropertyEditorState| {
+                let mut record = state.get_submit_data();
                 property_string_from_parts::<QemuConfigVga>(&mut record, "vga", true)?;
                 record = delete_empty_values(&record, &["vga"], false);
                 Ok(record)

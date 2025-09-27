@@ -6,10 +6,11 @@ use proxmox_schema::{ApiType, ObjectSchemaType, Schema};
 
 use pwt::prelude::*;
 use pwt::props::PwtSpace;
-use pwt::widget::form::{delete_empty_values, Checkbox, Field, FormContext, Hidden, Number};
+use pwt::widget::form::{delete_empty_values, Checkbox, Field, Hidden, Number};
 use pwt::widget::{Column, Container, Row};
 
 use crate::form::{property_string_from_parts, pspn, QemuCpuFlags, QemuCpuModelSelector};
+use crate::widgets::PropertyEditorState;
 use crate::{
     form::flatten_property_string,
     widgets::{label_field, EditableProperty, RenderPropertyInputPanelFn},
@@ -71,7 +72,8 @@ fn add_hidden_cpu_properties(column: &mut Column, exclude: &[&str]) {
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |form_ctx: FormContext, _| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let form_ctx = state.form_ctx;
         let total_cores;
         {
             let guard = form_ctx.read();
@@ -225,8 +227,8 @@ pub fn qemu_sockets_cores_property() -> EditableProperty {
         flatten_property_string::<PveVmCpuConf>(&mut record, "cpu")?;
         Ok(record)
     })
-    .submit_hook(|form_ctx: FormContext| {
-        let mut record = form_ctx.get_submit_data();
+    .submit_hook(|state: PropertyEditorState| {
+        let mut record = state.get_submit_data();
         property_string_from_parts::<PveVmCpuConf>(&mut record, "cpu", true)?;
         let record = delete_empty_values(&record, &["sockets", "cores", "cpu"], false);
         Ok(record)
@@ -234,7 +236,7 @@ pub fn qemu_sockets_cores_property() -> EditableProperty {
 }
 
 fn cpu_flags_input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |_form_ctx: FormContext, _| {
+    RenderPropertyInputPanelFn::new(move |_| {
         let mut column = Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
@@ -258,8 +260,8 @@ pub fn qemu_cpu_flags_property() -> EditableProperty {
             flatten_property_string::<PveVmCpuConf>(&mut record, "cpu")?;
             Ok(record)
         })
-        .submit_hook(|form_ctx: FormContext| {
-            let mut record = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let mut record = state.get_submit_data();
             property_string_from_parts::<PveVmCpuConf>(&mut record, "cpu", true)?;
             let record = delete_empty_values(&record, &["cpu"], false);
             Ok(record)
@@ -267,7 +269,8 @@ pub fn qemu_cpu_flags_property() -> EditableProperty {
 }
 
 fn kernel_scheduler_input_panel() -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |_form_ctx: FormContext, record: Rc<Value>| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let record = state.record;
         let cores = record["cores"].as_u64().unwrap_or(1);
         let sockets = record["sockets"].as_u64().unwrap_or(1);
         let total_cores = cores * sockets;
@@ -328,8 +331,8 @@ pub fn qemu_kernel_scheduler_property() -> EditableProperty {
         .required(true)
         .renderer(renderer)
         .render_input_panel(kernel_scheduler_input_panel())
-        .submit_hook(|form_ctx: FormContext| {
-            let mut record = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let mut record = state.get_submit_data();
 
             if let Some(cpulimit) = record["cpulimit"].as_f64() {
                 if cpulimit == 0.0 {

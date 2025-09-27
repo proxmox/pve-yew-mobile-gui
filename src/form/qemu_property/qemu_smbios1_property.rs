@@ -5,11 +5,11 @@ use serde_json::Value;
 use pve_api_types::PveQmSmbios1;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Field, FormContext, TextArea};
+use pwt::widget::form::{delete_empty_values, Field, TextArea};
 use pwt::widget::Column;
 
 use crate::form::{flatten_property_string, property_string_from_parts, pspn};
-use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
 thread_local! {
     static UUID_MATCH: Regex = Regex::new(r#"^[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$"#).unwrap();
@@ -26,7 +26,7 @@ const PROPERTIES: &[&str] = &[
 ];
 
 fn input_panel(name: String) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |_, _| {
+    RenderPropertyInputPanelFn::new(move |_| {
         let field_height = "2em";
         Column::new()
                     .gap(2)
@@ -112,8 +112,8 @@ pub fn qemu_smbios_property() -> EditableProperty {
         })
         .submit_hook({
             let name = name.clone();
-            move |ctx: FormContext| {
-                let mut value = ctx.get_submit_data();
+            move |state: PropertyEditorState| {
+                let mut value = state.get_submit_data();
                 let mut base64 = false;
 
                 // always base64 encoded properties

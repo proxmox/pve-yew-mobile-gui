@@ -6,7 +6,7 @@ use regex::Regex;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Field, FormContext, Number};
+use pwt::widget::form::{delete_empty_values, Field, Number};
 use pwt::widget::Column;
 
 use proxmox_yew_comp::SchemaValidation;
@@ -18,7 +18,7 @@ use crate::form::{
     property_string_submit_hook, BootDeviceList, HotplugFeatureSelector, PveStorageSelector,
     QemuOstypeSelector,
 };
-use crate::widgets::{EditableProperty, RenderPropertyInputPanelFn};
+use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 use crate::QemuConfigStartup;
 
 mod qemu_display_property;
@@ -84,7 +84,7 @@ fn lookup_object_property_schema(
 }
 
 fn render_string_input_panel(name: &'static str) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |_, _| {
+    RenderPropertyInputPanelFn::new(move |_| {
         let mut input = Field::new().name(name.to_string()).submit_empty(true);
 
         if let Some((optional, schema)) = lookup_schema(&name) {
@@ -127,8 +127,8 @@ pub fn qemu_name_property(vmid: u32) -> EditableProperty {
         .required(true)
         .placeholder(format!("VM {}", vmid))
         .render_input_panel(render_string_input_panel("name"))
-        .submit_hook(|form_ctx: FormContext| {
-            let data = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let data = state.get_submit_data();
             Ok(delete_empty_values(&data, &["name"], false))
         })
 }
@@ -141,15 +141,15 @@ pub fn qemu_ostype_property() -> EditableProperty {
             Some(s) => format_qemu_ostype(s).into(),
             None => v.into(),
         })
-        .render_input_panel(move |_, _| {
+        .render_input_panel(move |_| {
             QemuOstypeSelector::new()
                 .style("width", "100%")
                 .name("ostype")
                 .submit_empty(true)
                 .into()
         })
-        .submit_hook(|form_ctx: FormContext| {
-            let data = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let data = state.get_submit_data();
             Ok(delete_empty_values(&data, &["ostype"], false))
         })
 }
@@ -158,7 +158,7 @@ pub fn qemu_startup_property() -> EditableProperty {
     EditableProperty::new("startup", tr!("Start/Shutdown order"))
         .required(true)
         .placeholder("order=any")
-        .render_input_panel(|_, _| {
+        .render_input_panel(|_| {
             Column::new()
                 .gap(2)
                 .class(pwt::css::Flex::Fill)
@@ -203,15 +203,15 @@ pub fn qemu_boot_property() -> EditableProperty {
             tr!("any CD-ROM"),
             tr!("any net")
         ))
-        .render_input_panel(move |_, record: Rc<Value>| {
-            BootDeviceList::new(record.clone())
+        .render_input_panel(move |state: PropertyEditorState| {
+            BootDeviceList::new(state.record.clone())
                 .name("boot")
                 .submit_empty(true)
                 .into()
         })
         .required(true)
-        .submit_hook(|form_ctx: FormContext| {
-            let data = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let data = state.get_submit_data();
             Ok(delete_empty_values(&data, &["boot"], false))
         })
 }
@@ -224,15 +224,15 @@ pub fn qemu_hotplug_property() -> EditableProperty {
             record["hotplug"] = crate::form::normalize_hotplug_value(&record["hotplug"]);
             Ok(record)
         })
-        .render_input_panel(move |_, _| {
+        .render_input_panel(move |_| {
             HotplugFeatureSelector::new()
                 .name("hotplug")
                 .submit_empty(true)
                 .into()
         })
         .required(true)
-        .submit_hook(|form_ctx: FormContext| {
-            let data = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let data = state.get_submit_data();
             Ok(delete_empty_values(&data, &["hotplug"], false))
         })
 }
@@ -245,7 +245,7 @@ pub fn qemu_startdate_property() -> EditableProperty {
         .placeholder("now")
         // Note current schema definition does not include the regex, so we
         // need to add a validate function to the field.
-        .render_input_panel(move |_, _| {
+        .render_input_panel(move |_| {
             Field::new()
                 .name("startdate")
                 .placeholder("now")
@@ -259,8 +259,8 @@ pub fn qemu_startdate_property() -> EditableProperty {
                 .into()
         })
         .required(true)
-        .submit_hook(|form_ctx: FormContext| {
-            let data = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let data = state.get_submit_data();
             Ok(delete_empty_values(&data, &["startdate"], false))
         })
 }
@@ -271,7 +271,7 @@ pub fn qemu_vmstatestorage_property(node: &str) -> EditableProperty {
         .placeholder(tr!("Automatic"))
         .render_input_panel({
             let node = node.to_owned();
-            move |_, _| {
+            move |_| {
                 PveStorageSelector::new(node.clone())
                     .mobile(true)
                     .name("vmstatestorage")
@@ -281,8 +281,8 @@ pub fn qemu_vmstatestorage_property(node: &str) -> EditableProperty {
                     .into()
             }
         })
-        .submit_hook(|form_ctx: FormContext| {
-            let data = form_ctx.get_submit_data();
+        .submit_hook(|state: PropertyEditorState| {
+            let data = state.get_submit_data();
             Ok(delete_empty_values(&data, &["vmstatestorage"], false))
         })
 }

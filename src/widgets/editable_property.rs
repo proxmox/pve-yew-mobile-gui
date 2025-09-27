@@ -35,13 +35,24 @@ impl RenderPropertyFn {
     }
 }
 
+#[derive(Clone, PartialEq)]
+pub struct PropertyEditorState {
+    pub form_ctx: FormContext,
+    pub record: Rc<Value>,
+}
+impl PropertyEditorState {
+    pub fn get_submit_data(&self) -> Value {
+        self.form_ctx.get_submit_data()
+    }
+}
+
 /// For use with [EditableProperty]
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct RenderPropertyInputPanelFn(
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     #[allow(clippy::type_complexity)]
-    Rc<dyn Fn(FormContext, Rc<Value>) -> Html>,
+    Rc<dyn Fn(PropertyEditorState) -> Html>,
 );
 
 impl RenderPropertyInputPanelFn {
@@ -51,16 +62,24 @@ impl RenderPropertyInputPanelFn {
     }
 
     /// Apply the render function
-    pub fn apply(&self, form_ctx: FormContext, record: Rc<Value>) -> Html {
-        (self.0)(form_ctx, record)
+    pub fn apply(&self, state: PropertyEditorState) -> Html {
+        (self.0)(state)
     }
 }
-
-impl<F: 'static + Fn(FormContext, Rc<Value>) -> Html> From<F> for RenderPropertyInputPanelFn {
+impl<F: 'static + Fn(PropertyEditorState) -> Html> From<F> for RenderPropertyInputPanelFn {
     fn from(renderer: F) -> Self {
         Self(Rc::new(renderer))
     }
 }
+/*
+impl<F: 'static + Fn(FormContext, Rc<Value>) -> Html> From<F> for RenderPropertyInputPanelFn {
+    fn from(renderer: F) -> Self {
+        Self(Rc::new(move |state: PropertyEditorState| {
+            renderer(state.form_ctx, state.record)
+        }))
+    }
+}
+*/
 
 #[derive(Clone, PartialEq)]
 #[builder]
@@ -90,11 +109,11 @@ pub struct EditableProperty {
 
     /// Submit hook.
     #[builder(IntoPropValue, into_prop_value)]
-    pub submit_hook: Option<Callback<FormContext, Result<Value, Error>>>,
+    pub submit_hook: Option<Callback<PropertyEditorState, Result<Value, Error>>>,
 
     /// Data change callback.
-    #[builder_cb(IntoEventCallback, into_event_callback, FormContext)]
-    pub on_change: Option<Callback<FormContext>>,
+    #[builder_cb(IntoEventCallback, into_event_callback, PropertyEditorState)]
+    pub on_change: Option<Callback<PropertyEditorState>>,
 
     /// Edit input panel builder
     pub render_input_panel: Option<RenderPropertyInputPanelFn>,
@@ -143,7 +162,7 @@ impl EditableProperty {
                 };
                 text.into()
             })
-            .render_input_panel(move |_form_ctx, _record| {
+            .render_input_panel(move |_| {
                 Row::new()
                     .with_flex_spacer()
                     .with_child(
@@ -158,7 +177,7 @@ impl EditableProperty {
 
     pub fn new_string(name: impl Into<AttrValue>, title: impl Into<AttrValue>) -> Self {
         let name = name.into();
-        Self::new(name.clone(), title).render_input_panel(move |_form_ctx, _record| {
+        Self::new(name.clone(), title).render_input_panel(move |_| {
             Field::new()
                 .name(name.to_string())
                 .submit_empty(true)
@@ -189,7 +208,7 @@ impl From<EditableProperty> for EditDialog {
     fn from(property: EditableProperty) -> Self {
         let renderer = match property.render_input_panel {
             Some(renderer) => renderer,
-            None => RenderPropertyInputPanelFn::new(|_, _| html! {}),
+            None => RenderPropertyInputPanelFn::new(|_| html! {}),
         };
 
         EditDialog::new(property.title)

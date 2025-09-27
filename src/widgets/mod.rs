@@ -29,7 +29,7 @@ mod pending_property_list;
 pub use pending_property_list::{pve_pending_config_array_to_objects, PendingPropertyList};
 
 mod editable_property;
-pub use editable_property::{EditableProperty, RenderPropertyInputPanelFn};
+pub use editable_property::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
 use pwt::prelude::*;
 use pwt::props::{IntoOptionalInlineHtml, PwtSpace};

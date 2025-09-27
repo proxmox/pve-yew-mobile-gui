@@ -20,7 +20,7 @@ use pwt_macros::builder;
 
 use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback};
 
-use crate::widgets::editable_property::RenderPropertyInputPanelFn;
+use crate::widgets::editable_property::{PropertyEditorState, RenderPropertyInputPanelFn};
 
 // Like proxmox_yew_comp::EditWindow, but for mobile
 //
@@ -99,7 +99,7 @@ pub struct EditDialog {
     /// calling the [Self::on_submit] callback.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
-    pub submit_hook: Option<Callback<FormContext, Result<Value, Error>>>,
+    pub submit_hook: Option<Callback<PropertyEditorState, Result<Value, Error>>>,
 
     /// Reset button press callback.
     #[prop_or_default]
@@ -107,9 +107,9 @@ pub struct EditDialog {
     pub on_reset: Option<Callback<()>>,
 
     /// Data change callback.
-    #[builder_cb(IntoEventCallback, into_event_callback, FormContext)]
+    #[builder_cb(IntoEventCallback, into_event_callback, PropertyEditorState)]
     #[prop_or_default]
-    pub on_change: Option<Callback<FormContext>>,
+    pub on_change: Option<Callback<PropertyEditorState>>,
 
     /// Determines if the window is in edit mode (enabled reset button + dirty tracking)
     ///
@@ -250,7 +250,11 @@ impl Component for PwtEditDialog {
                     self.submit_error = None;
                 }
                 if let Some(on_change) = &props.on_change {
-                    on_change.emit(self.form_ctx.clone());
+                    let state = PropertyEditorState {
+                        form_ctx: self.form_ctx.clone(),
+                        record: self.load_data.clone(),
+                    };
+                    on_change.emit(state);
                 }
                 // Note: we redraw on any data change
                 true
@@ -261,9 +265,13 @@ impl Component for PwtEditDialog {
                     let form_ctx = self.form_ctx.clone();
                     let submit_hook = props.submit_hook.clone();
                     self.loading = true;
+                    let state = PropertyEditorState {
+                        form_ctx: self.form_ctx.clone(),
+                        record: self.load_data.clone(),
+                    };
                     self.async_pool.spawn(async move {
                         let result = if let Some(submit_hook) = &submit_hook {
-                            submit_hook.emit(form_ctx)
+                            submit_hook.emit(state.clone())
                         } else {
                             Ok(form_ctx.get_submit_data())
                         };
@@ -304,7 +312,13 @@ impl Component for PwtEditDialog {
         let loading = self.loading;
 
         let content = match &renderer {
-            Some(renderer) => renderer.apply(form_ctx.clone(), self.load_data.clone()),
+            Some(renderer) => {
+                let state = PropertyEditorState {
+                    form_ctx: self.form_ctx.clone(),
+                    record: self.load_data.clone(),
+                };
+                renderer.apply(state)
+            }
             None => html! {},
         };
 

@@ -45,7 +45,7 @@ mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
 use proxmox_schema::{property_string::PropertyString, ApiType, Schema};
-use pwt::widget::form::{delete_empty_values, FormContext};
+use pwt::widget::form::delete_empty_values;
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
@@ -55,6 +55,8 @@ use proxmox_schema::ObjectSchemaType;
 use proxmox_yew_comp::ApiLoadCallback;
 
 use yew::Callback;
+
+use crate::widgets::PropertyEditorState;
 
 // fixme: move to proxmox-yew-comp::form
 pub fn typed_load<T: DeserializeOwned + Serialize>(
@@ -90,10 +92,11 @@ pub fn property_string_load_hook<P: ApiType + Serialize + DeserializeOwned>(
 pub fn property_string_submit_hook<P: ApiType + Serialize + DeserializeOwned>(
     name: impl Into<String>,
     delete_empty: bool,
-) -> Callback<FormContext, Result<Value, Error>> {
+) -> Callback<PropertyEditorState, Result<Value, Error>> {
     let name = name.into();
-    Callback::from(move |form_ctx: FormContext| {
-        let mut data = form_ctx.get_submit_data();
+    Callback::from(move |state: PropertyEditorState| {
+        let mut data = state.get_submit_data();
+        // fixme: add defaults
         property_string_from_parts::<P>(&mut data, &name, true)?;
         if delete_empty {
             data = delete_empty_values(&data, &[&name], false);
