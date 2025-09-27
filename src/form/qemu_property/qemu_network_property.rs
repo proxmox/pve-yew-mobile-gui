@@ -4,26 +4,21 @@ use serde_json::Value;
 use pve_api_types::QemuConfigNet;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, Hidden, Number};
+use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, Number};
 use pwt::widget::{Column, Row};
 
 use crate::form::{
-    flatten_property_string, property_string_from_parts, pspn, PveNetworkSelector, PveVlanField,
+    flatten_property_string, property_string_add_missing_data, property_string_from_parts, pspn,
+    PveNetworkSelector, PveVlanField,
 };
 use crate::widgets::{
     label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
 };
 
-fn add_hidden_net_properties(column: &mut Column, name: &str, parts: &[&str]) {
-    for part in parts {
-        column.add_child(Hidden::new().name(pspn(name, part)));
-    }
-}
-
 fn input_panel(name: &str, node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
     let name = name.to_string();
     RenderPropertyInputPanelFn::new(move |_| {
-        let mut column = Column::new()
+        Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
             .with_child(label_field(
@@ -50,13 +45,16 @@ fn input_panel(name: &str, node: Option<AttrValue>) -> RenderPropertyInputPanelF
             ))
             .with_child(label_field(
                 PveVlanField::get_std_label(),
-                PveVlanField::new().name(pspn(&name, "tag")),
+                PveVlanField::new()
+                    .name(pspn(&name, "tag"))
+                    .submit_empty(true),
             ))
             .with_child(label_field(
                 tr!("MAC address"),
                 Field::new()
                     .name(pspn(&name, "macaddr"))
-                    .placeholder("auto"),
+                    .placeholder("auto")
+                    .submit_empty(true),
             ))
             .with_child(
                 Row::new()
@@ -70,11 +68,8 @@ fn input_panel(name: &str, node: Option<AttrValue>) -> RenderPropertyInputPanelF
                         tr!("Disconnect"),
                         Checkbox::new().name(pspn(&name, "link_down")),
                     )),
-            );
-
-        add_hidden_net_properties(&mut column, &name, &["mtu", "rate", "queues"]);
-
-        column.into()
+            )
+            .into()
     })
 }
 
@@ -86,6 +81,7 @@ pub fn qemu_network_property(name: &str, node: Option<AttrValue>) -> EditablePro
             let name = name.clone();
             move |state: PropertyEditorState| {
                 let mut data = state.get_submit_data();
+                property_string_add_missing_data::<QemuConfigNet>(&mut data, &state.record, &name)?;
                 property_string_from_parts::<QemuConfigNet>(&mut data, &name, true)?;
                 data = delete_empty_values(&data, &[&name], false);
                 Ok(data)
@@ -103,7 +99,7 @@ pub fn qemu_network_property(name: &str, node: Option<AttrValue>) -> EditablePro
 fn mtu_input_panel(name: &str) -> RenderPropertyInputPanelFn {
     let name = name.to_string();
     RenderPropertyInputPanelFn::new(move |_| {
-        let mut column = Column::new()
+        Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
             .with_child(label_field(
@@ -111,6 +107,7 @@ fn mtu_input_panel(name: &str) -> RenderPropertyInputPanelFn {
                 Number::<u16>::new()
                     .name(pspn(&name, "mtu"))
                     .placeholder("Same as bridge")
+                    .submit_empty(true)
                     .min(1)
                     .max(65520)
                     .validate(|val: &u16| {
@@ -125,6 +122,7 @@ fn mtu_input_panel(name: &str) -> RenderPropertyInputPanelFn {
                 Number::<f64>::new()
                     .name(pspn(&name, "rate"))
                     .placeholder(tr!("unlimited"))
+                    .submit_empty(true)
                     .min(0.0)
                     .max(10.0 * 1024.0)
             ))
@@ -132,17 +130,10 @@ fn mtu_input_panel(name: &str) -> RenderPropertyInputPanelFn {
                 tr!("Multiqueue"),
                 Number::<u8>::new()
                     .name(pspn(&name, "queues"))
+                    .submit_empty(true)
                     .min(1)
                     .max(64)
-            ));
-
-        add_hidden_net_properties(
-            &mut column,
-            &name,
-            &["bridge", "model", "tag", "macaddr", "firewall", "link_down"],
-        );
-
-        column.into()
+            )).into()
     })
 }
 
