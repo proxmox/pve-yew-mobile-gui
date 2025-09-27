@@ -178,6 +178,7 @@ impl PvePageDashboard {
         crate::widgets::standard_card(
             tr!("Analytics"),
             format!("Usage across all ({node_count}) online nodes."),
+            (),
         )
         .with_child(content)
         .into()
@@ -221,7 +222,7 @@ impl PvePageDashboard {
             })
         });
 
-        crate::widgets::standard_card(tr!("Nodes"), None::<&str>)
+        crate::widgets::standard_card(tr!("Nodes"), (), ())
             .with_child(content)
             .class("pwt-interactive")
             .onclick(Callback::from({
@@ -339,7 +340,7 @@ impl PvePageDashboard {
             })
         });
 
-        crate::widgets::standard_card(tr!("Resources"), None::<&str>)
+        crate::widgets::standard_card(tr!("Resources"), (), ())
             .class("pwt-interactive")
             .with_child(content)
             .onclick({

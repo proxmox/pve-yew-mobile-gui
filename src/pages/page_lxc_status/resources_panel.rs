@@ -79,7 +79,7 @@ impl PveLxcResourcesPanel {
             (),
         ));
 
-        crate::widgets::standard_card(tr!("Resources"), None::<&str>)
+        crate::widgets::standard_card(tr!("Resources"), (), ())
             .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }
@@ -96,7 +96,7 @@ impl PveLxcResourcesPanel {
             ));
         }
 
-        crate::widgets::standard_card(tr!("Network"), None::<&str>)
+        crate::widgets::standard_card(tr!("Network"), (), ())
             .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }
@@ -120,7 +120,7 @@ impl PveLxcResourcesPanel {
             (),
         ));
 
-        crate::widgets::standard_card(tr!("DNS"), None::<&str>)
+        crate::widgets::standard_card(tr!("DNS"), (), ())
             .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }

@@ -181,7 +181,7 @@ impl PveLxcDashboardPanel {
 
         let status = List::from_tiles(tiles).grid_template_columns("auto 1fr auto");
 
-        crate::widgets::standard_card(tr!("Status"), None::<&str>)
+        crate::widgets::standard_card(tr!("Status"), (), ())
             .with_child(status)
             .into()
     }

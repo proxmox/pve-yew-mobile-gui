@@ -387,7 +387,12 @@ impl Component for PveQemuHardwarePanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let content =
             crate::widgets::render_loaded_data(&self.data, |data| self.view_list(ctx, data));
-        crate::widgets::standard_card(tr!("Hardware"), None::<&str>)
+
+        let menu: Html = MenuButton::new("")
+            .icon_class("fa fa-bars")
+            .class("circle")
+            .into(); // fixme
+        crate::widgets::standard_card(tr!("Hardware"), (), menu)
             .min_height(200)
             .with_child(content)
             .with_optional_child(self.dialog.clone())

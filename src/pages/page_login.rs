@@ -68,7 +68,7 @@ impl Component for PvePageLogin {
         };
 
         let content: Html = if let Some(consent_text) = consent_text {
-            let card = crate::widgets::standard_card(tr!("Consent"), ())
+            let card = crate::widgets::standard_card(tr!("Consent"), (), ())
                 .class("pwt-scheme-neutral")
                 .with_child(
                     Column::new()

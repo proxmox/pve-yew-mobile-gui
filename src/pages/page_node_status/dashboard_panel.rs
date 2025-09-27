@@ -115,7 +115,7 @@ impl PveNodeDashboardPanel {
 
         let status = List::from_tiles(tiles).grid_template_columns("auto 1fr auto");
 
-        crate::widgets::standard_card(tr!("Summary"), data.pveversion.clone())
+        crate::widgets::standard_card(tr!("Summary"), data.pveversion.clone(), ())
             .with_child(status)
             .into()
     }
