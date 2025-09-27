@@ -141,26 +141,27 @@ impl PendingPropertyList {
 
             ListTile::new()
                 .class(pwt::css::AlignItems::Center)
-                //.class("pwt-column-gap-2")
                 .class("pwt-gap-2")
                 .border_bottom(true)
                 .with_optional_child(icon.map(|i| i.fixed_width().large_2x()))
                 .with_child(content)
         } else {
             let trailing = trailing.into_optional_inline_html();
+            let content: Html = Row::new()
+                .class(pwt::css::AlignItems::Center)
+                .class(pwt::css::JustifyContent::End)
+                .gap(1)
+                .with_child(title_subtitle_column(property.title.clone(), value))
+                .with_flex_spacer()
+                .with_optional_child(trailing.into_optional_inline_html())
+                .into();
 
             ListTile::new()
                 .class(pwt::css::AlignItems::Center)
-                //.class("pwt-column-gap-2")
                 .class("pwt-gap-2")
                 .border_bottom(true)
                 .with_optional_child(icon.map(|i| i.fixed_width().large_2x()))
-                .with_child(
-                    Row::new()
-                        .with_child(title_subtitle_column(property.title.clone(), value))
-                        .with_flex_spacer()
-                        .with_optional_child(trailing.into_optional_inline_html()),
-                )
+                .with_child(content)
         }
     }
 }
