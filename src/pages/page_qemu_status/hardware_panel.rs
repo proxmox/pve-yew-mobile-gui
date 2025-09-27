@@ -158,6 +158,7 @@ impl PveQemuHardwarePanel {
 
         let menu_button: Html = MenuButton::new("")
             .class(pwt::css::ColorScheme::Neutral)
+            .class("circle")
             .icon_class("fa fa-ellipsis-v fa-lg")
             .menu(menu)
             .into();
@@ -201,6 +202,7 @@ impl PveQemuHardwarePanel {
 
         let menu_button: Html = MenuButton::new("")
             .class(pwt::css::ColorScheme::Neutral)
+            .class("circle")
             .icon_class("fa fa-ellipsis-v fa-lg")
             .menu(menu)
             .into();
