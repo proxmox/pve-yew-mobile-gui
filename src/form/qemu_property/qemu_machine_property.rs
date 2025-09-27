@@ -1,14 +1,14 @@
-use proxmox_schema::{ApiType, ObjectSchemaType, Schema};
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Combobox, Hidden};
+use pwt::widget::form::{delete_empty_values, Combobox};
 use pwt::widget::{Column, Container};
 
 use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
 
 use crate::form::{
-    flatten_property_string, property_string_from_parts, pspn, QemuMachineVersionSelector,
+    flatten_property_string, property_string_add_missing_data, property_string_from_parts, pspn,
+    QemuMachineVersionSelector,
 };
 use crate::widgets::{
     label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
@@ -49,25 +49,6 @@ fn extract_machine_type(id: &str) -> QemuMachineType {
 
 fn placeholder() -> String {
     tr!("Default") + &format!(" ({})", QemuMachineType::I440fx)
-}
-
-fn add_hidden_machine_properties(column: &mut Column, exclude: &[&str]) {
-    // add unused machine property - we want to keep them!
-    match QemuConfigMachine::API_SCHEMA {
-        Schema::Object(object_schema) => {
-            let props = object_schema.properties();
-            for (part, _, _) in props {
-                if !exclude.contains(part) {
-                    column.add_child(Hidden::new().name(pspn("machine", part)));
-                }
-            }
-        }
-        _ => {
-            log::error!(
-                "add_hidden_machine_properties: internal error - got unsupported schema type"
-            )
-        }
-    };
 }
 
 fn input_panel() -> RenderPropertyInputPanelFn {
@@ -156,6 +137,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 Combobox::from_key_value_pairs(items)
                     .name(pspn("machine", "viommu"))
                     .force_selection(true)
+                    .submit_empty(true)
                     .placeholder(tr!("Default") + " (" + &tr!("None") + ")")
                     .render_value(|v: &AttrValue| {
                         match v.as_str() {
@@ -175,7 +157,6 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             ))
         }));
 
-        add_hidden_machine_properties(&mut column, &["type", "viommu"]);
         column.into()
     })
 }
@@ -203,8 +184,8 @@ pub fn qemu_machine_property() -> EditableProperty {
             let machine_type = record[&machine_type_prop_name].as_str().unwrap_or("");
             let machine_type = extract_machine_type(machine_type);
 
-            let name = format!("{machine_type}-version");
-            record[pspn("machine", &name)] = record[&machine_type_prop_name].take();
+            let version_prop_name = pspn("machine", &format!("{machine_type}-version"));
+            record[version_prop_name] = record[&machine_type_prop_name].take();
 
             let extracted_type_prop_name = pspn("machine", "extracted-type");
             record[extracted_type_prop_name] = machine_type.to_string().into();
@@ -222,13 +203,19 @@ pub fn qemu_machine_property() -> EditableProperty {
                 let machine_type = form_ctx
                     .read()
                     .get_field_text(extracted_type_prop_name.clone());
-                let name = pspn("machine", &format!("{machine_type}-version"));
 
-                data[machine_type_prop_name] = form_ctx
-                    .read()
-                    .get_field_value(name.clone())
-                    .unwrap_or(Value::Null);
+                let version_prop_name = pspn("machine", &format!("{machine_type}-version"));
+                let mut version = form_ctx.read().get_field_text(version_prop_name);
+                if version.is_empty() && machine_type == "q35" {
+                    version = String::from("q35");
+                }
+                data[machine_type_prop_name] = version.into();
 
+                property_string_add_missing_data::<QemuConfigMachine>(
+                    &mut data,
+                    &state.record,
+                    "machine",
+                )?;
                 property_string_from_parts::<QemuConfigMachine>(&mut data, "machine", true)?;
 
                 data = delete_empty_values(&data, &["machine"], false);
