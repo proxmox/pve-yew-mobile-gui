@@ -141,6 +141,39 @@ pub fn flatten_property_string<T: ApiType + Serialize + DeserializeOwned>(
     Ok(())
 }
 
+/// Copy undefined object values from other object.
+///
+/// This is useful to assemble data inside form submit functions. Instead of adding Hidden fields to
+/// include data, this function copies undefined values from the provided object (which
+/// usually refers to the initial data loaded by the form).
+///
+/// Note: Make sure that the form fields submits empty data (submit_empty(true)). Else this
+/// function always copies the data from 'original_data'.
+pub fn property_string_add_missing_data<T: ApiType + Serialize + DeserializeOwned>(
+    submit_data: &mut Value,
+    original_data: &Value,
+    name: &str,
+) -> Result<(), Error> {
+    let props = match T::API_SCHEMA {
+        Schema::Object(object_schema) => object_schema.properties(),
+        _ => {
+            bail!("property_string_add_missing_data: internal error - got unsupported schema type")
+        }
+    };
+
+    if let Value::Object(map) = submit_data {
+        if let Value::Object(original_map) = original_data {
+            for (part, _, _) in props {
+                let part = pspn(name, part);
+                if !map.contains_key(&part) && original_map.contains_key(&part) {
+                    map.insert(part.clone(), original_data[&part].clone());
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 // Copied from proxmox-yew-com and added proper error handling
 /// Uses an [`proxmox_schema::ObjectSchema`] to generate a property string from separate properties.
 ///
@@ -171,6 +204,7 @@ pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
             if let Some(v) = map.remove(&pspn(name, part)) {
                 has_parts = true;
                 let is_empty = match &v {
+                    Value::Null => true,
                     Value::String(s) => s.is_empty(),
                     _ => false,
                 };
@@ -188,7 +222,7 @@ pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
         let option: Option<T> = serde_json::from_value(value)?;
         data[name] = match option {
             Some(ref parsed) => proxmox_schema::property_string::print::<T>(parsed)?,
-            None => String::new(),
+            None::<_> => String::new(),
         }
         .into();
 
