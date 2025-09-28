@@ -59,7 +59,7 @@ fn input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
                     .gap(2)
                     .with_child(label_field(
                         tr!("Firewall"),
-                        Checkbox::new().name("_firewall"),
+                        Checkbox::new().name("_firewall").default(true),
                     ))
                     .with_child(label_field(
                         tr!("Disconnect"),
@@ -101,6 +101,11 @@ pub fn qemu_network_property(name: Option<String>, node: Option<AttrValue>) -> E
             let network = find_free_network(&state.record)?;
             let name = name.clone().unwrap_or(network);
             property_string_add_missing_data::<QemuConfigNet>(&mut data, &state.record)?;
+
+            if let Value::Bool(false) = data["_link_down"] {
+                data["_link_down"] = Value::Null; // do not set unnecessary value
+            }
+
             property_string_from_parts::<QemuConfigNet>(&mut data, &name, true)?;
             data = delete_empty_values(&data, &[&name], false);
             Ok(data)
