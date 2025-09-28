@@ -45,7 +45,7 @@ mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
 use proxmox_schema::{property_string::PropertyString, ApiType, Schema};
-use pwt::widget::form::delete_empty_values;
+use pwt::widget::form::{delete_empty_values, FormContext};
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
@@ -140,12 +140,10 @@ pub fn flatten_property_string<T: ApiType + Serialize + DeserializeOwned>(
 /// This is useful to assemble data inside form submit functions. Instead of adding Hidden fields to
 /// include data, this function copies undefined values from the provided object (which
 /// usually refers to the initial data loaded by the form).
-///
-/// Note: Make sure that the form fields submits empty data (submit_empty(true)). Else this
-/// function always copies the data from 'original_data'.
 pub fn property_string_add_missing_data<T: ApiType + Serialize + DeserializeOwned>(
     submit_data: &mut Value,
     original_data: &Value,
+    form_ctx: &FormContext,
 ) -> Result<(), Error> {
     let props = match T::API_SCHEMA {
         Schema::Object(object_schema) => object_schema.properties(),
@@ -154,11 +152,15 @@ pub fn property_string_add_missing_data<T: ApiType + Serialize + DeserializeOwne
         }
     };
 
+    let form_ctx = form_ctx.read();
     if let Value::Object(map) = submit_data {
         if let Value::Object(original_map) = original_data {
             for (part, _, _) in props {
                 let part = format!("_{part}");
-                if !map.contains_key(&part) && original_map.contains_key(&part) {
+                if !map.contains_key(&part)
+                    && !form_ctx.contains_field(&part)
+                    && original_map.contains_key(&part)
+                {
                     map.insert(part.clone(), original_data[&part].clone());
                 }
             }

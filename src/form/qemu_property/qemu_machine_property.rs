@@ -137,7 +137,6 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 Combobox::from_key_value_pairs(items)
                     .name("_viommu")
                     .force_selection(true)
-                    .submit_empty(true)
                     .placeholder(tr!("Default") + " (" + &tr!("None") + ")")
                     .render_value(|v: &AttrValue| {
                         match v.as_str() {
@@ -204,7 +203,11 @@ pub fn qemu_machine_property() -> EditableProperty {
                 }
                 data["_type"] = version.into();
 
-                property_string_add_missing_data::<QemuConfigMachine>(&mut data, &state.record)?;
+                property_string_add_missing_data::<QemuConfigMachine>(
+                    &mut data,
+                    &state.record,
+                    &form_ctx,
+                )?;
                 property_string_from_parts::<QemuConfigMachine>(&mut data, "machine", true)?;
 
                 data = delete_empty_values(&data, &["machine"], false);

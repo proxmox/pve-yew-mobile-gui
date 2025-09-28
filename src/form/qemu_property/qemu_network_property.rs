@@ -45,14 +45,11 @@ fn input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
             ))
             .with_child(label_field(
                 PveVlanField::get_std_label(),
-                PveVlanField::new().name("_tag").submit_empty(true),
+                PveVlanField::new().name("_tag"),
             ))
             .with_child(label_field(
                 tr!("MAC address"),
-                Field::new()
-                    .name("_macaddr")
-                    .placeholder("auto")
-                    .submit_empty(true),
+                Field::new().name("_macaddr").placeholder("auto"),
             ))
             .with_child(
                 Row::new()
@@ -100,7 +97,11 @@ pub fn qemu_network_property(name: Option<String>, node: Option<AttrValue>) -> E
             let mut data = state.get_submit_data();
             let network = find_free_network(&state.record)?;
             let name = name.clone().unwrap_or(network);
-            property_string_add_missing_data::<QemuConfigNet>(&mut data, &state.record)?;
+            property_string_add_missing_data::<QemuConfigNet>(
+                &mut data,
+                &state.record,
+                &state.form_ctx,
+            )?;
 
             if let Value::Bool(false) = data["_link_down"] {
                 data["_link_down"] = Value::Null; // do not set unnecessary value
@@ -134,7 +135,6 @@ fn mtu_input_panel() -> RenderPropertyInputPanelFn {
                 Number::<u16>::new()
                     .name("_mtu")
                     .placeholder("Same as bridge")
-                    .submit_empty(true)
                     .min(1)
                     .max(65520)
                     .validate(|val: &u16| {
@@ -149,7 +149,6 @@ fn mtu_input_panel() -> RenderPropertyInputPanelFn {
                 Number::<f64>::new()
                     .name("_rate")
                     .placeholder(tr!("unlimited"))
-                    .submit_empty(true)
                     .min(0.0)
                     .max(10.0 * 1024.0)
             ))
@@ -157,7 +156,6 @@ fn mtu_input_panel() -> RenderPropertyInputPanelFn {
                 tr!("Multiqueue"),
                 Number::<u8>::new()
                     .name("_queues")
-                    .submit_empty(true)
                     .min(1)
                     .max(64)
             )).into()
