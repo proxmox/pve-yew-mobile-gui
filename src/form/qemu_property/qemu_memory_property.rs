@@ -10,7 +10,7 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, FormContext, Hidden, Number};
 use pwt::widget::{Column, Row};
 
-use crate::form::{flatten_property_string, property_string_from_parts, pspn};
+use crate::form::{flatten_property_string, property_string_from_parts};
 use crate::widgets::{
     label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
 };
@@ -28,8 +28,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
         let form_ctx = state.form_ctx;
         let advanced = form_ctx.get_show_advanced();
 
-        let current_memory_prop = pspn("memory", "current");
-        let current_memory = read_u64(&form_ctx, &current_memory_prop);
+        let current_memory = read_u64(&form_ctx, "_current");
 
         let use_ballooning = form_ctx.read().get_field_checked("_use_ballooning");
 
@@ -49,7 +48,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .with_child(label_field(
                 tr!("Memory") + " (MiB)",
                 Number::<u64>::new()
-                    .name(current_memory_prop)
+                    .name("_current")
                     .placeholder(memory_default.to_string())
                     .min(16)
                     .step(32),
@@ -156,13 +155,12 @@ pub fn qemu_memory_property() -> EditableProperty {
         })
         .load_hook(|mut record| {
             flatten_property_string::<QemuConfigMemory>(&mut record, "memory")?;
-            let current_memory_prop = pspn("memory", "current");
 
             let use_ballooning = record["balloon"].as_u64().is_some();
             record["_use_ballooning"] = use_ballooning.into();
 
             if record["balloon"].is_null() {
-                if let Some(current_memory) = record[current_memory_prop].as_u64() {
+                if let Some(current_memory) = record["_current"].as_u64() {
                     record["balloon"] = current_memory.into();
                     record["_old_memory"] = current_memory.into();
                 }
@@ -171,10 +169,7 @@ pub fn qemu_memory_property() -> EditableProperty {
         })
         .on_change(|state: PropertyEditorState| {
             let form_ctx = state.form_ctx;
-            let current_memory_prop = pspn("memory", "current");
-            let current_memory = form_ctx
-                .read()
-                .get_last_valid_value(current_memory_prop.clone());
+            let current_memory = form_ctx.read().get_last_valid_value("_current");
             let old_memory = form_ctx.read().get_field_value("_old_memory");
             let balloon = form_ctx.read().get_last_valid_value("balloon");
 

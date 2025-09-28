@@ -8,9 +8,8 @@ use pwt::widget::form::{delete_empty_values, Checkbox, Combobox, Field, Number};
 use pwt::widget::{Column, Row};
 
 use crate::form::{
-    flatten_property_string, flatten_property_string_new, property_string_add_missing_data,
-    property_string_add_missing_data_new, property_string_from_parts,
-    property_string_from_parts_new, PveNetworkSelector, PveVlanField,
+    flatten_property_string, property_string_add_missing_data, property_string_from_parts,
+    PveNetworkSelector, PveVlanField,
 };
 use crate::widgets::{
     label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
@@ -101,8 +100,8 @@ pub fn qemu_network_property(name: Option<String>, node: Option<AttrValue>) -> E
             let mut data = state.get_submit_data();
             let network = find_free_network(&state.record)?;
             let name = name.clone().unwrap_or(network);
-            property_string_add_missing_data_new::<QemuConfigNet>(&mut data, &state.record)?;
-            property_string_from_parts_new::<QemuConfigNet>(&mut data, &name, true)?;
+            property_string_add_missing_data::<QemuConfigNet>(&mut data, &state.record)?;
+            property_string_from_parts::<QemuConfigNet>(&mut data, &name, true)?;
             data = delete_empty_values(&data, &[&name], false);
             Ok(data)
         }
@@ -111,7 +110,7 @@ pub fn qemu_network_property(name: Option<String>, node: Option<AttrValue>) -> E
         let name = name.clone();
         move |mut record: Value| {
             if let Some(name) = name.as_deref() {
-                flatten_property_string_new::<QemuConfigNet>(&mut record, name)?;
+                flatten_property_string::<QemuConfigNet>(&mut record, name)?;
             } else {
                 let _ = find_free_network(&record)?; // test early
             }

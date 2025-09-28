@@ -84,7 +84,10 @@ impl<F: 'static + Fn(FormContext, Rc<Value>) -> Html> From<F> for RenderProperty
 #[derive(Clone, PartialEq)]
 #[builder]
 pub struct EditableProperty {
-    pub name: AttrValue,
+    // Note: name may not be changed after creation, because it is likely used/referenced inside
+    // the callbacks.
+    name: Option<AttrValue>,
+
     pub title: AttrValue,
     #[builder]
     pub required: bool,
@@ -120,8 +123,8 @@ pub struct EditableProperty {
 }
 
 impl EditableProperty {
-    pub fn new(name: impl Into<AttrValue>, title: impl Into<AttrValue>) -> Self {
-        let name = name.into();
+    pub fn new(name: impl IntoPropValue<Option<AttrValue>>, title: impl Into<AttrValue>) -> Self {
+        let name = name.into_prop_value();
         Self {
             name: name.into(),
             revert_keys: None,
@@ -137,6 +140,11 @@ impl EditableProperty {
             render_input_panel: None,
             advanced_checkbox: false,
         }
+    }
+
+    // Allow read-only access to name
+    pub fn get_name(&self) -> Option<&AttrValue> {
+        self.name.as_ref()
     }
 
     pub fn new_bool(

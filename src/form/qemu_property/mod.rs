@@ -165,20 +165,16 @@ pub fn qemu_startup_property() -> EditableProperty {
                 .class(pwt::css::AlignItems::Stretch)
                 .with_child(crate::widgets::label_field(
                     tr!("Order"),
-                    Number::<u32>::new()
-                        .name("_startup_order")
-                        .placeholder(tr!("any")),
+                    Number::<u32>::new().name("_order").placeholder(tr!("any")),
                 ))
                 .with_child(crate::widgets::label_field(
                     tr!("Startup delay"),
-                    Number::<u32>::new()
-                        .name("_startup_up")
-                        .placeholder(tr!("default")),
+                    Number::<u32>::new().name("_up").placeholder(tr!("default")),
                 ))
                 .with_child(crate::widgets::label_field(
                     tr!("Shutdown timeout"),
                     Number::<u32>::new()
-                        .name("_startup_down")
+                        .name("_down")
                         .placeholder(tr!("default")),
                 ))
                 .into()

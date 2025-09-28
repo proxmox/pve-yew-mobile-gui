@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
-use proxmox_yew_comp::utils::render_boolean;
 use pwt::touch::SnackBar;
 use serde_json::{json, Map, Value};
 
@@ -19,7 +18,7 @@ use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback};
 
 use pwt_macros::builder;
 
-use crate::widgets::{title_subtitle_column, EditDialog, EditableProperty};
+use crate::widgets::{title_subtitle_column, EditDialog, EditableProperty, PropertyList};
 use crate::QemuPendingConfigValue;
 
 #[derive(Properties, Clone, PartialEq)]
@@ -48,37 +47,16 @@ impl PendingPropertyList {
     pub fn new(properties: Rc<Vec<EditableProperty>>) -> Self {
         yew::props!(Self { properties })
     }
+
     pub fn render_property_value(
         current: &Value,
         pending: &Value,
         property: &EditableProperty,
     ) -> (Html, Option<Html>) {
-        let name = &property.name.as_str();
-        let render_value = |data_record: &Value| {
-            let value = &data_record[name];
-            match (value, &property.renderer) {
-                (Value::Null, _) => property
-                    .placeholder
-                    .clone()
-                    .unwrap_or(AttrValue::Static("-"))
-                    .to_string()
-                    .into(),
-                (value, None) => match value {
-                    Value::String(value) => value.clone(),
-                    Value::Bool(value) => render_boolean(*value),
-                    Value::Number(n) => n.to_string(),
-                    v => v.to_string(),
-                }
-                .into(),
-                (other, Some(renderer)) => renderer.apply(name, other, &data_record),
-            }
-        };
-
-        let value = render_value(current);
-        let new_value = render_value(pending);
+        let value = PropertyList::render_property_value(current, property);
+        let new_value = PropertyList::render_property_value(pending, property);
 
         if value != new_value {
-            //value = html! {<><div>{value}</div><div style="line-height: 1.4em;" class="pwt-color-warning">{new_value}</div></>};
             (value, Some(new_value))
         } else {
             (value, None)
@@ -252,13 +230,20 @@ impl PvePendingPropertyList {
         let mut tiles: Vec<ListTile> = Vec::new();
 
         for item in props.properties.iter() {
-            let value = record.get(&*item.name);
+            let name = match item.get_name() {
+                Some(name) => name.clone(),
+                None::<_> => {
+                    log::error!("pending property list: skiping property without name");
+                    continue;
+                }
+            };
+            let value = record.get(name.as_str());
             if !item.required && (value.is_none() || value == Some(&Value::Null)) {
                 continue;
             }
 
             let mut tile = self.property_tile(ctx, record, pending, item);
-            tile.set_key(item.name.clone());
+            tile.set_key(name);
 
             tiles.push(tile);
         }
@@ -299,7 +284,16 @@ impl Component for PvePendingPropertyList {
                 let link = ctx.link().clone();
                 let keys = match property.revert_keys.as_deref() {
                     Some(keys) => keys.iter().map(|a| a.to_string()).collect(),
-                    None => vec![property.name.to_string()],
+                    None::<_> => {
+                        if let Some(name) = property.get_name() {
+                            vec![name.to_string()]
+                        } else {
+                            log::error!(
+                                "pending property list: cannot revert property without name",
+                            );
+                            return false;
+                        }
+                    }
                 };
                 if let Some(on_submit) = props.on_submit.clone() {
                     let param = json!({ "revert": keys });

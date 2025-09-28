@@ -12,7 +12,7 @@ use pve_api_types::{QemuConfigVga, QemuConfigVgaClipboard};
 use yew::virtual_dom::VComp;
 
 use crate::form::{
-    flatten_property_string, format_qemu_display_type, property_string_from_parts, pspn,
+    flatten_property_string, format_qemu_display_type, property_string_from_parts,
     QemuDisplayTypeSelector,
 };
 use crate::widgets::{label_field, EditableProperty, PropertyEditorState};
@@ -92,11 +92,8 @@ impl Component for StatefulPanelComp {
 
         let advanced = form_ctx.get_show_advanced();
 
-        let clipboard_prop_name = pspn("vga", "clipboard");
-        let vga_type_prop_name = pspn("vga", "type");
-
-        let vga_type = form_ctx.read().get_field_text(vga_type_prop_name.clone());
-        let is_vnc = form_ctx.read().get_field_text(clipboard_prop_name.clone()) == "vnc";
+        let vga_type = form_ctx.read().get_field_text("_type");
+        let is_vnc = form_ctx.read().get_field_text("_clipboard") == "vnc";
         let has_gui = vga_type != "none" && !vga_type.starts_with("serial");
 
         let show_default_hint = !is_vnc && has_gui;
@@ -132,13 +129,13 @@ impl Component for StatefulPanelComp {
             .with_child(label_field(
                 tr!("Graphic card"),
                 QemuDisplayTypeSelector::new()
-                    .name(vga_type_prop_name.clone())
+                    .name("_type")
                     .serial_device_list(Some(self.serial_device_list.clone())),
             ))
             .with_child(label_field(
                 tr!("Memory") + " (MiB)",
                 Number::<u64>::new()
-                    .name(pspn("vga", "memory"))
+                    .name("_memory")
                     .placeholder(memory_placeholder)
                     .disabled(!has_gui)
                     .min(4)
@@ -149,7 +146,7 @@ impl Component for StatefulPanelComp {
                 label_field(
                     tr!("Clipboard"),
                     Combobox::from_key_value_pairs([("", tr!("Default")), ("vnc", "VNC".into())])
-                        .name(clipboard_prop_name.clone())
+                        .name("_clipboard")
                         .disabled(!has_gui),
                 )
                 .class((!advanced).then(|| pwt::css::Display::None)),

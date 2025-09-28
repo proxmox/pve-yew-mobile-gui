@@ -40,11 +40,19 @@ impl PropertyList {
     }
 
     pub fn render_property_value(record: &Value, property: &EditableProperty) -> Html {
-        let name = &property.name.as_str();
-        let value = record.get(name);
+        let (render_name, value);
+
+        if let Some(name) = property.get_name() {
+            value = record.get(name.as_str());
+            render_name = name.to_string();
+        } else {
+            // simply pass empty string as property name to the renderer
+            render_name = String::new();
+            value = None;
+        }
 
         match (value, &property.renderer) {
-            (None | Some(Value::Null), _) => {
+            (None::<_> | Some(Value::Null), _) => {
                 let placeholder = if let Some(placeholder) = &property.placeholder {
                     placeholder.to_string().into()
                 } else {
@@ -56,14 +64,14 @@ impl PropertyList {
                     .into()
             }
 
-            (Some(value), None) => match value {
+            (Some(value), None::<_>) => match value {
                 Value::String(value) => value.clone(),
                 Value::Bool(value) => render_boolean(*value),
                 Value::Number(n) => n.to_string(),
                 v => v.to_string(),
             }
             .into(),
-            (Some(value), Some(renderer)) => renderer.apply(&*property.name, &value, &record),
+            (Some(value), Some(renderer)) => renderer.apply(&render_name, &value, &record),
         }
     }
 }
@@ -110,13 +118,20 @@ impl PvePropertyList {
         let mut tiles: Vec<ListTile> = Vec::new();
 
         for item in props.properties.iter() {
-            let value = record.get(&*item.name);
+            let name = match item.get_name() {
+                Some(name) => name.clone(),
+                None => {
+                    log::error!("property list: skiping property without name");
+                    continue;
+                }
+            };
+            let value = record.get(&*name);
             if !item.required && (value.is_none() || value == Some(&Value::Null)) {
                 continue;
             }
 
             let mut list_tile = self.property_tile(ctx, record, item);
-            list_tile.set_key(item.name.clone());
+            list_tile.set_key(name);
 
             tiles.push(list_tile);
         }

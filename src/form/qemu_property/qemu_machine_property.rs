@@ -7,7 +7,7 @@ use pwt::widget::{Column, Container};
 use pve_api_types::{QemuConfigMachine, QemuConfigOstype};
 
 use crate::form::{
-    flatten_property_string, property_string_add_missing_data, property_string_from_parts, pspn,
+    flatten_property_string, property_string_add_missing_data, property_string_from_parts,
     QemuMachineVersionSelector,
 };
 use crate::widgets::{
@@ -62,18 +62,18 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             serde_json::from_value(state.record["ostype"].clone()).ok();
         let ostype = ostype.unwrap_or(QemuConfigOstype::Other);
 
-        let extracted_type_prop_name = pspn("machine", "extracted-type");
+        let extracted_type_prop_name = "_extracted-type";
 
         let machine_type = form_ctx
             .read()
-            .get_field_value(extracted_type_prop_name.clone())
+            .get_field_value(extracted_type_prop_name)
             .unwrap_or(Value::Null);
         let machine_type: QemuMachineType = serde_json::from_value(machine_type)
             .ok()
             .flatten()
             .unwrap_or(QemuMachineType::I440fx);
 
-        let version_prop_name = pspn("machine", &format!("{machine_type}-version"));
+        let version_prop_name = format!("_{machine_type}-version");
         let show_version = match form_ctx.read().get_field_data(version_prop_name) {
             Some((Value::String(version), Ok(_), _)) => {
                 if version.is_empty() || version == "pc" || version == "q35" {
@@ -88,11 +88,11 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 
         let add_version_selector = |column: &mut Column, ty| {
             let disabled = machine_type != ty;
-            let name = format!("{ty}-version");
+            let name = format!("_{ty}-version");
             let field = label_field(
                 tr!("Version"),
                 QemuMachineVersionSelector::new(ty)
-                    .name(pspn("machine", &name))
+                    .name(name)
                     .required(ostype_is_windows(&ostype))
                     .disabled(disabled)
                     .submit(false),
@@ -109,7 +109,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .with_child(label_field(
                 tr!("Type"),
                 Combobox::new()
-                    .name(extracted_type_prop_name.clone())
+                    .name(extracted_type_prop_name)
                     .required(true)
                     .submit(false)
                     .with_item("i440fx")
@@ -135,7 +135,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             label_field(
                 "vIOMMU",
                 Combobox::from_key_value_pairs(items)
-                    .name(pspn("machine", "viommu"))
+                    .name("_viommu")
                     .force_selection(true)
                     .submit_empty(true)
                     .placeholder(tr!("Default") + " (" + &tr!("None") + ")")
@@ -180,15 +180,13 @@ pub fn qemu_machine_property() -> EditableProperty {
         .load_hook(move |mut record: Value| {
             flatten_property_string::<QemuConfigMachine>(&mut record, "machine")?;
 
-            let machine_type_prop_name = pspn("machine", "type");
-            let machine_type = record[&machine_type_prop_name].as_str().unwrap_or("");
+            let machine_type = record["_type"].as_str().unwrap_or("");
             let machine_type = extract_machine_type(machine_type);
 
-            let version_prop_name = pspn("machine", &format!("{machine_type}-version"));
-            record[version_prop_name] = record[&machine_type_prop_name].take();
+            let version_prop_name = format!("_{machine_type}-version");
+            record[version_prop_name] = record["_type"].take();
 
-            let extracted_type_prop_name = pspn("machine", "extracted-type");
-            record[extracted_type_prop_name] = machine_type.to_string().into();
+            record["_extracted-type"] = machine_type.to_string().into();
 
             Ok(record)
         })
@@ -197,25 +195,16 @@ pub fn qemu_machine_property() -> EditableProperty {
                 let form_ctx = state.form_ctx;
                 let mut data = form_ctx.get_submit_data();
 
-                let machine_type_prop_name = pspn("machine", "type");
-                let extracted_type_prop_name = pspn("machine", "extracted-type");
+                let machine_type = form_ctx.read().get_field_text("_extracted-type");
 
-                let machine_type = form_ctx
-                    .read()
-                    .get_field_text(extracted_type_prop_name.clone());
-
-                let version_prop_name = pspn("machine", &format!("{machine_type}-version"));
+                let version_prop_name = format!("{machine_type}-version");
                 let mut version = form_ctx.read().get_field_text(version_prop_name);
                 if version.is_empty() && machine_type == "q35" {
                     version = String::from("q35");
                 }
-                data[machine_type_prop_name] = version.into();
+                data["_type"] = version.into();
 
-                property_string_add_missing_data::<QemuConfigMachine>(
-                    &mut data,
-                    &state.record,
-                    "machine",
-                )?;
+                property_string_add_missing_data::<QemuConfigMachine>(&mut data, &state.record)?;
                 property_string_from_parts::<QemuConfigMachine>(&mut data, "machine", true)?;
 
                 data = delete_empty_values(&data, &["machine"], false);

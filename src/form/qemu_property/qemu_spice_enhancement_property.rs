@@ -8,15 +8,13 @@ use pwt::prelude::*;
 use pwt::widget::form::{delete_empty_values, Checkbox, Combobox};
 use pwt::widget::{Column, Container};
 
-use crate::form::{property_string_from_parts, property_string_load_hook, pspn};
+use crate::form::{property_string_from_parts, property_string_load_hook};
 use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
-fn input_panel(name: String) -> RenderPropertyInputPanelFn {
+fn input_panel() -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
         let form_ctx = state.form_ctx;
-        let folder_sharing = form_ctx
-            .read()
-            .get_field_checked(pspn(&name, "foldersharing"));
+        let folder_sharing = form_ctx.read().get_field_checked("_foldersharing");
 
         let mut show_spice_hint = true;
         if let Some(Value::String(vga)) = state.record.get("vga") {
@@ -39,13 +37,13 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
             .gap(2)
             .with_child(
                 Checkbox::new()
-                    .name(pspn(&name, "foldersharing"))
+                    .name("_foldersharing")
                     .box_label(tr!("Folder Sharing")),
             )
             .with_child(crate::widgets::label_field(
                 tr!("Video Streaming"),
                 Combobox::new()
-                    .name(pspn(&name, "videostreaming"))
+                    .name("_videostreaming")
                     .default("off")
                     .with_item("off")
                     .with_item("all")
@@ -93,7 +91,7 @@ pub fn qemu_spice_enhancement_property() -> EditableProperty {
             }
             value.into()
         })
-        .render_input_panel(input_panel(name.clone()))
+        .render_input_panel(input_panel())
         .load_hook(property_string_load_hook::<QemuConfigSpiceEnhancements>(
             &name,
         ))
@@ -104,13 +102,12 @@ pub fn qemu_spice_enhancement_property() -> EditableProperty {
 
                 let mut value = json!({});
 
-                let foldersharing_prop_name = pspn(&name, "foldersharing");
-                if let Some(Value::Bool(true)) = form_data.get(&foldersharing_prop_name) {
+                let foldersharing_prop_name = "_foldersharing";
+                if let Some(Value::Bool(true)) = form_data.get(foldersharing_prop_name) {
                     value[foldersharing_prop_name] = Value::Bool(true);
                 }
-                let videostreaming_prop_name = pspn(&name, "videostreaming");
-                if let Some(Value::String(videostreaming)) =
-                    form_data.get(&videostreaming_prop_name)
+                let videostreaming_prop_name = "_videostreaming";
+                if let Some(Value::String(videostreaming)) = form_data.get(videostreaming_prop_name)
                 {
                     if videostreaming != "off" {
                         value[videostreaming_prop_name] = videostreaming.to_string().into();

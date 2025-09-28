@@ -330,7 +330,14 @@ impl Component for PveQemuHardwarePanel {
                 let link = ctx.link().clone();
                 let keys = match property.revert_keys.as_deref() {
                     Some(keys) => keys.iter().map(|a| a.to_string()).collect(),
-                    None::<_> => vec![property.name.to_string()],
+                    None::<_> => {
+                        if let Some(name) = property.get_name() {
+                            vec![name.to_string()]
+                        } else {
+                            log::error!("hardware panel: cannot revert property without name",);
+                            return false;
+                        }
+                    }
                 };
                 let on_submit = self.on_submit.clone();
                 let param = json!({ "revert": keys });

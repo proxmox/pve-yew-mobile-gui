@@ -56,7 +56,7 @@ impl PveQemuConfigPanel {
             crate::form::qemu_agent_property(),
             crate::form::qemu_spice_enhancement_property(),
             crate::form::qemu_vmstatestorage_property(&props.node),
-            crate::form::qemu_amd_sev_property("amd-sev"),
+            crate::form::qemu_amd_sev_property(),
         ])
     }
 }

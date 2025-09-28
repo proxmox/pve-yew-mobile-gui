@@ -7,7 +7,7 @@ use pwt::widget::form::{Checkbox, Combobox};
 use pwt::widget::{Column, Container};
 use serde_json::Value;
 
-use crate::form::{property_string_load_hook, property_string_submit_hook, pspn};
+use crate::form::{property_string_load_hook, property_string_submit_hook};
 use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
 
 fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
@@ -42,14 +42,12 @@ fn renderer(_name: &str, value: &Value, _record: &Value) -> Html {
     }
 }
 
-fn input_panel(name: String) -> RenderPropertyInputPanelFn {
+fn input_panel() -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
         let form_ctx = state.form_ctx;
         let advanced = form_ctx.get_show_advanced();
-        let enabled = form_ctx.read().get_field_checked(pspn(&name, "enabled"));
-        let ffob_enabled = form_ctx
-            .read()
-            .get_field_checked(pspn(&name, "freeze-fs-on-backup"));
+        let enabled = form_ctx.read().get_field_checked("_enabled");
+        let ffob_enabled = form_ctx.read().get_field_checked("_freeze-fs-on-backup");
 
         let warning = |msg: String| {
             Container::new()
@@ -62,18 +60,18 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                         .class(pwt::css::FlexFit)
                         .with_child(
                             Checkbox::new()
-                                .name(pspn(&name, "enabled"))
+                                .name("_enabled")
                                 .box_label(tr!("Use QEMU Guest Agent")),
                         )
                         .with_child(
                             Checkbox::new()
-                                .name(pspn(&name, "fstrim_cloned_disks"))
+                                .name("_fstrim_cloned_disks")
                                 .box_label(tr!("Run guest-trim after a disk move or VM migration"))
                                 .disabled(!enabled),
                         )
                         .with_child(
                             Checkbox::new()
-                                .name(pspn(&name, "freeze-fs-on-backup"))
+                                .name("_freeze-fs-on-backup")
                                 .box_label(tr!(
                                     "Freeze/thaw guest filesystems on backup for consistency"
                                 ))
@@ -86,7 +84,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
                                         ("virtio", "VirtIO"),
                                         ("isa", "ISA"),
                                 ])
-                                    .name(pspn(&name, "type"))
+                                    .name("_type")
                                     .placeholder(tr!("Default") + " (VirtIO)")
                             ).class((!advanced).then(|| pwt::css::Display::None))
                             .padding_top(2)
@@ -109,7 +107,7 @@ pub fn qemu_agent_property() -> EditableProperty {
         .required(true)
         .placeholder(format!("{} ({})", tr!("Default"), tr!("Disabled")))
         .renderer(renderer)
-        .render_input_panel(input_panel(name.clone()))
+        .render_input_panel(input_panel())
         .load_hook(property_string_load_hook::<QemuConfigAgent>(&name))
         .submit_hook(property_string_submit_hook::<QemuConfigAgent>(&name, true))
 }
