@@ -3,17 +3,16 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
-use proxmox_yew_comp::http_put;
+use proxmox_yew_comp::{http_put, SafeConfirmDialog};
 use serde_json::{json, Value};
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use pwt::prelude::*;
-use pwt::touch::{SnackBar, SnackBarContextExt};
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
 use pwt::widget::{Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
+use pwt::{prelude::*, AsyncPool};
 
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 use pwt::props::{IntoOptionalInlineHtml, SubmitCallback};
@@ -79,14 +78,15 @@ pub enum Msg {
     EditProperty(EditableProperty),
     AddProperty(EditableProperty),
     Revert(EditableProperty),
-    RevertResult(Result<(), Error>),
+    CommandResult(Result<(), Error>),
+    DeleteDevice(String),
 }
 
 pub struct PveQemuHardwarePanel {
     data: Option<Result<(QemuConfig, QemuConfig, HashSet<String>), String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
-    revert_guard: Option<AsyncAbortGuard>,
+    async_pool: AsyncPool,
     dialog: Option<Html>,
 
     memory_property: EditableProperty,
@@ -201,7 +201,21 @@ impl PveQemuHardwarePanel {
                     let property = mtu_property.clone();
                     move |_| Msg::EditProperty(property.clone())
                 })),
-            );
+            )
+            .with_item({
+                let link = ctx.link().clone();
+                let dialog: Html = SafeConfirmDialog::new(name.to_string())
+                    .on_done(link.callback(|_| Msg::Dialog(None)))
+                    .on_confirm(link.callback({
+                        let name = name.to_string();
+                        move |_| Msg::DeleteDevice(name.clone())
+                    }))
+                    .into();
+                MenuItem::new(tr!("Delete device")).on_select(
+                    ctx.link()
+                        .callback(move |_| Msg::Dialog(Some(dialog.clone()))),
+                )
+            });
 
         let menu_button: Html = MenuButton::new("")
             .class(pwt::css::ColorScheme::Neutral)
@@ -300,7 +314,7 @@ impl Component for PveQemuHardwarePanel {
             data: None,
             reload_timeout: None,
             load_guard: None,
-            revert_guard: None,
+            async_pool: AsyncPool::new(),
             dialog: None,
             memory_property: qemu_memory_property(),
             bios_property: qemu_bios_property(),
@@ -326,6 +340,15 @@ impl Component for PveQemuHardwarePanel {
         let props = ctx.props();
 
         match msg {
+            Msg::DeleteDevice(name) => {
+                let link = ctx.link().clone();
+                let on_submit = self.on_submit.clone();
+                let param = json!({ "delete": [name] });
+                self.async_pool.spawn(async move {
+                    let result = on_submit.apply(param).await;
+                    link.send_message(Msg::CommandResult(result));
+                });
+            }
             Msg::Revert(property) => {
                 let link = ctx.link().clone();
                 let keys = match property.revert_keys.as_deref() {
@@ -341,17 +364,14 @@ impl Component for PveQemuHardwarePanel {
                 };
                 let on_submit = self.on_submit.clone();
                 let param = json!({ "revert": keys });
-                self.revert_guard = Some(AsyncAbortGuard::spawn(async move {
+                self.async_pool.spawn(async move {
                     let result = on_submit.apply(param).await;
-                    link.send_message(Msg::RevertResult(result));
-                }));
+                    link.send_message(Msg::CommandResult(result));
+                });
             }
-            Msg::RevertResult(result) => {
+            Msg::CommandResult(result) => {
                 if let Err(err) = result {
-                    ctx.link().show_snackbar(
-                        SnackBar::new()
-                            .message(tr!("Revert property failed") + " - " + &err.to_string()),
-                    );
+                    crate::show_failed_command_error(ctx.link(), err);
                 }
                 if self.reload_timeout.is_some() {
                     ctx.link().send_message(Msg::Load);
