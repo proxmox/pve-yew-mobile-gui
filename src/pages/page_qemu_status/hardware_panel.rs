@@ -76,7 +76,6 @@ pub enum Msg {
     LoadResult(Result<Vec<QemuPendingConfigValue>, Error>),
     Dialog(Option<Html>),
     EditProperty(EditableProperty),
-    AddProperty(EditableProperty),
     Revert(EditableProperty),
     CommandResult(Result<(), Error>),
     DeleteDevice(String),
@@ -386,16 +385,7 @@ impl Component for PveQemuHardwarePanel {
             Msg::EditProperty(property) => {
                 let url = props.editor_url();
                 let dialog = EditDialog::from(property.clone())
-                    .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
-                    .loader(typed_load::<QemuConfig>(url.clone()))
-                    .on_submit(self.on_submit.clone())
-                    .into();
-                self.dialog = Some(dialog);
-            }
-            Msg::AddProperty(property) => {
-                let url = props.editor_url();
-                let dialog = EditDialog::from(property.clone())
-                    .edit(false)
+                    .edit(property.get_name().is_none())
                     .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
                     .loader(typed_load::<QemuConfig>(url.clone()))
                     .on_submit(self.on_submit.clone())
@@ -435,7 +425,7 @@ impl Component for PveQemuHardwarePanel {
         let menu = Menu::new().with_item({
             MenuItem::new(tr!("Add Network card")).on_select(ctx.link().callback({
                 let property = qemu_network_property(None, Some(props.node.clone()));
-                move |_| Msg::AddProperty(property.clone())
+                move |_| Msg::EditProperty(property.clone())
             }))
         });
 
