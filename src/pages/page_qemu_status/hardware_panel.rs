@@ -77,6 +77,7 @@ pub enum Msg {
     LoadResult(Result<Vec<QemuPendingConfigValue>, Error>),
     Dialog(Option<Html>),
     EditProperty(EditableProperty),
+    AddProperty(EditableProperty),
     Revert(EditableProperty),
     RevertResult(Result<(), Error>),
 }
@@ -183,8 +184,10 @@ impl PveQemuHardwarePanel {
         pending: &Value,
     ) -> ListTile {
         let props = ctx.props();
-        let network_property = qemu_network_property(name, Some(props.node.clone()));
-        let mtu_property = qemu_network_mtu_property(name, Some(props.node.clone()));
+        let network_property =
+            qemu_network_property(Some(name.to_string()), Some(props.node.clone()));
+        let mtu_property =
+            qemu_network_mtu_property(Some(name.to_string()), Some(props.node.clone()));
 
         let menu = Menu::new()
             .with_item(
@@ -327,7 +330,7 @@ impl Component for PveQemuHardwarePanel {
                 let link = ctx.link().clone();
                 let keys = match property.revert_keys.as_deref() {
                     Some(keys) => keys.iter().map(|a| a.to_string()).collect(),
-                    None => vec![property.name.to_string()],
+                    None::<_> => vec![property.name.to_string()],
                 };
                 let on_submit = self.on_submit.clone();
                 let param = json!({ "revert": keys });
@@ -362,6 +365,16 @@ impl Component for PveQemuHardwarePanel {
                     .into();
                 self.dialog = Some(dialog);
             }
+            Msg::AddProperty(property) => {
+                let url = props.editor_url();
+                let dialog = EditDialog::from(property.clone())
+                    .edit(false)
+                    .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+                    .loader(typed_load::<QemuConfig>(url.clone()))
+                    .on_submit(self.on_submit.clone())
+                    .into();
+                self.dialog = Some(dialog);
+            }
             Msg::Load => {
                 let link = ctx.link().clone();
                 let url = props.pending_url();
@@ -387,14 +400,25 @@ impl Component for PveQemuHardwarePanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+
         let content =
             crate::widgets::render_loaded_data(&self.data, |data| self.view_list(ctx, data));
 
-        let menu: Html = MenuButton::new("")
+        let menu = Menu::new().with_item({
+            MenuItem::new(tr!("Add Network card")).on_select(ctx.link().callback({
+                let property = qemu_network_property(None, Some(props.node.clone()));
+                move |_| Msg::AddProperty(property.clone())
+            }))
+        });
+
+        let menu_button: Html = MenuButton::new("")
             .icon_class("fa fa-bars")
             .class("circle")
-            .into(); // fixme
-        crate::widgets::standard_card(tr!("Hardware"), (), menu)
+            .menu(menu)
+            .into();
+
+        crate::widgets::standard_card(tr!("Hardware"), (), menu_button)
             .min_height(200)
             .with_child(content)
             .with_optional_child(self.dialog.clone())

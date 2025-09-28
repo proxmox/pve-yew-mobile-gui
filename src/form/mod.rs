@@ -140,6 +140,27 @@ pub fn flatten_property_string<T: ApiType + Serialize + DeserializeOwned>(
 
     Ok(())
 }
+// do not use pspn - simply prefix with underscore
+pub fn flatten_property_string_new<T: ApiType + Serialize + DeserializeOwned>(
+    data: &mut Value,
+    name: &str,
+) -> Result<(), Error> {
+    // Note: schema.parse_property_string does not work for schemas using KeyAliasInfo!!
+    let test: Option<PropertyString<T>> = serde_json::from_value(data[name].clone())?;
+    if let Some(test) = test {
+        let record: Value = serde_json::to_value(test.into_inner())?;
+        match record {
+            Value::Object(map) => {
+                for (part, v) in map {
+                    data[format!("_{part}")] = v;
+                }
+            }
+            _ => bail!("flatten_property_string {name:?} failed: result is not an Object"),
+        }
+    }
+
+    Ok(())
+}
 
 /// Copy undefined object values from other object.
 ///
@@ -165,6 +186,30 @@ pub fn property_string_add_missing_data<T: ApiType + Serialize + DeserializeOwne
         if let Value::Object(original_map) = original_data {
             for (part, _, _) in props {
                 let part = pspn(name, part);
+                if !map.contains_key(&part) && original_map.contains_key(&part) {
+                    map.insert(part.clone(), original_data[&part].clone());
+                }
+            }
+        }
+    }
+    Ok(())
+}
+// do not use pspn
+pub fn property_string_add_missing_data_new<T: ApiType + Serialize + DeserializeOwned>(
+    submit_data: &mut Value,
+    original_data: &Value,
+) -> Result<(), Error> {
+    let props = match T::API_SCHEMA {
+        Schema::Object(object_schema) => object_schema.properties(),
+        _ => {
+            bail!("property_string_add_missing_data: internal error - got unsupported schema type")
+        }
+    };
+
+    if let Value::Object(map) = submit_data {
+        if let Value::Object(original_map) = original_data {
+            for (part, _, _) in props {
+                let part = format!("_{part}");
                 if !map.contains_key(&part) && original_map.contains_key(&part) {
                     map.insert(part.clone(), original_data[&part].clone());
                 }
@@ -202,6 +247,53 @@ pub fn property_string_from_parts<T: ApiType + Serialize + DeserializeOwned>(
         let mut has_parts = false;
         for (part, _, _) in props {
             if let Some(v) = map.remove(&pspn(name, part)) {
+                has_parts = true;
+                let is_empty = match &v {
+                    Value::Null => true,
+                    Value::String(s) => s.is_empty(),
+                    _ => false,
+                };
+                if !(skip_empty_values && is_empty) {
+                    value[part] = v;
+                }
+            }
+        }
+
+        if !has_parts {
+            data[name] = "".into();
+            return Ok(None);
+        }
+
+        let option: Option<T> = serde_json::from_value(value)?;
+        data[name] = match option {
+            Some(ref parsed) => proxmox_schema::property_string::print::<T>(parsed)?,
+            None::<_> => String::new(),
+        }
+        .into();
+
+        Ok(option)
+    } else {
+        bail!("property_string_from_parts: data is no Object");
+    }
+}
+
+// without pspn
+pub fn property_string_from_parts_new<T: ApiType + Serialize + DeserializeOwned>(
+    data: &mut Value,
+    name: &str,
+    skip_empty_values: bool,
+) -> Result<Option<T>, Error> {
+    let props = match T::API_SCHEMA {
+        Schema::Object(object_schema) => object_schema.properties(),
+        _ => bail!("property_string_from_parts: internal error - got unsupported schema type"),
+    };
+
+    if let Value::Object(map) = data {
+        let mut value = json!({});
+
+        let mut has_parts = false;
+        for (part, _, _) in props {
+            if let Some(v) = map.remove(&format!("_{part}")) {
                 has_parts = true;
                 let is_empty = match &v {
                     Value::Null => true,
