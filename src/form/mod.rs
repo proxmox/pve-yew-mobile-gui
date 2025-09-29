@@ -38,7 +38,8 @@ pub use qemu_property::{
     qemu_network_mtu_property, qemu_network_property, qemu_onboot_property, qemu_ostype_property,
     qemu_protection_property, qemu_scsihw_property, qemu_smbios_property,
     qemu_sockets_cores_property, qemu_spice_enhancement_property, qemu_startdate_property,
-    qemu_startup_property, qemu_tablet_property, qemu_vmstatestorage_property,
+    qemu_startup_property, qemu_tablet_property, qemu_vmstate_property,
+    qemu_vmstatestorage_property,
 };
 
 mod pve_storage_selector;

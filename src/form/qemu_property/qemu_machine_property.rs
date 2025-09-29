@@ -162,6 +162,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
 
 pub fn qemu_machine_property() -> EditableProperty {
     EditableProperty::new("machine", tr!("Machine"))
+        .required(true)
         .advanced_checkbox(true)
         .placeholder(placeholder())
         .renderer(move |_, v, record| {

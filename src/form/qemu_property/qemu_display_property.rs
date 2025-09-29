@@ -160,6 +160,7 @@ impl Component for StatefulPanelComp {
 
 pub fn qemu_display_property() -> EditableProperty {
     EditableProperty::new("vga", tr!("Display"))
+        .required(true)
         .advanced_checkbox(true)
         .placeholder(tr!("Default"))
         .renderer(renderer)

@@ -20,6 +20,7 @@ pub fn qemu_scsihw_property() -> EditableProperty {
     let placeholder = tr!("Default") + " (LSI 53C895A)";
 
     EditableProperty::new(NAME, "scsihw")
+        .required(true)
         .placeholder(placeholder.clone())
         .renderer({
             let items = items.clone();

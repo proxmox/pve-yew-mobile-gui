@@ -39,6 +39,7 @@ fn input_panel(name: String) -> RenderPropertyInputPanelFn {
 pub fn qemu_bios_property() -> EditableProperty {
     let name = String::from("bios");
     EditableProperty::new(name.clone(), "BIOS")
+        .required(true)
         .placeholder(tr!("Default") + " (SeaBIOS)")
         .renderer(
             |_, v, _| match serde_json::from_value::<QemuConfigBios>(v.clone()) {

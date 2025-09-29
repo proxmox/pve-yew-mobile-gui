@@ -24,7 +24,7 @@ use crate::form::{
     qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
     qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
     qemu_network_mtu_property, qemu_network_property, qemu_scsihw_property,
-    qemu_sockets_cores_property, typed_load,
+    qemu_sockets_cores_property, qemu_vmstate_property, typed_load,
 };
 use crate::widgets::{
     icon_list_tile, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
@@ -96,6 +96,7 @@ pub struct PveQemuHardwarePanel {
     display_property: EditableProperty,
     machine_property: EditableProperty,
     scsihw_property: EditableProperty,
+    vmstate_property: EditableProperty,
 
     on_submit: SubmitCallback<Value>,
 }
@@ -245,8 +246,20 @@ impl PveQemuHardwarePanel {
 
         let mut list: Vec<ListTile> = Vec::new();
 
-        let push_property_tile = |list: &mut Vec<_>, property, icon| {
-            list.push(self.property_tile(ctx, &record, &pending, property, icon, ()));
+        let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon| {
+            let name = match property.get_name() {
+                Some(name) => name,
+                None::<_> => return,
+            };
+            let has_value = match (record.as_object(), pending.as_object()) {
+                (Some(record), Some(pending)) => {
+                    record.contains_key(name.as_str()) || pending.contains_key(name.as_str())
+                }
+                _ => false,
+            };
+            if property.required || has_value {
+                list.push(self.property_tile(ctx, &record, &pending, property, icon, ()));
+            }
         };
 
         push_property_tile(&mut list, self.memory_property.clone(), Fa::new("memory"));
@@ -255,6 +268,11 @@ impl PveQemuHardwarePanel {
         push_property_tile(&mut list, self.display_property.clone(), Fa::new("desktop"));
         push_property_tile(&mut list, self.machine_property.clone(), Fa::new("cogs"));
         push_property_tile(&mut list, self.scsihw_property.clone(), Fa::new("database"));
+        push_property_tile(
+            &mut list,
+            self.vmstate_property.clone(),
+            Fa::new("download"),
+        );
 
         for (n, disk_config) in &data.ide {
             if let Ok(config) =
@@ -323,6 +341,7 @@ impl Component for PveQemuHardwarePanel {
             display_property: qemu_display_property(),
             machine_property: qemu_machine_property(),
             scsihw_property: qemu_scsihw_property(),
+            vmstate_property: qemu_vmstate_property(),
 
             on_submit: Self::create_on_submit(ctx.props()),
         }

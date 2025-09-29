@@ -282,3 +282,7 @@ pub fn qemu_vmstatestorage_property(node: &str) -> EditableProperty {
             Ok(delete_empty_values(&data, &["vmstatestorage"], false))
         })
 }
+
+pub fn qemu_vmstate_property() -> EditableProperty {
+    EditableProperty::new("vmstate", tr!("Hibernation VM State"))
+}
