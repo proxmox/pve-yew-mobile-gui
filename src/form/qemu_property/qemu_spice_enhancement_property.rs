@@ -1,6 +1,5 @@
+use proxmox_schema::property_string::PropertyString;
 use serde_json::{json, Value};
-
-use proxmox_schema::ApiType;
 
 use pve_api_types::{QemuConfigSpiceEnhancements, QemuConfigVga, QemuConfigVgaType};
 
@@ -44,8 +43,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 tr!("Video Streaming"),
                 Combobox::new()
                     .name("_videostreaming")
-                    .default("off")
-                    .with_item("off")
+                    .placeholder("off")
                     .with_item("all")
                     .with_item("filter"),
             ))
@@ -68,19 +66,17 @@ pub fn qemu_spice_enhancement_property() -> EditableProperty {
     EditableProperty::new(name.clone(), tr!("Spice Enhancements"))
         .required(true)
         .placeholder(tr!("none"))
-        .renderer(|_, value, _| {
-            if let Value::String(prop_str) = value {
-                if let Ok(props) =
-                    QemuConfigSpiceEnhancements::API_SCHEMA.parse_property_string(prop_str)
-                {
+        .renderer(|_, v, _| {
+            match serde_json::from_value::<Option<PropertyString<QemuConfigSpiceEnhancements>>>(
+                v.clone(),
+            ) {
+                Ok(Some(data)) => {
                     let mut output = Vec::new();
-                    if let Some(Value::Bool(true)) = props.get("foldersharing") {
+                    if let Some(true) = data.foldersharing {
                         output.push(tr!("Folder Sharing"));
                     }
-                    if let Some(Value::String(videostreaming)) = props.get("videostreaming") {
-                        if videostreaming == "all" || videostreaming == "filter" {
-                            output.push(tr!("Video Streaming") + ": " + videostreaming);
-                        }
+                    if let Some(videostreaming) = data.videostreaming {
+                        output.push(tr!("Video Streaming") + ": " + &videostreaming.to_string());
                     }
                     if output.is_empty() {
                         return tr!("none").into();
@@ -88,8 +84,12 @@ pub fn qemu_spice_enhancement_property() -> EditableProperty {
                         return output.join(", ").into();
                     }
                 }
+                Ok(None::<_>) => tr!("none").into(),
+                Err(err) => {
+                    log::error!("qemu_spice_enhancement_property renderer: {err}");
+                    v.into()
+                }
             }
-            value.into()
         })
         .render_input_panel(input_panel())
         .load_hook(property_string_load_hook::<QemuConfigSpiceEnhancements>(
@@ -109,7 +109,7 @@ pub fn qemu_spice_enhancement_property() -> EditableProperty {
                 let videostreaming_prop_name = "_videostreaming";
                 if let Some(Value::String(videostreaming)) = form_data.get(videostreaming_prop_name)
                 {
-                    if videostreaming != "off" {
+                    if !videostreaming.is_empty() {
                         value[videostreaming_prop_name] = videostreaming.to_string().into();
                     }
                 }
