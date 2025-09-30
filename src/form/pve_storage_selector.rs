@@ -62,7 +62,7 @@ pub struct PveStorageSelector {
 }
 
 impl PveStorageSelector {
-    pub fn new(node: impl IntoPropValue<AttrValue>) -> Self {
+    pub fn new(node: impl IntoPropValue<Option<AttrValue>>) -> Self {
         yew::props!(Self {
             node: node.into_prop_value()
         })
