@@ -147,31 +147,31 @@ impl PendingPropertyList {
 /// Parse PVE pending configuration array
 ///
 /// Returns 2 Objects, containing current and pending configuration,
-/// and the set of deleted keys.
+/// and the set of contained configuration  keys.
 pub fn pve_pending_config_array_to_objects(
     data: Vec<QemuPendingConfigValue>,
 ) -> Result<(Value, Value, HashSet<String>), Error> {
     let mut current = Map::new();
     let mut pending = Map::new();
-    let mut changes = HashSet::new();
+    let mut keys = HashSet::new();
 
     for item in data.iter() {
+        keys.insert(item.key.clone());
+
         if let Some(value) = item.value.clone() {
             current.insert(item.key.clone(), value);
         }
         if matches!(item.delete, Some(1) | Some(2)) {
-            changes.insert(item.key.clone());
             continue;
         }
         if let Some(value) = item.pending.clone() {
-            changes.insert(item.key.clone());
             pending.insert(item.key.clone(), value);
         } else if let Some(value) = item.value.clone() {
             pending.insert(item.key.clone(), value);
         }
     }
 
-    Ok((Value::Object(current), Value::Object(pending), changes))
+    Ok((Value::Object(current), Value::Object(pending), keys))
 }
 
 pub enum Msg {
@@ -223,7 +223,7 @@ impl PvePendingPropertyList {
     fn view_property(
         &self,
         ctx: &Context<Self>,
-        (record, pending, _changes): &(Value, Value, HashSet<String>),
+        (record, pending, keys): &(Value, Value, HashSet<String>),
     ) -> Html {
         let props = ctx.props();
 
@@ -231,21 +231,17 @@ impl PvePendingPropertyList {
 
         for item in props.properties.iter() {
             let name = match item.get_name() {
-                Some(name) => name.clone(),
+                Some(name) => name.to_string(),
                 None::<_> => {
                     log::error!("pending property list: skiping property without name");
                     continue;
                 }
             };
-            let value = record.get(name.as_str());
-            if !item.required && (value.is_none() || value == Some(&Value::Null)) {
-                continue;
+            if item.required || keys.contains(&name) {
+                let mut tile = self.property_tile(ctx, record, pending, item);
+                tile.set_key(name);
+                tiles.push(tile);
             }
-
-            let mut tile = self.property_tile(ctx, record, pending, item);
-            tile.set_key(name);
-
-            tiles.push(tile);
         }
 
         Column::new()

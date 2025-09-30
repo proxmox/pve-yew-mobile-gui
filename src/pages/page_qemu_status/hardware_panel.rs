@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
+use proxmox_schema::property_string::PropertyString;
 use proxmox_yew_comp::{http_put, SafeConfirmDialog};
 use serde_json::{json, Value};
 
@@ -17,18 +18,20 @@ use pwt::{prelude::*, AsyncPool};
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 use pwt::props::{IntoOptionalInlineHtml, SubmitCallback};
 
-use pve_api_types::{PveQmIde, PveQmIdeMedia, QemuConfig};
+use pve_api_types::{
+    PveQmIde, PveQmIdeMedia, QemuConfig, QemuConfigIdeArray, QemuConfigNetArray, QemuConfigScsi,
+    QemuConfigScsiArray,
+};
 
 use crate::api_types::QemuPendingConfigValue;
 use crate::form::{
-    qemu_bios_property, qemu_cpu_flags_property, qemu_display_property,
-    qemu_kernel_scheduler_property, qemu_machine_property, qemu_memory_property,
-    qemu_network_mtu_property, qemu_network_property, qemu_scsihw_property,
+    qemu_bios_property, qemu_cdrom_property, qemu_cpu_flags_property, qemu_disk_property,
+    qemu_display_property, qemu_kernel_scheduler_property, qemu_machine_property,
+    qemu_memory_property, qemu_network_mtu_property, qemu_network_property, qemu_scsihw_property,
     qemu_sockets_cores_property, qemu_vmstate_property, typed_load,
 };
 use crate::widgets::{
-    icon_list_tile, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
-    PendingPropertyList,
+    pve_pending_config_array_to_objects, EditDialog, EditableProperty, PendingPropertyList,
 };
 
 #[derive(Clone, PartialEq, Properties)]
@@ -62,15 +65,6 @@ impl QemuHardwarePanel {
     }
 }
 
-pub fn qemu_pending_config_array_to_rust(
-    data: Vec<QemuPendingConfigValue>,
-) -> Result<(QemuConfig, QemuConfig, HashSet<String>), Error> {
-    let (current, pending, changes) = pve_pending_config_array_to_objects(data)?;
-    let current = serde_json::from_value(current)?;
-    let pending = serde_json::from_value(pending)?;
-    Ok((current, pending, changes))
-}
-
 pub enum Msg {
     Load,
     LoadResult(Result<Vec<QemuPendingConfigValue>, Error>),
@@ -82,7 +76,7 @@ pub enum Msg {
 }
 
 pub struct PveQemuHardwarePanel {
-    data: Option<Result<(QemuConfig, QemuConfig, HashSet<String>), String>>,
+    data: Option<Result<(Value, Value, HashSet<String>), String>>,
     reload_timeout: Option<Timeout>,
     load_guard: Option<AsyncAbortGuard>,
     async_pool: AsyncPool,
@@ -239,26 +233,21 @@ impl PveQemuHardwarePanel {
     fn view_list(
         &self,
         ctx: &Context<Self>,
-        (data, pending, _changes): &(QemuConfig, QemuConfig, HashSet<String>),
+        (record, pending, keys): &(Value, Value, HashSet<String>),
     ) -> Html {
-        let record: Value = serde_json::to_value(data).unwrap();
-        let pending: Value = serde_json::to_value(pending).unwrap();
-
+        let props = ctx.props();
         let mut list: Vec<ListTile> = Vec::new();
 
         let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon| {
             let name = match property.get_name() {
-                Some(name) => name,
+                Some(name) => name.to_string(),
                 None::<_> => return,
             };
-            let has_value = match (record.as_object(), pending.as_object()) {
-                (Some(record), Some(pending)) => {
-                    record.contains_key(name.as_str()) || pending.contains_key(name.as_str())
-                }
-                _ => false,
-            };
-            if property.required || has_value {
-                list.push(self.property_tile(ctx, &record, &pending, property, icon, ()));
+
+            if property.required || keys.contains(&name) {
+                let mut tile = self.property_tile(ctx, &record, &pending, property, icon, ());
+                tile.set_key(name);
+                list.push(tile);
             }
         };
 
@@ -268,45 +257,67 @@ impl PveQemuHardwarePanel {
         push_property_tile(&mut list, self.display_property.clone(), Fa::new("desktop"));
         push_property_tile(&mut list, self.machine_property.clone(), Fa::new("cogs"));
         push_property_tile(&mut list, self.scsihw_property.clone(), Fa::new("database"));
+
+        // fixme: this should be removable - add menu with delete
         push_property_tile(
             &mut list,
             self.vmstate_property.clone(),
             Fa::new("download"),
         );
 
-        for (n, disk_config) in &data.ide {
-            if let Ok(config) =
-                proxmox_schema::property_string::parse::<PveQmIde>(disk_config.as_str())
-            {
-                if config.media == Some(PveQmIdeMedia::Cdrom) {
-                    list.push(icon_list_tile(
-                        Fa::new("cdrom"),
-                        tr!("CD/DVD Drive") + &format!(" (ide{n})"),
-                        disk_config.to_string(),
-                        (),
-                    ));
-                } else {
-                    list.push(icon_list_tile(
-                        Fa::new("hdd-o"),
-                        tr!("Hard Disk") + &format!(" (ide{n})"),
-                        disk_config.to_string(),
-                        (),
-                    ));
+        for n in 0..QemuConfigIdeArray::MAX {
+            let name = format!("ide{n}");
+            if !keys.contains(&name) {
+                continue;
+            }
+            let media = match serde_json::from_value::<Option<PropertyString<PveQmIde>>>(
+                pending[&name].clone(),
+            ) {
+                Ok(Some(ide)) => ide.media.unwrap_or(PveQmIdeMedia::Disk),
+                Ok(None) => PveQmIdeMedia::Disk,
+                Err(err) => {
+                    log::error!("unable to parse drive '{name}' media: {err}");
+                    continue;
                 }
+            };
+            if media == PveQmIdeMedia::Cdrom {
+                let property = qemu_cdrom_property(Some(name.clone()), Some(props.node.clone()));
+                push_property_tile(&mut list, property, Fa::new("cdrom"));
+            } else {
+                let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
+                push_property_tile(&mut list, property, Fa::new("hdd-o"));
             }
         }
 
-        for (n, disk_config) in &data.scsi {
-            list.push(icon_list_tile(
-                Fa::new("hdd-o"),
-                tr!("Hard Disk") + &format!(" (scsi{n})"),
-                disk_config.to_string(),
-                (),
-            ));
+        for n in 0..QemuConfigScsiArray::MAX {
+            let name = format!("scsi{n}");
+            if !keys.contains(&name) {
+                continue;
+            }
+            let media = match serde_json::from_value::<Option<PropertyString<QemuConfigScsi>>>(
+                pending[&name].clone(),
+            ) {
+                Ok(Some(scsi)) => scsi.media.unwrap_or(PveQmIdeMedia::Disk),
+                Ok(None) => PveQmIdeMedia::Disk,
+                Err(err) => {
+                    log::error!("unable to parse drive '{name}' media: {err}");
+                    continue;
+                }
+            };
+            if media == PveQmIdeMedia::Cdrom {
+                let property = qemu_cdrom_property(Some(name.clone()), Some(props.node.clone()));
+                push_property_tile(&mut list, property, Fa::new("cdrom"));
+            } else {
+                let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
+                push_property_tile(&mut list, property, Fa::new("hdd-o"));
+            }
         }
 
-        for (n, _net_config) in &data.net {
+        for n in 0..QemuConfigNetArray::MAX {
             let name = format!("net{n}");
+            if !keys.contains(&name) {
+                continue;
+            }
             list.push(self.network_list_tile(ctx, &name, &record, &pending));
         }
 
@@ -421,9 +432,9 @@ impl Component for PveQemuHardwarePanel {
             }
             Msg::LoadResult(result) => {
                 self.data = match result {
-                    Ok(data) => {
-                        Some(qemu_pending_config_array_to_rust(data).map_err(|err| err.to_string()))
-                    }
+                    Ok(data) => Some(
+                        pve_pending_config_array_to_objects(data).map_err(|err| err.to_string()),
+                    ),
                     Err(err) => Some(Err(err.to_string())),
                 };
                 let link = ctx.link().clone();
