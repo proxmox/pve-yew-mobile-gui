@@ -8,6 +8,7 @@ use pwt::widget::{form::delete_empty_values, Column};
 use pve_api_types::{PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigVirtio};
 
 const MEDIA_TYPE: &'static str = "_media_type_";
+const BUS_DEVICE: &'static str = "_device_";
 
 use crate::form::PveStorageSelector;
 use crate::{
@@ -52,7 +53,7 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
             .with_optional_child(is_create.then(|| {
                 label_field(
                     tr!("Bus/Device"),
-                    QemuControllerSelector::new().name("_device_").submit(false),
+                    QemuControllerSelector::new().name(BUS_DEVICE).submit(false),
                 )
             }))
             .with_child(
@@ -112,7 +113,7 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
                 }
             }
 
-            record["_device_"] = name.clone().into();
+            record[BUS_DEVICE] = name.clone().into();
 
             match record["_file"].as_str() {
                 Some("cdrom") => record[MEDIA_TYPE] = "cdrom".into(),
@@ -132,7 +133,7 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
 
             let device = match &name {
                 Some(name) => name.clone(),
-                None::<_> => form_ctx.read().get_field_text("_device_"),
+                None::<_> => form_ctx.read().get_field_text(BUS_DEVICE),
             };
 
             if device.starts_with("ide") {
