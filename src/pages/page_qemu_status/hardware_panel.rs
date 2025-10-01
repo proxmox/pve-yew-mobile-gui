@@ -19,8 +19,8 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 use pwt::props::{IntoOptionalInlineHtml, SubmitCallback};
 
 use pve_api_types::{
-    PveQmIde, PveQmIdeMedia, QemuConfig, QemuConfigIdeArray, QemuConfigNetArray, QemuConfigScsi,
-    QemuConfigScsiArray,
+    PveQmIde, PveQmIdeMedia, QemuConfig, QemuConfigIdeArray, QemuConfigNetArray, QemuConfigSata,
+    QemuConfigSataArray, QemuConfigScsi, QemuConfigScsiArray, QemuConfigVirtioArray,
 };
 
 use crate::api_types::QemuPendingConfigValue;
@@ -289,6 +289,30 @@ impl PveQemuHardwarePanel {
             }
         }
 
+        for n in 0..QemuConfigSataArray::MAX {
+            let name = format!("ide{n}");
+            if !keys.contains(&name) {
+                continue;
+            }
+            let media = match serde_json::from_value::<Option<PropertyString<QemuConfigSata>>>(
+                pending[&name].clone(),
+            ) {
+                Ok(Some(ide)) => ide.media.unwrap_or(PveQmIdeMedia::Disk),
+                Ok(None) => PveQmIdeMedia::Disk,
+                Err(err) => {
+                    log::error!("unable to parse drive '{name}' media: {err}");
+                    continue;
+                }
+            };
+            if media == PveQmIdeMedia::Cdrom {
+                let property = qemu_cdrom_property(Some(name.clone()), Some(props.node.clone()));
+                push_property_tile(&mut list, property, Fa::new("cdrom"));
+            } else {
+                let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
+                push_property_tile(&mut list, property, Fa::new("hdd-o"));
+            }
+        }
+
         for n in 0..QemuConfigScsiArray::MAX {
             let name = format!("scsi{n}");
             if !keys.contains(&name) {
@@ -311,6 +335,15 @@ impl PveQemuHardwarePanel {
                 let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
                 push_property_tile(&mut list, property, Fa::new("hdd-o"));
             }
+        }
+
+        for n in 0..QemuConfigVirtioArray::MAX {
+            let name = format!("virtio{n}");
+            if !keys.contains(&name) {
+                continue;
+            }
+            let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
+            push_property_tile(&mut list, property, Fa::new("hdd-o"));
         }
 
         for n in 0..QemuConfigNetArray::MAX {
