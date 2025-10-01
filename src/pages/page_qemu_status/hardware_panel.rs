@@ -290,7 +290,7 @@ impl PveQemuHardwarePanel {
         }
 
         for n in 0..QemuConfigSataArray::MAX {
-            let name = format!("ide{n}");
+            let name = format!("sata{n}");
             if !keys.contains(&name) {
                 continue;
             }
