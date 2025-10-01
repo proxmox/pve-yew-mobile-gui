@@ -64,6 +64,11 @@ pub struct PveStorageContentSelector {
     #[prop_or(false)]
     pub autoselect: bool,
 
+    /// Display full volume-id (instead of volumn name)
+    #[builder]
+    #[prop_or(false)]
+    pub display_volid: bool,
+
     /// Layout for mobile devices.
     #[builder]
     #[prop_or(false)]
@@ -177,6 +182,19 @@ impl Component for PveStorageContentSelectorComp {
         //.validate(self.validate_fn.clone())
         //.on_change(on_change)
         .default(props.default.clone())
+        .render_value({
+            let display_volid = props.display_volid;
+            move |v: &AttrValue| {
+                if display_volid {
+                    v.into()
+                } else {
+                    match v.split_once('/') {
+                        Some((_, name)) => name.into(),
+                        _ => v.into(),
+                    }
+                }
+            }
+        })
         .into()
     }
 }

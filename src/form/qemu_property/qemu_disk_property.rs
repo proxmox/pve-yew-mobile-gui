@@ -133,6 +133,11 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
             match record["_file"].as_str() {
                 Some("cdrom") => record[MEDIA_TYPE] = "cdrom".into(),
                 Some("none") => record[MEDIA_TYPE] = "none".into(),
+                Some(volid) => {
+                    if let Some((storage, _rest)) = volid.split_once(':') {
+                        record[IMAGE_STORAGE] = storage.into();
+                    }
+                }
                 _ => {}
             }
 
