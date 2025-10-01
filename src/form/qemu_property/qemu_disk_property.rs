@@ -11,6 +11,8 @@ const MEDIA_TYPE: &'static str = "_media_type_";
 const BUS_DEVICE: &'static str = "_device_";
 const IMAGE_STORAGE: &'static str = "_storage_";
 
+const FILE_PN: &'static str = "_file";
+
 use crate::form::pve_storage_content_selector::PveStorageContentSelector;
 use crate::form::PveStorageSelector;
 use crate::form::{
@@ -72,13 +74,18 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
                 tr!("Storage"),
                 PveStorageSelector::new(node.clone())
                     .name(IMAGE_STORAGE)
+                    .submit(false)
+                    .required(true)
+                    .autoselect(true)
                     .mobile(true),
                 media_type == "iso",
             ))
             .with_child(label_field(
                 tr!("ISO image"),
                 PveStorageContentSelector::new()
-                    .name("_file")
+                    .key(format!("_file_{image_storage}"))
+                    .name(FILE_PN)
+                    .required(true)
                     .node(node.clone())
                     .storage(image_storage.clone())
                     .content_filter(StorageContent::Iso),
@@ -131,8 +138,14 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
             record[BUS_DEVICE] = name.clone().into();
 
             match record["_file"].as_str() {
-                Some("cdrom") => record[MEDIA_TYPE] = "cdrom".into(),
-                Some("none") => record[MEDIA_TYPE] = "none".into(),
+                Some("cdrom") => {
+                    record[MEDIA_TYPE] = "cdrom".into();
+                    record[FILE_PN] = Value::Null;
+                }
+                Some("none") => {
+                    record[MEDIA_TYPE] = "none".into();
+                    record[FILE_PN] = Value::Null;
+                }
                 Some(volid) => {
                     if let Some((storage, _rest)) = volid.split_once(':') {
                         record[IMAGE_STORAGE] = storage.into();
@@ -154,6 +167,14 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
             let device = match &name {
                 Some(name) => name.clone(),
                 None::<_> => form_ctx.read().get_field_text(BUS_DEVICE),
+            };
+
+            let media_type = form_ctx.read().get_field_text(MEDIA_TYPE);
+
+            match media_type.as_str() {
+                "cdrom" => data[FILE_PN] = "cdrom".into(),
+                "none" => data[FILE_PN] = "none".into(),
+                _ => {}
             };
 
             if device.starts_with("ide") {
