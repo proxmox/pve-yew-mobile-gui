@@ -131,23 +131,24 @@ impl Component for StatefulPanelComp {
                 QemuDisplayTypeSelector::new()
                     .name("_type")
                     .serial_device_list(Some(self.serial_device_list.clone())),
+                true,
             ))
             .with_child(label_field(
                 tr!("Memory") + " (MiB)",
                 Number::<u64>::new()
                     .name("_memory")
                     .placeholder(memory_placeholder)
-                    .disabled(!has_gui)
                     .min(4)
                     .max(512)
                     .step(4),
+                has_gui,
             ))
             .with_child(
                 label_field(
                     tr!("Clipboard"),
                     Combobox::from_key_value_pairs([("", tr!("Default")), ("vnc", "VNC".into())])
-                        .name("_clipboard")
-                        .disabled(!has_gui),
+                        .name("_clipboard"),
+                    has_gui,
                 )
                 .class((!advanced).then(|| pwt::css::Display::None)),
             )

@@ -26,6 +26,7 @@ fn input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
                     .node(node.clone())
                     .name("_bridge")
                     .required(true),
+                true,
             ))
             .with_child(label_field(
                 tr!("Model"),
@@ -42,14 +43,17 @@ fn input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
                 .name("_model")
                 .required(true)
                 .default("virtio"),
+                true,
             ))
             .with_child(label_field(
                 PveVlanField::get_std_label(),
                 PveVlanField::new().name("_tag"),
+                true,
             ))
             .with_child(label_field(
                 tr!("MAC address"),
                 Field::new().name("_macaddr").placeholder("auto"),
+                true,
             ))
             .with_child(
                 Row::new()
@@ -57,10 +61,12 @@ fn input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
                     .with_child(label_field(
                         tr!("Firewall"),
                         Checkbox::new().name("_firewall").default(true),
+                        true,
                     ))
                     .with_child(label_field(
                         tr!("Disconnect"),
                         Checkbox::new().name("_link_down"),
+                        true,
                     )),
             )
             .into()
@@ -143,6 +149,7 @@ fn mtu_input_panel() -> RenderPropertyInputPanelFn {
                         }
                         bail!("MTU needs to be >= 576 or 1 to inherit the MTU from the underlying bridge.");
                     }),
+                    true
             ))
             .with_child(label_field(
                 tr!("Rate limit") + " (MB/s)",
@@ -150,14 +157,16 @@ fn mtu_input_panel() -> RenderPropertyInputPanelFn {
                     .name("_rate")
                     .placeholder(tr!("unlimited"))
                     .min(0.0)
-                    .max(10.0 * 1024.0)
+                    .max(10.0 * 1024.0),
+                    true
             ))
             .with_child(label_field(
                 tr!("Multiqueue"),
                 Number::<u8>::new()
                     .name("_queues")
                     .min(1)
-                    .max(64)
+                    .max(64),
+                    true
             )).into()
     })
 }

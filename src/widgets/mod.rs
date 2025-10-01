@@ -232,10 +232,30 @@ pub fn form_list_tile(
         .with_optional_child(trailing.into_optional_inline_html())
 }
 
-pub fn label_field(label: impl Into<AttrValue>, field: impl Into<Html>) -> Column {
+pub fn label_widget(label: impl Into<AttrValue>, field: impl Into<Html>) -> Column {
     Column::new()
         .with_child(FieldLabel::new(label.into()).padding_bottom(PwtSpace::Em(0.3)))
         .with_child(field)
+        .into()
+}
+
+pub fn label_field(
+    label: impl Into<FieldLabel>,
+    field: impl FieldBuilder,
+    enabled: bool,
+) -> Column {
+    let label_id = pwt::widget::get_unique_element_id();
+
+    Column::new()
+        .with_child(
+            label
+                .into()
+                .id(label_id.clone())
+                .padding_bottom(PwtSpace::Em(0.3))
+                .class((!enabled).then(|| "pwt-label-disabled"))
+                .class("this-is-a-text"),
+        )
+        .with_child(field.label_id(label_id).disabled(!enabled))
         .into()
 }
 

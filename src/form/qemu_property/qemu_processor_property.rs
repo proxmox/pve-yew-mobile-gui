@@ -98,15 +98,18 @@ fn input_panel() -> RenderPropertyInputPanelFn {
             .with_child(label_field(
                 tr!("Type"),
                 QemuCpuModelSelector::new().name("_cputype").mobile(true),
+                true,
             ))
             .with_child(Hidden::new().name("cpu")) // store original cpu settings
             .with_child(label_field(
                 tr!("Sockets"),
                 Number::<u64>::new().name("sockets").min(1),
+                true,
             ))
             .with_child(label_field(
                 tr!("Cores"),
                 Number::<u64>::new().name("cores").min(1),
+                true,
             ))
             .with_child(
                 Row::new()
@@ -286,6 +289,7 @@ fn kernel_scheduler_input_panel() -> RenderPropertyInputPanelFn {
                     .max(total_cores)
                     .placeholder(total_cores.to_string())
                     .submit_empty(true),
+                true,
             ))
             .with_child(label_field(
                 tr!("CPU units"),
@@ -295,6 +299,7 @@ fn kernel_scheduler_input_panel() -> RenderPropertyInputPanelFn {
                     .max(10000)
                     .placeholder("100")
                     .submit_empty(true),
+                true,
             ))
             .with_child(label_field(
                 tr!("CPU limit"),
@@ -304,6 +309,7 @@ fn kernel_scheduler_input_panel() -> RenderPropertyInputPanelFn {
                     .min(0.0)
                     .max(128.0) // api maximum
                     .submit_empty(true),
+                true,
             ))
             .with_child(label_field(
                 tr!("CPU Affinity"),
@@ -311,6 +317,7 @@ fn kernel_scheduler_input_panel() -> RenderPropertyInputPanelFn {
                     .name("affinity")
                     .placeholder(tr!("All Cores"))
                     .submit_empty(true),
+                true,
             ))
             .with_child(
                 Row::new()

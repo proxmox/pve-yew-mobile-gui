@@ -9,7 +9,9 @@ use pwt::widget::form::{delete_empty_values, Field, TextArea};
 use pwt::widget::Column;
 
 use crate::form::{flatten_property_string, property_string_from_parts};
-use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn};
+use crate::widgets::{
+    label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
+};
 
 thread_local! {
     static UUID_MATCH: Regex = Regex::new(r#"^[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$"#).unwrap();
@@ -32,7 +34,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     .gap(2)
                     .class(pwt::css::FlexFit)
                     .class(pwt::css::AlignItems::Stretch)
-                    .with_child(crate::widgets::label_field(
+                    .with_child(label_field(
                         tr!("UUID"),
                         Field::new()
                             .name("_uuid")
@@ -44,43 +46,43 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                                     tr!("Format")
                                         + ": xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (where x is 0-9 or a-f or A-F)"
                                 )
-                            }),
+                            }),true
                     ))
-                    .with_child(crate::widgets::label_field(
+                    .with_child(label_field(
                         tr!("Manufacturer"),
                         TextArea::new()
                             .name("_manufacturer")
-                            .style("height", field_height)
+                            .style("height", field_height), true
                     ))
-                    .with_child(crate::widgets::label_field(
+                    .with_child(label_field(
                         tr!("Product"),
                         TextArea::new()
                             .name("_product")
-                            .style("height", field_height)
+                            .style("height", field_height), true
                     ))
-                    .with_child(crate::widgets::label_field(
+                    .with_child(label_field(
                         tr!("Version"),
                         TextArea::new()
                             .name("_version")
-                            .style("height", field_height)
+                            .style("height", field_height),true
                     ))
-                    .with_child(crate::widgets::label_field(
+                    .with_child(label_field(
                         tr!("Serial"),
                         TextArea::new()
                             .name("_serial")
-                    .style("height", field_height)
+                            .style("height", field_height), true
             ))
-            .with_child(crate::widgets::label_field(
+            .with_child(label_field(
                 "SKU",
                 TextArea::new()
                     .name("_sku")
-                    .style("height", field_height)
+                    .style("height", field_height), true
             ))
-            .with_child(crate::widgets::label_field(
+            .with_child(label_field(
                 tr!("Family"),
                 TextArea::new()
                     .name("_family")
-                    .style("height", field_height)
+                    .style("height", field_height), true
             ))
             .into()
     })

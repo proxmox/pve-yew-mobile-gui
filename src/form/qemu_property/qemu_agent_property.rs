@@ -85,10 +85,11 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                                         ("isa", "ISA"),
                                 ])
                                     .name("_type")
-                                    .placeholder(tr!("Default") + " (VirtIO)")
+                                    .placeholder(tr!("Default") + " (VirtIO)"),
+                                true
                             ).class((!advanced).then(|| pwt::css::Display::None))
                             .padding_top(2)
-                            .padding_bottom(1)
+                            .padding_bottom(1),
                         )
                         .with_optional_child((!ffob_enabled).then(|| warning(tr!(
                             "Freeze/thaw for guest filesystems disabled. This can lead to inconsistent disk backups."

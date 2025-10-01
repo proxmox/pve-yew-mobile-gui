@@ -13,12 +13,13 @@ const IMAGE_STORAGE: &'static str = "_storage_";
 
 use crate::form::pve_storage_content_selector::PveStorageContentSelector;
 use crate::form::PveStorageSelector;
-use crate::{
-    form::{
-        flatten_property_string, property_string_add_missing_data, property_string_from_parts,
-        QemuControllerSelector,
-    },
-    widgets::{label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn},
+use crate::form::{
+    flatten_property_string, property_string_add_missing_data, property_string_from_parts,
+    QemuControllerSelector,
+};
+
+use crate::widgets::{
+    label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
 };
 
 fn input_panel(_node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
@@ -57,6 +58,7 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
                 label_field(
                     tr!("Bus/Device"),
                     QemuControllerSelector::new().name(BUS_DEVICE).submit(false),
+                    true,
                 )
             }))
             .with_child(
@@ -70,18 +72,17 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
                 tr!("Storage"),
                 PveStorageSelector::new(node.clone())
                     .name(IMAGE_STORAGE)
-                    .mobile(true)
-                    .disabled(media_type != "iso"),
+                    .mobile(true),
+                media_type == "iso",
             ))
             .with_child(label_field(
                 tr!("ISO image"),
                 PveStorageContentSelector::new()
                     .name("_file")
-                    .mobile(true)
                     .node(node.clone())
                     .storage(image_storage.clone())
-                    .content_filter(StorageContent::Iso)
-                    .disabled(media_type != "iso"),
+                    .content_filter(StorageContent::Iso),
+                media_type == "iso",
             ))
             .with_child(
                 RadioButton::new("cdrom")

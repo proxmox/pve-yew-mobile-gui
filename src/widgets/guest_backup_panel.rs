@@ -83,9 +83,13 @@ impl PveGuestBackupPanel {
                     .class(pwt::css::FlexFit)
                     .padding(2)
                     .gap(2)
-                    .with_child(label_field(tr!("Mode"), mode_selector))
-                    .with_child(label_field(tr!("Compression"), comp_selector))
-                    .with_child(label_field(tr!("Email to"), Field::new().name("mailto")))
+                    .with_child(label_field(tr!("Mode"), mode_selector, true))
+                    .with_child(label_field(tr!("Compression"), comp_selector, true))
+                    .with_child(label_field(
+                        tr!("Email to"),
+                        Field::new().name("mailto"),
+                        true,
+                    ))
                     .with_child(
                         Row::new()
                             .class(pwt::css::JustifyContent::Center)

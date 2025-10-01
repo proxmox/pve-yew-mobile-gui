@@ -45,7 +45,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     .name("_videostreaming")
                     .placeholder("off")
                     .with_item("all")
-                    .with_item("filter"),
+                    .with_item("filter"), true
             ))
             .with_optional_child(show_spice_hint.then(|| {
                 hint(tr!(

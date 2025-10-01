@@ -52,6 +52,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     .placeholder(memory_default.to_string())
                     .min(16)
                     .step(32),
+                true,
             ))
             .with_child(Hidden::new().name("_old_memory").submit(false))
             .with_child(
@@ -60,11 +61,11 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     Number::<u64>::new()
                         .name("balloon")
                         .submit_empty(true)
-                        .disabled(!use_ballooning)
                         .min(1)
                         .max(current_memory)
                         .step(32)
                         .placeholder(current_memory.map(|n| n.to_string())),
+                    use_ballooning,
                 )
                 .class((!advanced).then(|| pwt::css::Display::None)),
             )
@@ -74,10 +75,10 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                     Number::<u64>::new()
                         .name("shares")
                         .submit_empty(true)
-                        .disabled(!use_ballooning || disable_shares)
                         .placeholder(tr!("Default") + " (1000)")
                         .max(50000)
                         .step(10),
+                    use_ballooning && !disable_shares,
                 )
                 .class((!advanced).then(|| pwt::css::Display::None)),
             )

@@ -169,16 +169,19 @@ pub fn qemu_startup_property() -> EditableProperty {
                 .with_child(crate::widgets::label_field(
                     tr!("Order"),
                     Number::<u32>::new().name("_order").placeholder(tr!("any")),
+                    true,
                 ))
                 .with_child(crate::widgets::label_field(
                     tr!("Startup delay"),
                     Number::<u32>::new().name("_up").placeholder(tr!("default")),
+                    true,
                 ))
                 .with_child(crate::widgets::label_field(
                     tr!("Shutdown timeout"),
                     Number::<u32>::new()
                         .name("_down")
                         .placeholder(tr!("default")),
+                    true,
                 ))
                 .into()
         })

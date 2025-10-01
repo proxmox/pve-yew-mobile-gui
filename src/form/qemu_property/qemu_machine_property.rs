@@ -94,8 +94,8 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                 QemuMachineVersionSelector::new(ty)
                     .name(name)
                     .required(ostype_is_windows(&ostype))
-                    .disabled(disabled)
                     .submit(false),
+                !disabled,
             )
             .class((disabled || !show_version).then(|| pwt::css::Display::None));
 
@@ -119,6 +119,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                         "q35" => "Q35".into(),
                         _ => v.into(),
                     }),
+                true,
             ));
 
         add_version_selector(&mut column, QemuMachineType::I440fx);
@@ -146,6 +147,7 @@ fn input_panel() -> RenderPropertyInputPanelFn {
                         }
                         .into()
                     }),
+                true,
             )
             .class((!advanced).then(|| pwt::css::Display::None)),
         );

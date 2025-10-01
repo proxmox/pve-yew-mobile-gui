@@ -9,7 +9,7 @@ use pwt::prelude::*;
 
 use pwt::widget::{Column, LanguageSelector, ThemeDensitySelector, ThemeNameSelector};
 
-use crate::widgets::label_field;
+use crate::widgets::label_widget;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageSettings {}
@@ -36,9 +36,9 @@ impl Component for PvePageSettings {
         let content = Column::new()
             .padding(2)
             .gap(2)
-            .with_child(label_field(tr!("Language"), LanguageSelector::new()))
-            .with_child(label_field(tr!("Theme"), ThemeNameSelector::new()))
-            .with_child(label_field(tr!("Density"), ThemeDensitySelector::new()));
+            .with_child(label_widget(tr!("Language"), LanguageSelector::new()))
+            .with_child(label_widget(tr!("Theme"), ThemeNameSelector::new()))
+            .with_child(label_widget(tr!("Density"), ThemeDensitySelector::new()));
 
         Column::new()
             .class("pwt-fit")
