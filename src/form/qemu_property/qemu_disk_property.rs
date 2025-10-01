@@ -77,6 +77,7 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
                 tr!("ISO image"),
                 PveStorageContentSelector::new()
                     .name("_file")
+                    .mobile(true)
                     .node(node.clone())
                     .storage(image_storage.clone())
                     .content_filter(StorageContent::Iso)

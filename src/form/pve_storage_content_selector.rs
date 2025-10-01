@@ -16,12 +16,14 @@ use pwt::props::{FieldBuilder, LoadCallback, WidgetBuilder, WidgetStyleBuilder};
 use pwt::state::Store;
 use pwt::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use pwt::widget::form::{Selector, SelectorRenderArgs};
+use pwt::widget::{Column, Container, Row};
 
 use pwt_macros::{builder, widget};
 
 use proxmox_yew_comp::http_get;
 use proxmox_yew_comp::percent_encoding::percent_encode_component;
 
+use crate::widgets::title_subtitle_column;
 use crate::StorageEntry;
 
 #[widget(comp=PveStorageContentSelectorComp, @input)]
@@ -61,6 +63,11 @@ pub struct PveStorageContentSelector {
     #[builder]
     #[prop_or(false)]
     pub autoselect: bool,
+
+    /// Layout for mobile devices.
+    #[builder]
+    #[prop_or(false)]
+    pub mobile: bool,
 }
 
 impl PveStorageContentSelector {
@@ -144,14 +151,19 @@ impl Component for PveStorageContentSelectorComp {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
+        let mobile = props.mobile;
         Selector::new(
             self.store.clone(),
             move |args: &SelectorRenderArgs<Store<StorageEntry>>| {
                 GridPicker::new(
-                    DataTable::new(columns(), args.store.clone())
-                        .min_width(300)
-                        .header_focusable(false)
-                        .class(pwt::css::FlexFit),
+                    DataTable::new(
+                        if mobile { columns_mobile() } else { columns() },
+                        args.store.clone(),
+                    )
+                    .show_header(!mobile)
+                    .min_width(300)
+                    .header_focusable(false)
+                    .class(pwt::css::FlexFit),
                 )
                 .selection(args.selection.clone())
                 .on_select(args.controller.on_select_callback())
@@ -167,6 +179,43 @@ impl Component for PveStorageContentSelectorComp {
         .default(props.default.clone())
         .into()
     }
+}
+
+fn volume_name(entry: &StorageEntry) -> &str {
+    match entry.volid.split_once('/') {
+        None => entry.volid.as_str(),
+        Some((_, name)) => name,
+    }
+}
+fn columns_mobile() -> Rc<Vec<DataTableHeader<StorageEntry>>> {
+    Rc::new(vec![DataTableColumn::new(tr!("Name"))
+        .get_property(|entry: &StorageEntry| volume_name(entry))
+        .sort_order(true)
+        .render(|entry: &StorageEntry| {
+            Column::new()
+                .with_child(Container::new().with_child(volume_name(entry)))
+                .with_child(
+                    Row::new()
+                        .gap(1)
+                        .with_child(Container::new().with_child(&entry.format))
+                        .with_flex_spacer()
+                        .with_child(
+                            Container::new().with_child(HumanByte::new_decimal(entry.size as f64)),
+                        ),
+                )
+                .into()
+        })
+        .render(|entry: &StorageEntry| {
+            Row::new()
+                .with_child(title_subtitle_column(
+                    volume_name(entry),
+                    entry.format.clone(),
+                ))
+                .with_flex_spacer()
+                .with_child(Container::new().with_child(HumanByte::new_decimal(entry.size as f64)))
+                .into()
+        })
+        .into()])
 }
 
 fn columns() -> Rc<Vec<DataTableHeader<StorageEntry>>> {
