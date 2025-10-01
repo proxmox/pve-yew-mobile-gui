@@ -23,6 +23,8 @@ pub use qemu_machine_version_selector::QemuMachineVersionSelector;
 mod pve_network_selector;
 pub use pve_network_selector::PveNetworkSelector;
 
+mod pve_storage_content_selector;
+
 mod pve_vlan_field;
 pub use pve_vlan_field::PveVlanField;
 

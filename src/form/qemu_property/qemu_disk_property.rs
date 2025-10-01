@@ -5,11 +5,13 @@ use serde_json::Value;
 use pwt::prelude::*;
 use pwt::widget::{form::delete_empty_values, Column};
 
-use pve_api_types::{PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigVirtio};
+use pve_api_types::{PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigVirtio, StorageContent};
 
 const MEDIA_TYPE: &'static str = "_media_type_";
 const BUS_DEVICE: &'static str = "_device_";
+const IMAGE_STORAGE: &'static str = "_storage_";
 
+use crate::form::pve_storage_content_selector::PveStorageContentSelector;
 use crate::form::PveStorageSelector;
 use crate::{
     form::{
@@ -19,7 +21,7 @@ use crate::{
     widgets::{label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn},
 };
 
-fn input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
+fn input_panel(_node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
     RenderPropertyInputPanelFn::new(move |_| {
         Column::new()
             .class(pwt::css::FlexFit)
@@ -46,6 +48,7 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
     RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
         let form_ctx = state.form_ctx;
         let media_type = form_ctx.read().get_field_text(MEDIA_TYPE);
+        let image_storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
 
         Column::new()
             .class(pwt::css::FlexFit)
@@ -66,7 +69,17 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
             .with_child(label_field(
                 tr!("Storage"),
                 PveStorageSelector::new(node.clone())
+                    .name(IMAGE_STORAGE)
                     .mobile(true)
+                    .disabled(media_type != "iso"),
+            ))
+            .with_child(label_field(
+                tr!("ISO image"),
+                PveStorageContentSelector::new()
+                    .name("_file")
+                    .node(node.clone())
+                    .storage(image_storage.clone())
+                    .content_filter(StorageContent::Iso)
                     .disabled(media_type != "iso"),
             ))
             .with_child(

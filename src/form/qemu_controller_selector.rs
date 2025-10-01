@@ -53,15 +53,15 @@ impl ManagedField for QemuControllerSelectorField {
     type Properties = QemuControllerSelector;
     type ValidateClosure = ();
 
-    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {
         ()
     }
 
-    fn setup(props: &Self::Properties) -> ManagedFieldState {
+    fn setup(_props: &Self::Properties) -> ManagedFieldState {
         ManagedFieldState::new(Value::Null, Value::Null)
     }
 
-    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
         Self {
             controller: String::new(),
             device_id: String::new(),
