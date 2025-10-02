@@ -193,6 +193,8 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
                     _ => {}
                 };
 
+                data["_media"] = "cdrom".into();
+
                 if device.starts_with("ide") {
                     property_string_add_missing_data::<PveQmIde>(
                         &mut data,
