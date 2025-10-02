@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{bail, Error};
 use serde_json::{json, Value};
 
@@ -12,13 +14,18 @@ use pwt_macros::{builder, widget};
 use pve_api_types::{
     QemuConfigIdeArray, QemuConfigSataArray, QemuConfigScsiArray, QemuConfigVirtioArray,
 };
+use yew::html::IntoPropValue;
 
 pub type QemuControllerSelectorComp = ManagedFieldMaster<QemuControllerSelectorField>;
 
 #[widget(comp=QemuControllerSelectorComp, @input)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
-pub struct QemuControllerSelector {}
+pub struct QemuControllerSelector {
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub exclude_devices: Option<HashSet<String>>,
+}
 
 impl QemuControllerSelector {
     pub fn new() -> Self {
@@ -53,16 +60,22 @@ pub fn parse_qemu_controller_name(s: &str) -> Result<(&'static str, u32), Error>
 impl ManagedField for QemuControllerSelectorField {
     type Message = Msg;
     type Properties = QemuControllerSelector;
-    type ValidateClosure = ();
+    type ValidateClosure = QemuControllerSelector;
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {
-        ()
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        props.clone()
     }
 
-    fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         match value {
             Value::String(s) => {
                 let _ = parse_qemu_controller_name(s)?;
+                if let Some(exclude_devices) = &props.exclude_devices {
+                    if exclude_devices.contains(s) {
+                        // fixme: howto display this error ??
+                        bail!(tr!("device '{0}' name is already in use.", s));
+                    }
+                }
                 Ok(s.to_string().into())
             }
             _ => {

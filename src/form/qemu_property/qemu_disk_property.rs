@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::bail;
 use pwt::widget::form::RadioButton;
 use serde_json::Value;
@@ -14,11 +16,11 @@ const IMAGE_STORAGE: &'static str = "_storage_";
 const FILE_PN: &'static str = "_file";
 
 use crate::form::pve_storage_content_selector::PveStorageContentSelector;
-use crate::form::PveStorageSelector;
 use crate::form::{
     flatten_property_string, property_string_add_missing_data, property_string_from_parts,
     QemuControllerSelector,
 };
+use crate::form::{parse_qemu_controller_name, PveStorageSelector};
 
 use crate::widgets::{
     label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
@@ -46,6 +48,18 @@ pub fn qemu_disk_property(name: Option<String>, node: Option<AttrValue>) -> Edit
     .render_input_panel(input_panel(node.clone()))
 }
 
+fn extract_used_devices(record: &Value) -> HashSet<String> {
+    let mut list = HashSet::new();
+    if let Some(map) = record.as_object() {
+        for key in map.keys() {
+            if let Ok(_) = parse_qemu_controller_name(key) {
+                list.insert(key.to_string());
+            }
+        }
+    }
+    list
+}
+
 fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
     let is_create = name.is_none();
     RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
@@ -53,13 +67,18 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
         let media_type = form_ctx.read().get_field_text(MEDIA_TYPE);
         let image_storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
 
+        let used_devices = extract_used_devices(&state.record);
+
         Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
             .with_optional_child(is_create.then(|| {
                 label_field(
                     tr!("Bus/Device"),
-                    QemuControllerSelector::new().name(BUS_DEVICE).submit(false),
+                    QemuControllerSelector::new()
+                        .name(BUS_DEVICE)
+                        .submit(false)
+                        .exclude_devices(used_devices),
                     true,
                 )
             }))
