@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::rc::Rc;
 
 use anyhow::{bail, Error};
 use serde_json::{json, Value};
@@ -6,6 +7,7 @@ use serde_json::{json, Value};
 use pwt::prelude::*;
 use pwt::widget::form::{
     Combobox, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState, Number,
+    ValidateFn,
 };
 use pwt::widget::Row;
 
@@ -22,6 +24,10 @@ pub type QemuControllerSelectorComp = ManagedFieldMaster<QemuControllerSelectorF
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct QemuControllerSelector {
+    #[builder]
+    #[prop_or_default]
+    pub allow_virtio: bool,
+
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub exclude_devices: Option<HashSet<String>>,
@@ -36,6 +42,7 @@ impl QemuControllerSelector {
 pub struct QemuControllerSelectorField {
     controller: String,
     device_id: String,
+    validate: ValidateFn<u32>,
 }
 
 pub enum Msg {
@@ -57,6 +64,26 @@ pub fn parse_qemu_controller_name(s: &str) -> Result<(&'static str, u32), Error>
     }
 }
 
+fn create_validator(props: &QemuControllerSelector, controller: &str) -> ValidateFn<u32> {
+    let controller = controller.to_string();
+    let props = props.clone();
+    ValidateFn::new(move |id: &u32| {
+        if controller.is_empty() {
+            bail!("no controller selected");
+        }
+        let device_name = format!("{}{}", controller, id);
+        let _ = parse_qemu_controller_name(&device_name)?;
+
+        if let Some(exclude_devices) = &props.exclude_devices {
+            if exclude_devices.contains(&device_name) {
+                bail!(tr!("device '{0}' name is already in use.", device_name));
+            }
+        }
+
+        Ok(())
+    })
+}
+
 impl ManagedField for QemuControllerSelectorField {
     type Message = Msg;
     type Properties = QemuControllerSelector;
@@ -66,32 +93,15 @@ impl ManagedField for QemuControllerSelectorField {
         props.clone()
     }
 
-    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
-        match value {
-            Value::String(s) => {
-                let _ = parse_qemu_controller_name(s)?;
-                if let Some(exclude_devices) = &props.exclude_devices {
-                    if exclude_devices.contains(s) {
-                        // fixme: howto display this error ??
-                        bail!(tr!("device '{0}' name is already in use.", s));
-                    }
-                }
-                Ok(s.to_string().into())
-            }
-            _ => {
-                bail!("invalid device name");
-            }
-        }
-    }
-
     fn setup(_props: &Self::Properties) -> ManagedFieldState {
         ManagedFieldState::new(Value::Null, Value::Null)
     }
 
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
         Self {
             controller: String::new(),
             device_id: String::new(),
+            validate: create_validator(ctx.props(), ""),
         }
     }
 
@@ -133,15 +143,19 @@ impl ManagedField for QemuControllerSelectorField {
         }
 
         let device = format!("{}{}", self.controller, self.device_id);
-        let new_value: Value = if let Ok(_) = parse_qemu_controller_name(&device) {
-            device.into()
-        } else {
-            json!({"controller": self.controller, "device_id": self.device_id})
+        let new_value: Value = match parse_qemu_controller_name(&device) {
+            Ok(_) => device.into(),
+            Err(_) => json!({"controller": self.controller, "device_id": self.device_id}),
         };
+
+        self.validate = create_validator(ctx.props(), &self.controller);
         ctx.link().update_value(new_value);
+
         true
     }
+
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
+        let props = ctx.props();
         let max: Option<u32> = match self.controller.as_str() {
             "ide" => Some(QemuConfigIdeArray::MAX as u32 - 1),
             "sata" => Some(QemuConfigSataArray::MAX as u32 - 1),
@@ -149,15 +163,23 @@ impl ManagedField for QemuControllerSelectorField {
             "virtio" => Some(QemuConfigVirtioArray::MAX as u32 - 1),
             _ => None,
         };
+
+        let mut items = vec![
+            AttrValue::Static("ide"),
+            AttrValue::Static("sata"),
+            AttrValue::Static("scsi"),
+        ];
+        if props.allow_virtio {
+            items.push(AttrValue::Static("virtio"));
+        }
+
         Row::new()
             .with_child(
                 Combobox::new()
                     .required(true)
                     .force_selection(true)
                     .value(self.controller.clone())
-                    .with_item("ide")
-                    .with_item("scsi")
-                    .with_item("sata")
+                    .items(Rc::new(items))
                     .on_change(ctx.link().callback(Msg::SetController)),
             )
             .with_child(
@@ -166,6 +188,7 @@ impl ManagedField for QemuControllerSelectorField {
                     .min(0)
                     .max(max)
                     .value(self.device_id.clone())
+                    .validate(self.validate.clone())
                     .on_input(ctx.link().callback(|(s, _)| Msg::SetDeviceId(s))),
             )
             .into()

@@ -174,11 +174,16 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
             }
         })
         .submit_hook({
+            let name = name.clone();
+
             move |state: PropertyEditorState| {
                 let form_ctx = state.form_ctx;
                 let mut data = form_ctx.get_submit_data();
 
-                let device = form_ctx.read().get_field_text(BUS_DEVICE);
+                let device = match &name {
+                    Some(name) => name.clone(),
+                    None::<_> => form_ctx.read().get_field_text(BUS_DEVICE),
+                };
 
                 let media_type = form_ctx.read().get_field_text(MEDIA_TYPE);
 
