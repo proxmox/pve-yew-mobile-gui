@@ -92,43 +92,40 @@ pub fn qemu_network_property(name: Option<String>, node: Option<AttrValue>) -> E
     if let Some(name) = name.as_deref() {
         title = title + " (" + name + ")";
     }
-    EditableProperty::new(
-        name.as_ref().map(|s| s.clone()).unwrap_or(String::new()),
-        title,
-    )
-    .render_input_panel(input_panel(node.clone()))
-    .submit_hook({
-        let name = name.clone();
-        move |state: PropertyEditorState| {
-            let mut data = state.get_submit_data();
-            let network = find_free_network(&state.record)?;
-            let name = name.clone().unwrap_or(network);
-            property_string_add_missing_data::<QemuConfigNet>(
-                &mut data,
-                &state.record,
-                &state.form_ctx,
-            )?;
+    EditableProperty::new(name.clone(), title)
+        .render_input_panel(input_panel(node.clone()))
+        .submit_hook({
+            let name = name.clone();
+            move |state: PropertyEditorState| {
+                let mut data = state.get_submit_data();
+                let network = find_free_network(&state.record)?;
+                let name = name.clone().unwrap_or(network);
+                property_string_add_missing_data::<QemuConfigNet>(
+                    &mut data,
+                    &state.record,
+                    &state.form_ctx,
+                )?;
 
-            if let Value::Bool(false) = data["_link_down"] {
-                data["_link_down"] = Value::Null; // do not set unnecessary value
-            }
+                if let Value::Bool(false) = data["_link_down"] {
+                    data["_link_down"] = Value::Null; // do not set unnecessary value
+                }
 
-            property_string_from_parts::<QemuConfigNet>(&mut data, &name, true)?;
-            data = delete_empty_values(&data, &[&name], false);
-            Ok(data)
-        }
-    })
-    .load_hook({
-        let name = name.clone();
-        move |mut record: Value| {
-            if let Some(name) = name.as_deref() {
-                flatten_property_string::<QemuConfigNet>(&mut record, name)?;
-            } else {
-                let _ = find_free_network(&record)?; // test early
+                property_string_from_parts::<QemuConfigNet>(&mut data, &name, true)?;
+                data = delete_empty_values(&data, &[&name], false);
+                Ok(data)
             }
-            Ok(record)
-        }
-    })
+        })
+        .load_hook({
+            let name = name.clone();
+            move |mut record: Value| {
+                if let Some(name) = name.as_deref() {
+                    flatten_property_string::<QemuConfigNet>(&mut record, name)?;
+                } else {
+                    let _ = find_free_network(&record)?; // test early
+                }
+                Ok(record)
+            }
+        })
 }
 
 fn mtu_input_panel() -> RenderPropertyInputPanelFn {

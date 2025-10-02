@@ -485,12 +485,23 @@ impl Component for PveQemuHardwarePanel {
         let content =
             crate::widgets::render_loaded_data(&self.data, |data| self.view_list(ctx, data));
 
-        let menu = Menu::new().with_item({
-            MenuItem::new(tr!("Add Network card")).on_select(ctx.link().callback({
-                let property = qemu_network_property(None, Some(props.node.clone()));
-                move |_| Msg::EditProperty(property.clone())
-            }))
-        });
+        let menu = Menu::new()
+            .with_item({
+                MenuItem::new(tr!("Add CD/DVD drive"))
+                    .icon_class("fa fa-cdrom")
+                    .on_select(ctx.link().callback({
+                        let property = qemu_cdrom_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            })
+            .with_item({
+                MenuItem::new(tr!("Add Network card"))
+                    .icon_class("fa fa-exchange")
+                    .on_select(ctx.link().callback({
+                        let property = qemu_network_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            });
 
         let menu_button: Html = MenuButton::new("")
             .icon_class("fa fa-bars")

@@ -6,7 +6,7 @@ mod qemu_ostype_selector;
 pub use qemu_ostype_selector::{format_qemu_ostype, QemuOstypeSelector};
 
 mod qemu_controller_selector;
-pub use qemu_controller_selector::QemuControllerSelector;
+pub use qemu_controller_selector::{parse_qemu_controller_name, QemuControllerSelector};
 
 mod qemu_cpu_flags_list;
 pub use qemu_cpu_flags_list::QemuCpuFlags;

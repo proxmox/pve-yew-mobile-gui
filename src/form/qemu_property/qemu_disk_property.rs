@@ -112,101 +112,97 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
     if let Some(name) = name.as_deref() {
         title = title + " (" + name + ")";
     }
-    EditableProperty::new(
-        name.as_ref().map(|s| s.clone()).unwrap_or(String::new()),
-        title,
-    )
-    .render_input_panel(cdrom_input_panel(name.clone(), node.clone()))
-    .load_hook({
-        let name = name.clone();
+    EditableProperty::new(name.clone(), title)
+        .render_input_panel(cdrom_input_panel(name.clone(), node.clone()))
+        .load_hook({
+            let name = name.clone();
 
-        move |mut record: Value| {
-            if let Some(name) = &name {
-                if name.starts_with("ide") {
-                    flatten_property_string::<PveQmIde>(&mut record, name)?;
-                } else if name.starts_with("sata") {
-                    flatten_property_string::<QemuConfigSata>(&mut record, name)?;
-                } else if name.starts_with("scsi") {
-                    flatten_property_string::<QemuConfigScsi>(&mut record, name)?;
-                } else if name.starts_with("virtio") {
-                    flatten_property_string::<QemuConfigVirtio>(&mut record, name)?;
-                } else {
-                    bail!("qemu_cdrom_property: unsupported device type '{name}'");
-                }
-            }
-
-            record[BUS_DEVICE] = name.clone().into();
-
-            match record["_file"].as_str() {
-                Some("cdrom") => {
-                    record[MEDIA_TYPE] = "cdrom".into();
-                    record[FILE_PN] = Value::Null;
-                }
-                Some("none") => {
-                    record[MEDIA_TYPE] = "none".into();
-                    record[FILE_PN] = Value::Null;
-                }
-                Some(volid) => {
-                    if let Some((storage, _rest)) = volid.split_once(':') {
-                        record[IMAGE_STORAGE] = storage.into();
+            move |mut record: Value| {
+                if let Some(name) = &name {
+                    if name.starts_with("ide") {
+                        flatten_property_string::<PveQmIde>(&mut record, name)?;
+                    } else if name.starts_with("sata") {
+                        flatten_property_string::<QemuConfigSata>(&mut record, name)?;
+                    } else if name.starts_with("scsi") {
+                        flatten_property_string::<QemuConfigScsi>(&mut record, name)?;
+                    } else if name.starts_with("virtio") {
+                        flatten_property_string::<QemuConfigVirtio>(&mut record, name)?;
+                    } else {
+                        bail!("qemu_cdrom_property: unsupported device type '{name}'");
                     }
                 }
-                _ => {}
+
+                record[BUS_DEVICE] = name.clone().into();
+
+                match record["_file"].as_str() {
+                    Some("cdrom") => {
+                        record[MEDIA_TYPE] = "cdrom".into();
+                        record[FILE_PN] = Value::Null;
+                    }
+                    Some("none") => {
+                        record[MEDIA_TYPE] = "none".into();
+                        record[FILE_PN] = Value::Null;
+                    }
+                    Some(volid) => {
+                        if let Some((storage, _rest)) = volid.split_once(':') {
+                            record[IMAGE_STORAGE] = storage.into();
+                        }
+                    }
+                    _ => {}
+                }
+
+                Ok(record)
             }
+        })
+        .submit_hook({
+            move |state: PropertyEditorState| {
+                let form_ctx = state.form_ctx;
+                let mut data = form_ctx.get_submit_data();
 
-            Ok(record)
-        }
-    })
-    .submit_hook({
-        //let name = name.clone();
+                let device = form_ctx.read().get_field_text(BUS_DEVICE);
 
-        move |state: PropertyEditorState| {
-            let form_ctx = state.form_ctx;
-            let mut data = form_ctx.get_submit_data();
+                let media_type = form_ctx.read().get_field_text(MEDIA_TYPE);
 
-            let device = match &name {
-                Some(name) => name.clone(),
-                None::<_> => form_ctx.read().get_field_text(BUS_DEVICE),
-            };
+                match media_type.as_str() {
+                    "cdrom" => data[FILE_PN] = "cdrom".into(),
+                    "none" => data[FILE_PN] = "none".into(),
+                    _ => {}
+                };
 
-            let media_type = form_ctx.read().get_field_text(MEDIA_TYPE);
+                if device.starts_with("ide") {
+                    property_string_add_missing_data::<PveQmIde>(
+                        &mut data,
+                        &state.record,
+                        &form_ctx,
+                    )?;
+                    property_string_from_parts::<PveQmIde>(&mut data, &device, true)?;
+                } else if device.starts_with("sata") {
+                    property_string_add_missing_data::<QemuConfigSata>(
+                        &mut data,
+                        &state.record,
+                        &form_ctx,
+                    )?;
+                    property_string_from_parts::<QemuConfigSata>(&mut data, &device, true)?;
+                } else if device.starts_with("scsi") {
+                    property_string_add_missing_data::<QemuConfigScsi>(
+                        &mut data,
+                        &state.record,
+                        &form_ctx,
+                    )?;
+                    property_string_from_parts::<QemuConfigScsi>(&mut data, &device, true)?;
+                } else if device.starts_with("virtio") {
+                    property_string_add_missing_data::<QemuConfigVirtio>(
+                        &mut data,
+                        &state.record,
+                        &form_ctx,
+                    )?;
+                    property_string_from_parts::<QemuConfigVirtio>(&mut data, &device, true)?;
+                } else {
+                    bail!("qemu_cdrom_property: unsupported device type '{device}'");
+                }
+                data = delete_empty_values(&data, &[&device], false);
 
-            match media_type.as_str() {
-                "cdrom" => data[FILE_PN] = "cdrom".into(),
-                "none" => data[FILE_PN] = "none".into(),
-                _ => {}
-            };
-
-            if device.starts_with("ide") {
-                property_string_add_missing_data::<PveQmIde>(&mut data, &state.record, &form_ctx)?;
-                property_string_from_parts::<PveQmIde>(&mut data, &device, true)?;
-            } else if device.starts_with("sata") {
-                property_string_add_missing_data::<QemuConfigSata>(
-                    &mut data,
-                    &state.record,
-                    &form_ctx,
-                )?;
-                property_string_from_parts::<QemuConfigSata>(&mut data, &device, true)?;
-            } else if device.starts_with("scsi") {
-                property_string_add_missing_data::<QemuConfigScsi>(
-                    &mut data,
-                    &state.record,
-                    &form_ctx,
-                )?;
-                property_string_from_parts::<QemuConfigScsi>(&mut data, &device, true)?;
-            } else if device.starts_with("virtio") {
-                property_string_add_missing_data::<QemuConfigVirtio>(
-                    &mut data,
-                    &state.record,
-                    &form_ctx,
-                )?;
-                property_string_from_parts::<QemuConfigVirtio>(&mut data, &device, true)?;
-            } else {
-                bail!("qemu_cdrom_property: unsupported device type '{device}'");
+                Ok(data)
             }
-            data = delete_empty_values(&data, &[&device], false);
-
-            Ok(data)
-        }
-    })
+        })
 }
