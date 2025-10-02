@@ -83,7 +83,7 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
             .with_child(label_field(
                 tr!("ISO image"),
                 PveStorageContentSelector::new()
-                    .key(format!("_file_{image_storage}"))
+                    .key(format!("_file_{image_storage}")) // reset on storage change
                     .name(FILE_PN)
                     .required(true)
                     .node(node.clone())
