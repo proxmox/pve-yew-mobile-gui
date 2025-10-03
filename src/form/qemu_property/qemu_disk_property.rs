@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use anyhow::bail;
+use anyhow::{bail, Error};
 use pwt::widget::form::RadioButton;
 use serde_json::Value;
 
@@ -26,12 +26,24 @@ use crate::widgets::{
     label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
 };
 
-fn input_panel(_node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |_| {
+fn disk_input_panel(name: Option<String>, _node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
+    let is_create = name.is_none();
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let used_devices = extract_used_devices(&state.record);
+
         Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
-            .with_child("TEST")
+            .with_optional_child(is_create.then(|| {
+                label_field(
+                    tr!("Bus/Device"),
+                    QemuControllerSelector::new()
+                        .name(BUS_DEVICE)
+                        .submit(false)
+                        .exclude_devices(used_devices),
+                    true,
+                )
+            }))
             .into()
     })
 }
@@ -41,11 +53,38 @@ pub fn qemu_disk_property(name: Option<String>, node: Option<AttrValue>) -> Edit
     if let Some(name) = name.as_deref() {
         title = title + " (" + name + ")";
     }
-    EditableProperty::new(
-        name.as_ref().map(|s| s.clone()).unwrap_or(String::new()),
-        title,
-    )
-    .render_input_panel(input_panel(node.clone()))
+
+    EditableProperty::new(name.clone(), title)
+        .render_input_panel(disk_input_panel(name.clone(), node.clone()))
+        .load_hook({
+            let name = name.clone();
+
+            move |mut record: Value| {
+                if let Some(name) = &name {
+                    flatten_device_data(&mut record, name)?;
+                }
+
+                record[BUS_DEVICE] = name.clone().into();
+
+                Ok(record)
+            }
+        })
+        .submit_hook({
+            let name = name.clone();
+
+            move |state: PropertyEditorState| {
+                let form_ctx = &state.form_ctx;
+                let mut data = form_ctx.get_submit_data();
+
+                let device = match &name {
+                    Some(name) => name.clone(),
+                    None::<_> => form_ctx.read().get_field_text(BUS_DEVICE),
+                };
+
+                let data = assemble_device_data(&state, &mut data, &device)?;
+                Ok(data)
+            }
+        })
 }
 
 fn extract_used_devices(record: &Value) -> HashSet<String> {
@@ -137,17 +176,7 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
 
             move |mut record: Value| {
                 if let Some(name) = &name {
-                    if name.starts_with("ide") {
-                        flatten_property_string::<PveQmIde>(&mut record, name)?;
-                    } else if name.starts_with("sata") {
-                        flatten_property_string::<QemuConfigSata>(&mut record, name)?;
-                    } else if name.starts_with("scsi") {
-                        flatten_property_string::<QemuConfigScsi>(&mut record, name)?;
-                    } else if name.starts_with("virtio") {
-                        flatten_property_string::<QemuConfigVirtio>(&mut record, name)?;
-                    } else {
-                        bail!("qemu_cdrom_property: unsupported device type '{name}'");
-                    }
+                    flatten_device_data(&mut record, name)?;
                 }
 
                 record[BUS_DEVICE] = name.clone().into();
@@ -176,7 +205,7 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
             let name = name.clone();
 
             move |state: PropertyEditorState| {
-                let form_ctx = state.form_ctx;
+                let form_ctx = &state.form_ctx;
                 let mut data = form_ctx.get_submit_data();
 
                 let device = match &name {
@@ -194,38 +223,7 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
 
                 data["_media"] = "cdrom".into();
 
-                if device.starts_with("ide") {
-                    property_string_add_missing_data::<PveQmIde>(
-                        &mut data,
-                        &state.record,
-                        &form_ctx,
-                    )?;
-                    property_string_from_parts::<PveQmIde>(&mut data, &device, true)?;
-                } else if device.starts_with("sata") {
-                    property_string_add_missing_data::<QemuConfigSata>(
-                        &mut data,
-                        &state.record,
-                        &form_ctx,
-                    )?;
-                    property_string_from_parts::<QemuConfigSata>(&mut data, &device, true)?;
-                } else if device.starts_with("scsi") {
-                    property_string_add_missing_data::<QemuConfigScsi>(
-                        &mut data,
-                        &state.record,
-                        &form_ctx,
-                    )?;
-                    property_string_from_parts::<QemuConfigScsi>(&mut data, &device, true)?;
-                } else if device.starts_with("virtio") {
-                    property_string_add_missing_data::<QemuConfigVirtio>(
-                        &mut data,
-                        &state.record,
-                        &form_ctx,
-                    )?;
-                    property_string_from_parts::<QemuConfigVirtio>(&mut data, &device, true)?;
-                } else {
-                    bail!("qemu_cdrom_property: unsupported device type '{device}'");
-                }
-                data = delete_empty_values(&data, &[&device], false);
+                let data = assemble_device_data(&state, &mut data, &device)?;
 
                 Ok(data)
             }
@@ -240,4 +238,44 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
                 }
             }
         })
+}
+
+fn flatten_device_data(record: &mut Value, name: &str) -> Result<(), Error> {
+    if name.starts_with("ide") {
+        flatten_property_string::<PveQmIde>(record, name)?;
+    } else if name.starts_with("sata") {
+        flatten_property_string::<QemuConfigSata>(record, name)?;
+    } else if name.starts_with("scsi") {
+        flatten_property_string::<QemuConfigScsi>(record, name)?;
+    } else if name.starts_with("virtio") {
+        flatten_property_string::<QemuConfigVirtio>(record, name)?;
+    } else {
+        bail!("flatten_device_data: unsupported device type '{name}'");
+    }
+    Ok(())
+}
+
+fn assemble_device_data(
+    state: &PropertyEditorState,
+    data: &mut Value,
+    device: &str,
+) -> Result<Value, Error> {
+    let form_ctx = &state.form_ctx;
+    if device.starts_with("ide") {
+        property_string_add_missing_data::<PveQmIde>(data, &state.record, &form_ctx)?;
+        property_string_from_parts::<PveQmIde>(data, &device, true)?;
+    } else if device.starts_with("sata") {
+        property_string_add_missing_data::<QemuConfigSata>(data, &state.record, &form_ctx)?;
+        property_string_from_parts::<QemuConfigSata>(data, &device, true)?;
+    } else if device.starts_with("scsi") {
+        property_string_add_missing_data::<QemuConfigScsi>(data, &state.record, &form_ctx)?;
+        property_string_from_parts::<QemuConfigScsi>(data, &device, true)?;
+    } else if device.starts_with("virtio") {
+        property_string_add_missing_data::<QemuConfigVirtio>(data, &state.record, &form_ctx)?;
+        property_string_from_parts::<QemuConfigVirtio>(data, &device, true)?;
+    } else {
+        bail!("assemble_device_data: unsupported device type '{device}'");
+    }
+    let data = delete_empty_values(data, &[&device], false);
+    Ok(data)
 }
