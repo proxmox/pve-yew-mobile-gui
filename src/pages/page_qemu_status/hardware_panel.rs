@@ -487,6 +487,14 @@ impl Component for PveQemuHardwarePanel {
 
         let menu = Menu::new()
             .with_item({
+                MenuItem::new(tr!("Add Hard Disk"))
+                    .icon_class("fa fa-hdd-o")
+                    .on_select(ctx.link().callback({
+                        let property = qemu_disk_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            })
+            .with_item({
                 MenuItem::new(tr!("Add CD/DVD drive"))
                     .icon_class("fa fa-cdrom")
                     .on_select(ctx.link().callback({
