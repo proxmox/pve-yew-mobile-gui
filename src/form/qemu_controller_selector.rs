@@ -43,6 +43,7 @@ pub struct QemuControllerSelectorField {
     controller: String,
     device_id: String,
     validate: ValidateFn<u32>,
+    device_id_field_name: String,
 }
 
 pub enum Msg {
@@ -102,6 +103,7 @@ impl ManagedField for QemuControllerSelectorField {
             controller: String::new(),
             device_id: String::new(),
             validate: create_validator(ctx.props(), ""),
+            device_id_field_name: pwt::widget::get_unique_element_id(),
         }
     }
 
@@ -185,6 +187,9 @@ impl ManagedField for QemuControllerSelectorField {
             .with_child(
                 Number::<u32>::new()
                     .required(true)
+                    // register with form context for error tracking
+                    .name(self.device_id_field_name.clone())
+                    .submit(false)
                     .min(0)
                     .max(max)
                     .value(self.device_id.clone())
