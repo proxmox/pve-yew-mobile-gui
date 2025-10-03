@@ -102,7 +102,6 @@ fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPro
             .with_child(label_field(
                 tr!("ISO image"),
                 PveStorageContentSelector::new()
-                    .key(format!("_file_{image_storage}")) // reset on storage change
                     .name(FILE_PN)
                     .required(true)
                     .node(node.clone())
@@ -229,6 +228,16 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
                 data = delete_empty_values(&data, &[&device], false);
 
                 Ok(data)
+            }
+        })
+        .on_change(|state: PropertyEditorState| {
+            let form_ctx = state.form_ctx;
+            let image_storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
+            let file = form_ctx.read().get_field_text(FILE_PN);
+            if !image_storage.is_empty() {
+                if !file.starts_with(&(image_storage + ":")) {
+                    form_ctx.write().set_field_value(FILE_PN, "".into());
+                }
             }
         })
 }
