@@ -18,7 +18,7 @@ const FILE_PN: &'static str = "_file";
 use crate::form::pve_storage_content_selector::PveStorageContentSelector;
 use crate::form::{
     flatten_property_string, property_string_add_missing_data, property_string_from_parts,
-    QemuControllerSelector,
+    QemuCacheTypeSelector, QemuControllerSelector,
 };
 use crate::form::{parse_qemu_controller_name, PveStorageSelector};
 
@@ -48,6 +48,11 @@ fn disk_input_panel(name: Option<String>, _node: Option<AttrValue>) -> RenderPro
                 DisplayField::new().name(FILE_PN)
                 //.class("pwt-label-disabled")
             }))
+            .with_child(label_field(
+                tr!("Cache"),
+                QemuCacheTypeSelector::new().name("_cache"),
+                true,
+            ))
             .into()
     })
 }
