@@ -178,6 +178,7 @@ impl ManagedField for QemuControllerSelectorField {
         Row::new()
             .with_child(
                 Combobox::new()
+                    .style("min-width", "0")
                     .required(true)
                     .force_selection(true)
                     .value(self.controller.clone())
@@ -186,6 +187,7 @@ impl ManagedField for QemuControllerSelectorField {
             )
             .with_child(
                 Number::<u32>::new()
+                    .style("min-width", "0")
                     .required(true)
                     // register with form context for error tracking
                     .name(self.device_id_field_name.clone())
