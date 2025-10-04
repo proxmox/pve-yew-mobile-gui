@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use anyhow::{bail, Error};
-use pwt::widget::form::{DisplayField, RadioButton};
+use pwt::widget::form::{Checkbox, RadioButton};
+use pwt::widget::{Container, Row};
 use serde_json::Value;
 
 use pwt::prelude::*;
@@ -45,14 +46,62 @@ fn disk_input_panel(name: Option<String>, _node: Option<AttrValue>) -> RenderPro
                 )
             }))
             .with_optional_child((!is_create).then(|| {
-                DisplayField::new().name(FILE_PN)
-                //.class("pwt-label-disabled")
+                let file_text = match state.record.get(FILE_PN) {
+                    Some(Value::String(file)) => file.clone(),
+                    _ => String::new(),
+                };
+                let size_text = match state.record.get("_size") {
+                    Some(Value::String(s)) => s.clone(),
+                    _ => "-".into(),
+                };
+                Row::new()
+                    .gap(1)
+                    .with_child(Container::new().with_child(file_text))
+                    .with_flex_spacer()
+                    .with_child(Container::new().with_child(size_text))
             }))
             .with_child(label_field(
                 tr!("Cache"),
                 QemuCacheTypeSelector::new().name("_cache"),
                 true,
             ))
+            .with_child(
+                Row::new()
+                    .gap(2)
+                    .style("flex-wrap", "wrap")
+                    .with_child(
+                        label_field(
+                            tr!("Discard"),
+                            Checkbox::new().name("_discard").default(true),
+                            true,
+                        )
+                        .class(pwt::css::JustifyContent::SpaceBetween),
+                    )
+                    .with_child(
+                        label_field(tr!("IO thread"), Checkbox::new().name("_iothread"), true)
+                            .class(pwt::css::JustifyContent::SpaceBetween),
+                    )
+                    .with_child(
+                        label_field(tr!("SSD emulation"), Checkbox::new().name("_ssd"), true)
+                            .class(pwt::css::JustifyContent::SpaceBetween),
+                    )
+                    .with_child(
+                        label_field(tr!("Backup"), Checkbox::new().name("_backup"), true)
+                            .class(pwt::css::JustifyContent::SpaceBetween),
+                    )
+                    .with_child(
+                        label_field(
+                            tr!("Skip replication"),
+                            Checkbox::new().name("_noreplicate"),
+                            true,
+                        )
+                        .class(pwt::css::JustifyContent::SpaceBetween),
+                    )
+                    .with_child(
+                        label_field(tr!("Read-only"), Checkbox::new().name("_readOnly"), true)
+                            .class(pwt::css::JustifyContent::SpaceBetween),
+                    ),
+            )
             .into()
     })
 }
