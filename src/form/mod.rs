@@ -5,6 +5,9 @@ pub use boot_device_list::{BootDeviceList, PveBootDeviceList};
 mod qemu_ostype_selector;
 pub use qemu_ostype_selector::{format_qemu_ostype, QemuOstypeSelector};
 
+mod qemu_cache_type_selector;
+pub use qemu_cache_type_selector::QemuCacheTypeSelector;
+
 mod qemu_controller_selector;
 pub use qemu_controller_selector::{parse_qemu_controller_name, QemuControllerSelector};
 

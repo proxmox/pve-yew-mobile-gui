@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use anyhow::{bail, Error};
-use pwt::widget::form::RadioButton;
+use pwt::widget::form::{DisplayField, RadioButton};
 use serde_json::Value;
 
 use pwt::prelude::*;
@@ -43,6 +43,10 @@ fn disk_input_panel(name: Option<String>, _node: Option<AttrValue>) -> RenderPro
                         .exclude_devices(used_devices),
                     true,
                 )
+            }))
+            .with_optional_child((!is_create).then(|| {
+                DisplayField::new().name(FILE_PN)
+                //.class("pwt-label-disabled")
             }))
             .into()
     })
