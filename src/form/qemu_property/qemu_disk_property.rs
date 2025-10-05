@@ -1,18 +1,21 @@
 use std::collections::HashSet;
 
 use anyhow::{bail, Error};
-use pwt::widget::form::{Checkbox, RadioButton};
+use pwt::widget::form::{Number, RadioButton};
 use pwt::widget::{Container, Row};
 use serde_json::Value;
 
 use pwt::prelude::*;
 use pwt::widget::{form::delete_empty_values, Column};
 
-use pve_api_types::{PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigVirtio, StorageContent};
+use pve_api_types::{
+    PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigScsiArray, QemuConfigVirtio, StorageContent,
+};
 
 const MEDIA_TYPE: &'static str = "_media_type_";
 const BUS_DEVICE: &'static str = "_device_";
 const IMAGE_STORAGE: &'static str = "_storage_";
+const DISK_SIZE: &'static str = "_disk_size_";
 
 const FILE_PN: &'static str = "_file";
 
@@ -27,7 +30,7 @@ use crate::widgets::{
     label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
 };
 
-fn disk_input_panel(name: Option<String>, _node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
+fn disk_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
     let is_create = name.is_none();
     RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
         let used_devices = extract_used_devices(&state.record);
@@ -65,6 +68,33 @@ fn disk_input_panel(name: Option<String>, _node: Option<AttrValue>) -> RenderPro
                 QemuCacheTypeSelector::new().name("_cache"),
                 true,
             ))
+            .with_optional_child(is_create.then(|| {
+                label_field(
+                    tr!("Storage"),
+                    PveStorageSelector::new(node.clone())
+                        .name(IMAGE_STORAGE)
+                        .submit(false)
+                        .required(true)
+                        .content_types(Some(vec![StorageContent::Images]))
+                        .mobile(true),
+                    true,
+                )
+            }))
+            .with_optional_child(is_create.then(|| {
+                label_field(
+                    tr!("Disk size") + " (GiB)",
+                    Number::<f64>::new()
+                        .name(DISK_SIZE)
+                        .submit(false)
+                        .required(true)
+                        .min(0.001)
+                        .max(128.0 * 1024.0)
+                        .default(32.0),
+                    true,
+                )
+            }))
+            /*
+            // fixme: boolean in property strings does not work currently
             .with_child(
                 Row::new()
                     .gap(2)
@@ -102,6 +132,7 @@ fn disk_input_panel(name: Option<String>, _node: Option<AttrValue>) -> RenderPro
                             .class(pwt::css::JustifyContent::SpaceBetween),
                     ),
             )
+            */
             .into()
     })
 }
@@ -120,9 +151,12 @@ pub fn qemu_disk_property(name: Option<String>, node: Option<AttrValue>) -> Edit
             move |mut record: Value| {
                 if let Some(name) = &name {
                     flatten_device_data(&mut record, name)?;
+                    record[BUS_DEVICE] = name.clone().into();
+                } else {
+                    let used_devices = extract_used_devices(&record);
+                    let default_device = first_unused_scsi_device(&used_devices);
+                    record[BUS_DEVICE] = default_device.clone().into();
                 }
-
-                record[BUS_DEVICE] = name.clone().into();
 
                 Ok(record)
             }
@@ -133,11 +167,22 @@ pub fn qemu_disk_property(name: Option<String>, node: Option<AttrValue>) -> Edit
             move |state: PropertyEditorState| {
                 let form_ctx = &state.form_ctx;
                 let mut data = form_ctx.get_submit_data();
+                let is_create = name.is_none();
 
                 let device = match &name {
                     Some(name) => name.clone(),
                     None::<_> => form_ctx.read().get_field_text(BUS_DEVICE),
                 };
+
+                if is_create {
+                    let image_storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
+                    let image_size = match form_ctx.read().get_last_valid_value(DISK_SIZE) {
+                        Some(Value::Number(size)) => size.as_f64().unwrap(),
+                        _ => bail!("got invalid disk size"),
+                    };
+                    let image = format!("{image_storage}:{image_size}");
+                    data[FILE_PN] = image.into();
+                }
 
                 let data = assemble_device_data(&state, &mut data, &device)?;
                 Ok(data)
@@ -155,6 +200,16 @@ fn extract_used_devices(record: &Value) -> HashSet<String> {
         }
     }
     list
+}
+
+fn first_unused_scsi_device(used_devices: &HashSet<String>) -> Option<String> {
+    for n in 0..QemuConfigScsiArray::MAX {
+        let name = format!("scsi{n}");
+        if !used_devices.contains(&name) {
+            return Some(name);
+        }
+    }
+    None
 }
 
 fn cdrom_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
