@@ -230,12 +230,59 @@ impl PveQemuHardwarePanel {
         tile
     }
 
+    fn disk_list_tile(
+        &self,
+        ctx: &Context<Self>,
+        name: &str,
+        media: PveQmIdeMedia,
+        record: &Value,
+        pending: &Value,
+    ) -> ListTile {
+        let props = ctx.props();
+
+        let (property, icon) = if media == PveQmIdeMedia::Cdrom {
+            (
+                qemu_cdrom_property(Some(name.to_string()), Some(props.node.clone())),
+                Fa::new("cdrom"),
+            )
+        } else {
+            (
+                qemu_disk_property(Some(name.to_string()), Some(props.node.clone())),
+                Fa::new("hdd-o"),
+            )
+        };
+
+        let menu = Menu::new().with_item({
+            let link = ctx.link().clone();
+            let dialog: Html = SafeConfirmDialog::new(name.to_string())
+                .on_done(link.callback(|_| Msg::Dialog(None)))
+                .on_confirm(link.callback({
+                    let name = name.to_string();
+                    move |_| Msg::DeleteDevice(name.clone())
+                }))
+                .into();
+            MenuItem::new(tr!("Delete device")).on_select(
+                ctx.link()
+                    .callback(move |_| Msg::Dialog(Some(dialog.clone()))),
+            )
+        });
+
+        let menu_button: Html = MenuButton::new("")
+            .class(pwt::css::ColorScheme::Neutral)
+            .class("circle")
+            .icon_class("fa fa-ellipsis-v fa-lg")
+            .menu(menu)
+            .into();
+        let mut tile = self.property_tile(ctx, &record, &pending, property, icon, menu_button);
+        tile.set_key(name.to_string());
+        tile
+    }
+
     fn view_list(
         &self,
         ctx: &Context<Self>,
         (record, pending, keys): &(Value, Value, HashSet<String>),
     ) -> Html {
-        let props = ctx.props();
         let mut list: Vec<ListTile> = Vec::new();
 
         let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon| {
@@ -280,13 +327,7 @@ impl PveQemuHardwarePanel {
                     continue;
                 }
             };
-            if media == PveQmIdeMedia::Cdrom {
-                let property = qemu_cdrom_property(Some(name.clone()), Some(props.node.clone()));
-                push_property_tile(&mut list, property, Fa::new("cdrom"));
-            } else {
-                let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
-                push_property_tile(&mut list, property, Fa::new("hdd-o"));
-            }
+            list.push(self.disk_list_tile(ctx, &name, media, &record, &pending));
         }
 
         for n in 0..QemuConfigSataArray::MAX {
@@ -304,13 +345,7 @@ impl PveQemuHardwarePanel {
                     continue;
                 }
             };
-            if media == PveQmIdeMedia::Cdrom {
-                let property = qemu_cdrom_property(Some(name.clone()), Some(props.node.clone()));
-                push_property_tile(&mut list, property, Fa::new("cdrom"));
-            } else {
-                let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
-                push_property_tile(&mut list, property, Fa::new("hdd-o"));
-            }
+            list.push(self.disk_list_tile(ctx, &name, media, &record, &pending));
         }
 
         for n in 0..QemuConfigScsiArray::MAX {
@@ -328,13 +363,7 @@ impl PveQemuHardwarePanel {
                     continue;
                 }
             };
-            if media == PveQmIdeMedia::Cdrom {
-                let property = qemu_cdrom_property(Some(name.clone()), Some(props.node.clone()));
-                push_property_tile(&mut list, property, Fa::new("cdrom"));
-            } else {
-                let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
-                push_property_tile(&mut list, property, Fa::new("hdd-o"));
-            }
+            list.push(self.disk_list_tile(ctx, &name, media, &record, &pending));
         }
 
         for n in 0..QemuConfigVirtioArray::MAX {
@@ -342,8 +371,7 @@ impl PveQemuHardwarePanel {
             if !keys.contains(&name) {
                 continue;
             }
-            let property = qemu_disk_property(Some(name.clone()), Some(props.node.clone()));
-            push_property_tile(&mut list, property, Fa::new("hdd-o"));
+            list.push(self.disk_list_tile(ctx, &name, PveQmIdeMedia::Disk, &record, &pending));
         }
 
         for n in 0..QemuConfigNetArray::MAX {
