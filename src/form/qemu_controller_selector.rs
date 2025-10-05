@@ -43,7 +43,6 @@ pub struct QemuControllerSelectorField {
     controller: String,
     device_id: String,
     validate: ValidateFn<u32>,
-    device_id_field_name: String,
 }
 
 pub enum Msg {
@@ -94,6 +93,18 @@ impl ManagedField for QemuControllerSelectorField {
         props.clone()
     }
 
+    fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
+        match value {
+            Value::String(s) => parse_qemu_controller_name(s)?,
+            _ => {
+                // Note: We never show this error to the user. Instead, we use the number filed
+                // to show errors (see create_validator() above)
+                bail!("invalid controller name");
+            }
+        };
+        Ok(value.clone())
+    }
+
     fn setup(_props: &Self::Properties) -> ManagedFieldState {
         ManagedFieldState::new(Value::Null, Value::Null)
     }
@@ -103,7 +114,6 @@ impl ManagedField for QemuControllerSelectorField {
             controller: String::new(),
             device_id: String::new(),
             validate: create_validator(ctx.props(), ""),
-            device_id_field_name: pwt::widget::get_unique_element_id(),
         }
     }
 
@@ -189,8 +199,6 @@ impl ManagedField for QemuControllerSelectorField {
                 Number::<u32>::new()
                     .style("min-width", "0")
                     .required(true)
-                    // register with form context for error tracking
-                    .name(self.device_id_field_name.clone())
                     .submit(false)
                     .min(0)
                     .max(max)
