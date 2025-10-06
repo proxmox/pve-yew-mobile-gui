@@ -1,11 +1,9 @@
 use std::rc::Rc;
 
 use anyhow::{format_err, Error};
-use pwt::widget::GridPicker;
-
-use proxmox_human_byte::HumanByte;
 
 use proxmox_client::{ApiPathBuilder, HttpApiClient};
+use proxmox_human_byte::HumanByte;
 
 use pve_api_types::{StorageContent, StorageInfo};
 
@@ -18,7 +16,9 @@ use pwt::props::{FieldBuilder, LoadCallback, WidgetBuilder, WidgetStyleBuilder};
 use pwt::state::Store;
 use pwt::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use pwt::widget::form::{Selector, SelectorRenderArgs, ValidateFn};
-use pwt::widget::{Column, Container, Progress, Row};
+use pwt::widget::{Column, Container, GridPicker, Progress, Row};
+
+use proxmox_yew_comp::percent_encoding::percent_encode_component;
 
 use pwt_macros::{builder, widget};
 
@@ -39,11 +39,6 @@ pub struct PveStorageSelector {
     /// The node to query
     #[prop_or_default]
     pub node: Option<AttrValue>,
-
-    /// The target node for the storage
-    #[builder(IntoPropValue, into_prop_value)]
-    #[prop_or_default]
-    pub target: Option<AttrValue>,
 
     /// The content types to show
     #[builder(IntoPropValue, into_prop_value)]
@@ -79,16 +74,16 @@ impl PveStorageSelectorComp {
     async fn get_storage_list(
         node: AttrValue,
         content: Option<Vec<StorageContent>>,
-        target: Option<AttrValue>,
     ) -> Result<Vec<StorageInfo>, Error> {
-        // fixme: Howto use PveClient trait (Send,Sync problem)?
-        let url = &ApiPathBuilder::new(format!("/api2/extjs/nodes/{node}/storage"))
-            .maybe_list_arg("content", &content)
-            //.maybe_bool_arg("enabled", enabled)
-            //.maybe_bool_arg("format", format)
-            //.maybe_arg("storage", &storage)
-            .maybe_arg("target", &target)
-            .build();
+        let url = &ApiPathBuilder::new(format!(
+            "/api2/extjs/nodes/{}/storage",
+            percent_encode_component(&node)
+        ))
+        .maybe_list_arg("content", &content)
+        //.maybe_bool_arg("enabled", enabled)
+        .bool_arg("format", true)
+        //.maybe_arg("storage", &storage)
+        .build();
 
         let pve_client = proxmox_yew_comp::CLIENT.with(|c| std::rc::Rc::clone(&c.borrow()));
 
@@ -101,14 +96,12 @@ impl PveStorageSelectorComp {
     fn create_load_callback(ctx: &yew::Context<Self>) -> LoadCallback<Vec<StorageInfo>> {
         let props = ctx.props();
         let node = props.node.clone();
-        let target = props.target.clone();
         let content_types = props.content_types.clone();
 
         (move || {
             Self::get_storage_list(
                 node.clone().unwrap_or("localhost".into()),
                 content_types.clone(),
-                target.clone(),
             )
         })
         .into()
@@ -140,10 +133,7 @@ impl Component for PveStorageSelectorComp {
     fn changed(&mut self, ctx: &yew::Context<Self>, old: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        if old.target != props.target
-            || old.node != props.node
-            || old.content_types != props.content_types
-        {
+        if old.node != props.node || old.content_types != props.content_types {
             self.load_callback = Self::create_load_callback(ctx);
         }
 
