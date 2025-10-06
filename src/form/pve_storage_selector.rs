@@ -32,9 +32,9 @@ pub struct PveStorageSelector {
     pub default: Option<AttrValue>,
 
     /// Change callback
-    #[builder_cb(IntoEventCallback, into_event_callback, Option<AttrValue>)]
+    #[builder_cb(IntoEventCallback, into_event_callback, Option<StorageInfo>)]
     #[prop_or_default]
-    pub on_change: Option<Callback<Option<AttrValue>>>,
+    pub on_change: Option<Callback<Option<StorageInfo>>>,
 
     /// The node to query
     #[prop_or_default]
@@ -162,7 +162,7 @@ impl Component for PveStorageSelectorComp {
                         .read()
                         .iter()
                         .find(|e| key == store.extract_key(e))
-                        .map(|e| e.storage.clone().into());
+                        .map(|e| e.clone());
                     on_change.emit(result);
                 }
             }
