@@ -9,6 +9,7 @@ use proxmox_yew_comp::{http_put, SafeConfirmDialog};
 use pwt::widget::form::Number;
 use serde_json::{json, Value};
 
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
@@ -37,18 +38,25 @@ use crate::widgets::{
     PendingPropertyList, PropertyEditorState,
 };
 
+use pwt_macros::builder;
+
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct QemuHardwarePanel {
     vmid: u32,
     node: AttrValue,
+
+    #[builder_cb(IntoEventCallback, into_event_callback, Result<String, Error>)]
+    #[prop_or_default]
+    on_start_command: Option<Callback<Result<String, Error>>>,
 }
 
 impl QemuHardwarePanel {
     pub fn new(node: impl Into<AttrValue>, vmid: u32) -> Self {
-        Self {
+        yew::props!(Self {
             node: node.into(),
             vmid,
-        }
+        })
     }
 
     fn editor_url(&self) -> String {
@@ -291,12 +299,19 @@ impl PveQemuHardwarePanel {
                             Ok(data)
                         }
                     })
-                    .on_submit(move |v: Value| {
-                        let submit_url = submit_url.clone();
-                        async move {
-                            let upid: String = http_put(&submit_url, Some(v)).await?;
-                            log::info!("FIXME: SHOW {upid}");
-                            Ok(())
+                    .on_submit({
+                        let on_start_command = props.on_start_command.clone();
+                        move |v: Value| {
+                            let submit_url = submit_url.clone();
+                            let on_start_command = on_start_command.clone();
+                            async move {
+                                let result: Result<String, Error> =
+                                    http_put(&submit_url, Some(v)).await;
+                                if let Some(on_start_command) = &on_start_command {
+                                    on_start_command.emit(result);
+                                }
+                                Ok(())
+                            }
                         }
                     })
                     .renderer(|_| {
