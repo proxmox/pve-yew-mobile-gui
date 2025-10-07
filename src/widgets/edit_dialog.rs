@@ -225,8 +225,8 @@ impl Component for PwtEditDialog {
                     Ok(api_resp) => {
                         let mut value = api_resp.data;
                         if props.submit_digest {
-                            if let Some(digest) = api_resp.attribs.get("digest") {
-                                value["digest"] = digest.clone();
+                            if let Some(Value::String(digest)) = api_resp.attribs.get("digest") {
+                                value["digest"] = digest.clone().into();
                             }
                         }
                         if let Some(load_hook) = &props.load_hook {
@@ -365,10 +365,10 @@ impl Component for PwtEditDialog {
                     .class("pwt-button-text")
                     .on_reset(props.on_reset.clone()),
             );
+        }
 
-            if props.submit_digest {
-                toolbar.add_child(Hidden::new().name("digest").submit_empty(false));
-            }
+        if props.submit_digest && props.loader.is_some() {
+            toolbar.add_child(Hidden::new().name("digest").submit_empty(false));
         }
 
         let submit_text = match &props.submit_text {
