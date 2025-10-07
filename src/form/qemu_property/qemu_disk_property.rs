@@ -10,8 +10,8 @@ use pwt::prelude::*;
 use pwt::widget::{form::delete_empty_values, Column};
 
 use pve_api_types::{
-    PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigScsiArray, QemuConfigUnused,
-    QemuConfigVirtio, StorageContent,
+    PveQmIde, QemuConfigEfidisk0, QemuConfigEfidisk0Efitype, QemuConfigSata, QemuConfigScsi,
+    QemuConfigScsiArray, QemuConfigUnused, QemuConfigVirtio, StorageContent,
 };
 
 const MEDIA_TYPE: &'static str = "_media_type_";
@@ -412,6 +412,53 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
                     form_ctx.write().set_field_value(FILE_PN, "".into());
                 }
             }
+        })
+}
+
+fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
+    RenderPropertyInputPanelFn::new(move |_state: PropertyEditorState| {
+        Column::new()
+            .class(pwt::css::FlexFit)
+            .gap(2)
+            .with_child(label_field(
+                tr!("Storage"),
+                PveStorageSelector::new(node.clone())
+                    .name(IMAGE_STORAGE)
+                    .submit(false)
+                    .required(true)
+                    .autoselect(true)
+                    .content_types(Some(vec![StorageContent::Images]))
+                    .mobile(true),
+                true,
+            ))
+            .into()
+    })
+}
+
+pub fn qemu_efidisk_property(name: Option<String>, node: Option<AttrValue>) -> EditableProperty {
+    let title = tr!("EFI Disk");
+    EditableProperty::new(name.clone(), title)
+        .render_input_panel(efidisk_input_panel(node.clone()))
+        .submit_hook(move |state: PropertyEditorState| {
+            let form_ctx = &state.form_ctx;
+            let mut data = form_ctx.get_submit_data();
+
+            let storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
+            // we use 1 here, because for efi the size gets overridden from the backend
+            let file = format!("{}:1", storage);
+            let efidisk = PropertyString::new(QemuConfigEfidisk0 {
+                // always default to newer 4m type with secure boot support, if we're
+                // adding a new EFI disk there can't be any old state anyway
+                efitype: Some(QemuConfigEfidisk0Efitype::Mb4),
+                file,
+                format: None,
+                pre_enrolled_keys: None,
+                size: None,
+            });
+
+            let efidisk: Value = serde_json::to_value(efidisk)?;
+            data["efidisk0"] = efidisk.into();
+            Ok(data)
         })
 }
 

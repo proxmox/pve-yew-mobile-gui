@@ -41,7 +41,7 @@ mod qemu_property;
 pub use qemu_property::{
     qemu_acpi_property, qemu_agent_property, qemu_amd_sev_property, qemu_bios_property,
     qemu_boot_property, qemu_cdrom_property, qemu_cpu_flags_property, qemu_disk_property,
-    qemu_display_property, qemu_freeze_property, qemu_hotplug_property,
+    qemu_display_property, qemu_efidisk_property, qemu_freeze_property, qemu_hotplug_property,
     qemu_kernel_scheduler_property, qemu_kvm_property, qemu_localtime_property,
     qemu_machine_property, qemu_memory_property, qemu_name_property, qemu_network_mtu_property,
     qemu_network_property, qemu_onboot_property, qemu_ostype_property, qemu_protection_property,

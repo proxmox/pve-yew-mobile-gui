@@ -30,9 +30,10 @@ use pve_api_types::{
 use crate::api_types::QemuPendingConfigValue;
 use crate::form::{
     qemu_bios_property, qemu_cdrom_property, qemu_cpu_flags_property, qemu_disk_property,
-    qemu_display_property, qemu_kernel_scheduler_property, qemu_machine_property,
-    qemu_memory_property, qemu_network_mtu_property, qemu_network_property, qemu_scsihw_property,
-    qemu_sockets_cores_property, qemu_unused_disk_property, qemu_vmstate_property, typed_load,
+    qemu_display_property, qemu_efidisk_property, qemu_kernel_scheduler_property,
+    qemu_machine_property, qemu_memory_property, qemu_network_mtu_property, qemu_network_property,
+    qemu_scsihw_property, qemu_sockets_cores_property, qemu_unused_disk_property,
+    qemu_vmstate_property, typed_load,
 };
 use crate::widgets::{
     label_field, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
@@ -419,6 +420,7 @@ impl PveQemuHardwarePanel {
         ctx: &Context<Self>,
         (record, pending, keys): &(Value, Value, HashSet<String>),
     ) -> Html {
+        let props = ctx.props();
         let mut list: Vec<ListTile> = Vec::new();
 
         let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon| {
@@ -524,6 +526,11 @@ impl PveQemuHardwarePanel {
                 continue;
             }
             list.push(self.unused_disk_list_tile(ctx, &name, record, pending));
+        }
+
+        if keys.contains("efidisk0") {
+            let property = qemu_efidisk_property(Some("efidisk0".into()), Some(props.node.clone()));
+            push_property_tile(&mut list, property, Fa::new("hdd-o"));
         }
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
@@ -692,6 +699,14 @@ impl Component for PveQemuHardwarePanel {
                     .icon_class("fa fa-exchange")
                     .on_select(ctx.link().callback({
                         let property = qemu_network_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            })
+            .with_item({
+                MenuItem::new(tr!("EFI Disk"))
+                    .icon_class("fa fa-hdd-o")
+                    .on_select(ctx.link().callback({
+                        let property = qemu_efidisk_property(None, Some(props.node.clone()));
                         move |_| Msg::EditProperty(property.clone())
                     }))
             });
