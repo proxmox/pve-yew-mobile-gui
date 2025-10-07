@@ -1,17 +1,19 @@
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use anyhow::Error;
+use anyhow::{bail, Error};
+
 use gloo_timers::callback::Timeout;
 use proxmox_schema::property_string::PropertyString;
 use proxmox_yew_comp::{http_put, SafeConfirmDialog};
+use pwt::widget::form::Number;
 use serde_json::{json, Value};
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
-use pwt::widget::{Fa, List, ListTile};
+use pwt::widget::{Column, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 use pwt::{prelude::*, AsyncPool};
 
@@ -31,7 +33,8 @@ use crate::form::{
     qemu_sockets_cores_property, qemu_vmstate_property, typed_load,
 };
 use crate::widgets::{
-    pve_pending_config_array_to_objects, EditDialog, EditableProperty, PendingPropertyList,
+    label_field, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
+    PendingPropertyList, PropertyEditorState,
 };
 
 #[derive(Clone, PartialEq, Properties)]
@@ -59,6 +62,14 @@ impl QemuHardwarePanel {
     fn pending_url(&self) -> String {
         format!(
             "/nodes/{}/qemu/{}/pending",
+            percent_encode_component(&self.node),
+            self.vmid
+        )
+    }
+
+    fn resize_disk_url(&self) -> String {
+        format!(
+            "/nodes/{}/qemu/{}/resize",
             percent_encode_component(&self.node),
             self.vmid
         )
@@ -252,7 +263,67 @@ impl PveQemuHardwarePanel {
             )
         };
 
-        let menu = Menu::new().with_item({
+        let mut menu = Menu::new();
+        if media == PveQmIdeMedia::Disk {
+            menu.add_item({
+                let load_url = props.editor_url();
+                let submit_url = props.resize_disk_url();
+                let title = tr!("Resize Disk");
+                let dialog: Html = EditDialog::new(title.clone())
+                    .edit(false)
+                    .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+                    .loader(typed_load::<QemuConfig>(load_url.clone()))
+                    .submit_text(title.clone())
+                    .submit_hook({
+                        let disk = name.to_string();
+                        move |state: PropertyEditorState| {
+                            let mut data = state.form_ctx.get_submit_data(); // get digest
+                            let incr = match state
+                                .form_ctx
+                                .read()
+                                .get_last_valid_value("_size_increment_")
+                            {
+                                Some(Value::Number(n)) => n.as_f64().unwrap_or(0.0),
+                                _ => bail!("invalid size increase - internal error"),
+                            };
+                            data["disk"] = disk.clone().into();
+                            data["size"] = format!("+{incr}G").into();
+                            Ok(data)
+                        }
+                    })
+                    .on_submit(move |v: Value| {
+                        let submit_url = submit_url.clone();
+                        async move {
+                            let upid: String = http_put(&submit_url, Some(v)).await?;
+                            log::info!("FIXME: SHOW {upid}");
+                            Ok(())
+                        }
+                    })
+                    .renderer(|_| {
+                        Column::new()
+                            .class(pwt::css::FlexFit)
+                            .gap(2)
+                            .with_child(label_field(
+                                tr!("Size Increment") + " (" + &tr!("GiB") + ")",
+                                Number::<f64>::new()
+                                    .name("_size_increment_")
+                                    .default(0.0)
+                                    .min(0.0)
+                                    .max(128.0 * 1024.0)
+                                    .submit(false),
+                                true,
+                            ))
+                            .into()
+                    })
+                    .into();
+                MenuItem::new(title).on_select(
+                    ctx.link()
+                        .callback(move |_| Msg::Dialog(Some(dialog.clone()))),
+                )
+            })
+        };
+
+        menu.add_item({
             let link = ctx.link().clone();
             let dialog: Html = SafeConfirmDialog::new(name.to_string())
                 .on_done(link.callback(|_| Msg::Dialog(None)))
