@@ -23,7 +23,8 @@ use pwt::props::{IntoOptionalInlineHtml, SubmitCallback};
 
 use pve_api_types::{
     PveQmIde, PveQmIdeMedia, QemuConfig, QemuConfigIdeArray, QemuConfigNetArray, QemuConfigSata,
-    QemuConfigSataArray, QemuConfigScsi, QemuConfigScsiArray, QemuConfigVirtioArray,
+    QemuConfigSataArray, QemuConfigScsi, QemuConfigScsiArray, QemuConfigUnusedArray,
+    QemuConfigVirtioArray,
 };
 
 use crate::api_types::QemuPendingConfigValue;
@@ -31,7 +32,7 @@ use crate::form::{
     qemu_bios_property, qemu_cdrom_property, qemu_cpu_flags_property, qemu_disk_property,
     qemu_display_property, qemu_kernel_scheduler_property, qemu_machine_property,
     qemu_memory_property, qemu_network_mtu_property, qemu_network_property, qemu_scsihw_property,
-    qemu_sockets_cores_property, qemu_vmstate_property, typed_load,
+    qemu_sockets_cores_property, qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
 use crate::widgets::{
     label_field, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
@@ -369,6 +370,7 @@ impl PveQemuHardwarePanel {
         ctx: &Context<Self>,
         (record, pending, keys): &(Value, Value, HashSet<String>),
     ) -> Html {
+        let props = ctx.props();
         let mut list: Vec<ListTile> = Vec::new();
 
         let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon| {
@@ -468,6 +470,18 @@ impl PveQemuHardwarePanel {
             list.push(self.network_list_tile(ctx, &name, &record, &pending));
         }
 
+        for n in 0..QemuConfigUnusedArray::MAX {
+            let name = format!("unused{n}");
+            if !keys.contains(&name) {
+                continue;
+            }
+            let icon = Fa::new("hdd-o");
+            let property = qemu_unused_disk_property(&name, Some(props.node.clone()));
+            let mut tile = self.property_tile(ctx, &record, &pending, property, icon, ());
+            tile.set_key(name.to_string());
+            list.push(tile);
+        }
+
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
             .grid_template_columns("auto 1fr")
             .into()
@@ -565,8 +579,17 @@ impl Component for PveQemuHardwarePanel {
             }
             Msg::EditProperty(property) => {
                 let url = props.editor_url();
+                let is_edit = if let Some(name) = property.get_name() {
+                    if name.starts_with("unused") {
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    false
+                };
                 let dialog = EditDialog::from(property.clone())
-                    .edit(property.get_name().is_some())
+                    .edit(is_edit)
                     .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
                     .loader(typed_load::<QemuConfig>(url.clone()))
                     .on_submit(self.on_submit.clone())

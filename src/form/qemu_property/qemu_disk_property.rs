@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use anyhow::{bail, Error};
+use proxmox_schema::property_string::PropertyString;
 use pwt::widget::form::{Number, RadioButton};
 use pwt::widget::{Container, Row};
 use serde_json::Value;
@@ -9,7 +10,8 @@ use pwt::prelude::*;
 use pwt::widget::{form::delete_empty_values, Column};
 
 use pve_api_types::{
-    PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigScsiArray, QemuConfigVirtio, StorageContent,
+    PveQmIde, QemuConfigSata, QemuConfigScsi, QemuConfigScsiArray, QemuConfigUnused,
+    QemuConfigVirtio, StorageContent,
 };
 
 const MEDIA_TYPE: &'static str = "_media_type_";
@@ -183,6 +185,66 @@ pub fn qemu_disk_property(name: Option<String>, node: Option<AttrValue>) -> Edit
                     let image = format!("{image_storage}:{image_size}");
                     data[FILE_PN] = image.into();
                 }
+
+                let data = assemble_device_data(&state, &mut data, &device)?;
+                Ok(data)
+            }
+        })
+}
+
+fn add_unused_disk_panel(name: String, _node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let used_devices = extract_used_devices(&state.record);
+
+        let disk_image = state
+            .record
+            .get(&name)
+            .map(|v| v.as_str())
+            .flatten()
+            .unwrap_or("unknown");
+
+        Column::new()
+            .class(pwt::css::FlexFit)
+            .gap(2)
+            .with_child(Container::new().with_child(disk_image))
+            .with_child(label_field(
+                tr!("Bus/Device"),
+                QemuControllerSelector::new()
+                    .name(BUS_DEVICE)
+                    .submit(false)
+                    .exclude_devices(used_devices),
+                true,
+            ))
+            .into()
+    })
+}
+
+pub fn qemu_unused_disk_property(name: &str, node: Option<AttrValue>) -> EditableProperty {
+    let title = tr!("Unused Disk");
+
+    EditableProperty::new(name.to_string(), title)
+        .render_input_panel(add_unused_disk_panel(name.to_string(), node.clone()))
+        .load_hook({
+            // let name = name.to_string();
+            move |mut record: Value| {
+                let used_devices = extract_used_devices(&record);
+                let default_device = first_unused_scsi_device(&used_devices);
+                record[BUS_DEVICE] = default_device.clone().into();
+                Ok(record)
+            }
+        })
+        .submit_hook({
+            let name = name.to_string();
+
+            move |state: PropertyEditorState| {
+                let form_ctx = &state.form_ctx;
+                let mut data = form_ctx.get_submit_data();
+
+                let device = form_ctx.read().get_field_text(BUS_DEVICE);
+                let unused: PropertyString<QemuConfigUnused> =
+                    serde_json::from_value(state.record[&name].clone())?;
+
+                data[FILE_PN] = unused.file.clone().into();
 
                 let data = assemble_device_data(&state, &mut data, &device)?;
                 Ok(data)
