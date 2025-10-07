@@ -341,14 +341,23 @@ impl PveQemuHardwarePanel {
 
         menu.add_item({
             let link = ctx.link().clone();
+            let (title, message) = if media == PveQmIdeMedia::Disk {
+                (
+                    tr!("Detach disk"),
+                    Some(tr!("Are you sure you want to detach entry {0}", name)),
+                )
+            } else {
+                (tr!("Delete device"), None)
+            };
             let dialog: Html = SafeConfirmDialog::new(name.to_string())
+                .message(message)
                 .on_done(link.callback(|_| Msg::Dialog(None)))
                 .on_confirm(link.callback({
                     let name = name.to_string();
                     move |_| Msg::DeleteDevice(name.clone())
                 }))
                 .into();
-            MenuItem::new(tr!("Delete device")).on_select(
+            MenuItem::new(title).on_select(
                 ctx.link()
                     .callback(move |_| Msg::Dialog(Some(dialog.clone()))),
             )
