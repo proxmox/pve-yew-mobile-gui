@@ -14,7 +14,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
-use pwt::widget::{Column, Fa, List, ListTile};
+use pwt::widget::{Column, ConfirmDialog, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 use pwt::{prelude::*, AsyncPool};
 
@@ -374,12 +374,51 @@ impl PveQemuHardwarePanel {
         tile
     }
 
+    fn unused_disk_list_tile(
+        &self,
+        ctx: &Context<Self>,
+        name: &str,
+        record: &Value,
+        pending: &Value,
+    ) -> ListTile {
+        let props = ctx.props();
+
+        let menu = Menu::new().with_item({
+            let link = ctx.link().clone();
+
+            let dialog: Html = ConfirmDialog::default()
+                .on_close(link.callback(|_| Msg::Dialog(None)))
+                .on_confirm(link.callback({
+                    let name = name.to_string();
+                    move |_| Msg::DeleteDevice(name.clone())
+                }))
+                .into();
+
+            MenuItem::new(tr!("Delete disk")).on_select(
+                ctx.link()
+                    .callback(move |_| Msg::Dialog(Some(dialog.clone()))),
+            )
+        });
+
+        let menu_button: Html = MenuButton::new("")
+            .class(pwt::css::ColorScheme::Neutral)
+            .class("circle")
+            .icon_class("fa fa-ellipsis-v fa-lg")
+            .menu(menu)
+            .into();
+
+        let icon = Fa::new("hdd-o");
+        let property = qemu_unused_disk_property(&name, Some(props.node.clone()));
+        let mut tile = self.property_tile(ctx, &record, &pending, property, icon, menu_button);
+        tile.set_key(name.to_string());
+        tile
+    }
+
     fn view_list(
         &self,
         ctx: &Context<Self>,
         (record, pending, keys): &(Value, Value, HashSet<String>),
     ) -> Html {
-        let props = ctx.props();
         let mut list: Vec<ListTile> = Vec::new();
 
         let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon| {
@@ -484,11 +523,7 @@ impl PveQemuHardwarePanel {
             if !keys.contains(&name) {
                 continue;
             }
-            let icon = Fa::new("hdd-o");
-            let property = qemu_unused_disk_property(&name, Some(props.node.clone()));
-            let mut tile = self.property_tile(ctx, &record, &pending, property, icon, ());
-            tile.set_key(name.to_string());
-            list.push(tile);
+            list.push(self.unused_disk_list_tile(ctx, &name, record, pending));
         }
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
