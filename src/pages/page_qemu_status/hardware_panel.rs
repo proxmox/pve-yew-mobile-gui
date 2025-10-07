@@ -505,10 +505,14 @@ impl Component for PveQemuHardwarePanel {
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
-        self.data = None;
-        self.on_submit = Self::create_on_submit(ctx.props());
-        ctx.link().send_message(Msg::Load);
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+
+        if props.node != old_props.node || props.vmid != old_props.vmid {
+            self.data = None;
+            self.on_submit = Self::create_on_submit(ctx.props());
+            ctx.link().send_message(Msg::Load);
+        }
         true
     }
 

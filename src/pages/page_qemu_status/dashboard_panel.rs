@@ -49,8 +49,6 @@ pub struct PveQemuDashboardPanel {
     cmd_guard: Option<AsyncAbortGuard>,
     running_upid: Option<String>,
     confirm_vm_command: Option<(String, String, Option<Value>)>,
-
-    on_start_command_cb: Callback<Result<String, Error>>,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -316,7 +314,6 @@ impl Component for PveQemuDashboardPanel {
             cmd_guard: None,
             running_upid: None,
             confirm_vm_command: None,
-            on_start_command_cb: ctx.link().callback(Msg::CommandResult),
         }
     }
 
@@ -387,7 +384,7 @@ impl Component for PveQemuDashboardPanel {
                 .with_child(self.task_button(ctx))
                 .with_child(
                     QemuHardwarePanel::new(props.node.clone(), props.vmid)
-                        .on_start_command(self.on_start_command_cb.clone()),
+                        .on_start_command(ctx.link().callback(Msg::CommandResult)),
                 )
                 .with_optional_child(confirm_dialog)
                 .into()
