@@ -1,6 +1,6 @@
-use serde_json::Value;
+use std::rc::Rc;
 
-use pwt::widget::form::{Checkbox, Combobox, Hidden};
+use pwt::widget::form::{Checkbox, Combobox};
 use pwt::widget::Container;
 
 use pwt::prelude::*;
@@ -9,20 +9,45 @@ use pwt::widget::Column;
 use pve_api_types::{
     QemuConfigBios, QemuConfigEfidisk0, QemuConfigEfidisk0Efitype, StorageContent, StorageInfo,
 };
+use yew::virtual_dom::VComp;
 
 const IMAGE_STORAGE: &'static str = "_storage_";
-const STORAGE_INFO: &'static str = "_storage_info_";
-
-const PRE_ENROLLED_KEYS: &'static str = "_pre-enrolled-keys";
 
 use crate::form::{property_string_from_parts, PveStorageSelector};
 
-use crate::widgets::{
-    label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
-};
+use crate::widgets::{label_field, EditableProperty, PropertyEditorState};
 
-fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+#[derive(PartialEq, Properties)]
+struct QemuEfidiskPanel {
+    node: Option<AttrValue>,
+    state: PropertyEditorState,
+}
+
+enum Msg {
+    StorageInfo(Option<StorageInfo>),
+}
+struct QemuEfidiskPanelComp {
+    storage_info: Option<StorageInfo>,
+}
+
+impl Component for QemuEfidiskPanelComp {
+    type Message = Msg;
+    type Properties = QemuEfidiskPanel;
+
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self { storage_info: None }
+    }
+
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::StorageInfo(info) => self.storage_info = info,
+        }
+        true
+    }
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        let state = &props.state;
+
         let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
 
         let bios = serde_json::from_value::<Option<QemuConfigBios>>(state.record["bios"].clone());
@@ -31,36 +56,21 @@ fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
             _ => true,
         };
 
-        let storage_info = state
-            .form_ctx
-            .read()
-            .get_field_value(STORAGE_INFO)
-            .unwrap_or(Value::Null);
-        let _storage_info = serde_json::from_value::<Option<StorageInfo>>(storage_info).unwrap();
-
-        // fixme: detect available storage formats
+        // fixme: detect available storage formats from self.storage_info
         let disable_format_selector = true;
 
         Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
-            .with_child(Hidden::new().name(STORAGE_INFO).submit(false))
             .with_child(label_field(
                 tr!("Storage"),
-                PveStorageSelector::new(node.clone())
+                PveStorageSelector::new(props.node.clone())
                     .name(IMAGE_STORAGE)
                     .submit(false)
                     .required(true)
                     .autoselect(true)
                     .content_types(Some(vec![StorageContent::Images]))
-                    .on_change({
-                        let form_ctx = state.form_ctx.clone();
-                        move |info: Option<StorageInfo>| {
-                            form_ctx
-                                .write()
-                                .set_field_value(STORAGE_INFO, serde_json::to_value(info).unwrap());
-                        }
-                    })
+                    .on_change(ctx.link().callback(Msg::StorageInfo))
                     .mobile(true),
                 true,
             ))
@@ -77,7 +87,7 @@ fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
             ))
             .with_child(label_field(
                 tr!("Pre-Enroll keys"),
-                Checkbox::new().name(PRE_ENROLLED_KEYS).submit(false),
+                Checkbox::new().name("_pre-enrolled-keys").submit(false),
                 true,
             ))
             .with_optional_child(bios_hint.then(|| {
@@ -86,13 +96,19 @@ fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
                 ))
             }))
             .into()
-    })
+    }
 }
 
 pub fn qemu_efidisk_property(name: Option<String>, node: Option<AttrValue>) -> EditableProperty {
     let title = tr!("EFI Disk");
     EditableProperty::new(name.clone(), title)
-        .render_input_panel(efidisk_input_panel(node.clone()))
+        .render_input_panel(move |state| {
+            let props = QemuEfidiskPanel {
+                state,
+                node: node.clone(),
+            };
+            VComp::new::<QemuEfidiskPanelComp>(Rc::new(props), None).into()
+        })
         .submit_hook(move |state: PropertyEditorState| {
             let form_ctx = &state.form_ctx;
             let mut data = form_ctx.get_submit_data();
