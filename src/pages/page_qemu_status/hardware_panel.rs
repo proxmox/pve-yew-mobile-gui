@@ -36,7 +36,7 @@ use crate::form::{
     qemu_vmstate_property, typed_load,
 };
 use crate::widgets::{
-    label_field, pve_pending_config_array_to_objects, EditDialog, EditableProperty,
+    label_field, pve_pending_config_array_to_objects, standard_card, EditDialog, EditableProperty,
     PendingPropertyList, PropertyEditorState,
 };
 
@@ -573,6 +573,57 @@ impl PveQemuHardwarePanel {
             .into()
     }
 
+    fn card_menu(
+        &self,
+        ctx: &Context<Self>,
+        (_record, pending, _keys): &(Value, Value, HashSet<String>),
+    ) -> Html {
+        let props = ctx.props();
+
+        let has_efidisk = pending.get("efidisk0").is_some();
+
+        let menu = Menu::new()
+            .with_item({
+                MenuItem::new(tr!("Add Hard Disk"))
+                    .icon_class("fa fa-hdd-o")
+                    .on_select(ctx.link().callback({
+                        let property = qemu_disk_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            })
+            .with_item({
+                MenuItem::new(tr!("Add CD/DVD drive"))
+                    .icon_class("fa fa-cdrom")
+                    .on_select(ctx.link().callback({
+                        let property = qemu_cdrom_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            })
+            .with_item({
+                MenuItem::new(tr!("Add Network card"))
+                    .icon_class("fa fa-exchange")
+                    .on_select(ctx.link().callback({
+                        let property = qemu_network_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            })
+            .with_item({
+                MenuItem::new(tr!("EFI Disk"))
+                    .icon_class("fa fa-hdd-o")
+                    .disabled(has_efidisk)
+                    .on_select(ctx.link().callback({
+                        let property = qemu_efidisk_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            });
+
+        MenuButton::new("")
+            .icon_class("fa fa-bars")
+            .class("circle")
+            .menu(menu)
+            .into()
+    }
+
     fn create_on_submit(props: &QemuHardwarePanel) -> SubmitCallback<Value> {
         let url = props.editor_url();
         SubmitCallback::new(move |data: Value| http_put(url.clone(), Some(data.clone())))
@@ -707,53 +758,30 @@ impl Component for PveQemuHardwarePanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
+        let title = tr!("Hardware");
+        let min_height = 200;
 
-        let content =
-            crate::widgets::render_loaded_data(&self.data, |data| self.view_list(ctx, data));
+        let data = match &self.data {
+            None => {
+                return standard_card(title.clone(), (), ())
+                    .min_height(min_height)
+                    .with_child(pwt::widget::Progress::new().class("pwt-delay-visibility"))
+                    .into()
+            }
+            Some(Err(err)) => {
+                return standard_card(title.clone(), (), ())
+                    .min_height(min_height)
+                    .with_child(pwt::widget::error_message(&err.to_string()).padding(2))
+                    .into();
+            }
+            Some(Ok(data)) => data,
+        };
 
-        let menu = Menu::new()
-            .with_item({
-                MenuItem::new(tr!("Add Hard Disk"))
-                    .icon_class("fa fa-hdd-o")
-                    .on_select(ctx.link().callback({
-                        let property = qemu_disk_property(None, Some(props.node.clone()));
-                        move |_| Msg::EditProperty(property.clone())
-                    }))
-            })
-            .with_item({
-                MenuItem::new(tr!("Add CD/DVD drive"))
-                    .icon_class("fa fa-cdrom")
-                    .on_select(ctx.link().callback({
-                        let property = qemu_cdrom_property(None, Some(props.node.clone()));
-                        move |_| Msg::EditProperty(property.clone())
-                    }))
-            })
-            .with_item({
-                MenuItem::new(tr!("Add Network card"))
-                    .icon_class("fa fa-exchange")
-                    .on_select(ctx.link().callback({
-                        let property = qemu_network_property(None, Some(props.node.clone()));
-                        move |_| Msg::EditProperty(property.clone())
-                    }))
-            })
-            .with_item({
-                MenuItem::new(tr!("EFI Disk"))
-                    .icon_class("fa fa-hdd-o")
-                    .on_select(ctx.link().callback({
-                        let property = qemu_efidisk_property(None, Some(props.node.clone()));
-                        move |_| Msg::EditProperty(property.clone())
-                    }))
-            });
+        let content = self.view_list(ctx, data);
+        let card_menu = self.card_menu(ctx, data);
 
-        let menu_button: Html = MenuButton::new("")
-            .icon_class("fa fa-bars")
-            .class("circle")
-            .menu(menu)
-            .into();
-
-        crate::widgets::standard_card(tr!("Hardware"), (), menu_button)
-            .min_height(200)
+        crate::widgets::standard_card(title, (), card_menu)
+            .min_height(min_height)
             .with_child(content)
             .with_optional_child(self.dialog.clone())
             .into()
