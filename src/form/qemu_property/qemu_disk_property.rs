@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use anyhow::{bail, Error};
 use proxmox_schema::property_string::PropertyString;
-use pwt::widget::form::{Checkbox, Number, RadioButton};
+use pwt::widget::form::{Checkbox, Combobox, Hidden, Number, RadioButton};
 use pwt::widget::{Container, Row};
 use serde_json::Value;
 
@@ -12,15 +12,17 @@ use pwt::widget::{form::delete_empty_values, Column};
 use pve_api_types::{
     PveQmIde, QemuConfigBios, QemuConfigEfidisk0, QemuConfigEfidisk0Efitype, QemuConfigSata,
     QemuConfigScsi, QemuConfigScsiArray, QemuConfigUnused, QemuConfigVirtio, StorageContent,
+    StorageInfo,
 };
 
 const MEDIA_TYPE: &'static str = "_media_type_";
 const BUS_DEVICE: &'static str = "_device_";
 const IMAGE_STORAGE: &'static str = "_storage_";
+const STORAGE_INFO: &'static str = "_storage_info_";
 const DISK_SIZE: &'static str = "_disk_size_";
-const PRE_ENROLLED_KEYS: &'static str = "_pre-enrolled-keys_";
 
 const FILE_PN: &'static str = "_file";
+const PRE_ENROLLED_KEYS: &'static str = "_pre-enrolled-keys";
 
 use crate::form::pve_storage_content_selector::PveStorageContentSelector;
 use crate::form::{
@@ -426,9 +428,20 @@ fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
             _ => true,
         };
 
+        let storage_info = state
+            .form_ctx
+            .read()
+            .get_field_value(STORAGE_INFO)
+            .unwrap_or(Value::Null);
+        let _storage_info = serde_json::from_value::<Option<StorageInfo>>(storage_info).unwrap();
+
+        // fixme: detect available storage formats
+        let disable_format_selector = true;
+
         Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
+            .with_child(Hidden::new().name(STORAGE_INFO).submit(false))
             .with_child(label_field(
                 tr!("Storage"),
                 PveStorageSelector::new(node.clone())
@@ -437,8 +450,27 @@ fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
                     .required(true)
                     .autoselect(true)
                     .content_types(Some(vec![StorageContent::Images]))
+                    .on_change({
+                        let form_ctx = state.form_ctx.clone();
+                        move |info: Option<StorageInfo>| {
+                            form_ctx
+                                .write()
+                                .set_field_value(STORAGE_INFO, serde_json::to_value(info).unwrap());
+                        }
+                    })
                     .mobile(true),
                 true,
+            ))
+            .with_child(label_field(
+                tr!("Format"),
+                Combobox::from_key_value_pairs([
+                    ("raw", tr!("Raw disk image") + " (raw)"),
+                    ("qcow2", tr!("QEMU image format") + " (qcow2)"),
+                    ("vmdk", tr!("VMware image format") + " (vmdk)"),
+                ])
+                .placeholder("raw")
+                .name("_format"),
+                !disable_format_selector,
             ))
             .with_child(label_field(
                 tr!("Pre-Enroll keys"),
@@ -463,24 +495,14 @@ pub fn qemu_efidisk_property(name: Option<String>, node: Option<AttrValue>) -> E
             let mut data = form_ctx.get_submit_data();
 
             let storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
-            let pre_enrolled_keys = match form_ctx.read().get_last_valid_value(PRE_ENROLLED_KEYS) {
-                Some(Value::Bool(true)) => Some(true),
-                _ => None,
-            };
-            // we use 1 here, because for efi the size gets overridden from the backend
-            let file = format!("{}:1", storage);
-            let efidisk = PropertyString::new(QemuConfigEfidisk0 {
-                // always default to newer 4m type with secure boot support, if we're
-                // adding a new EFI disk there can't be any old state anyway
-                efitype: Some(QemuConfigEfidisk0Efitype::Mb4),
-                file,
-                format: None,
-                pre_enrolled_keys,
-                size: None,
-            });
 
-            let efidisk: Value = serde_json::to_value(efidisk)?;
-            data["efidisk0"] = efidisk.into();
+            // we use 1 here, because for efi the size gets overridden from the backend
+            data["_file"] = format!("{}:1", storage).into();
+            // always default to newer 4m type with secure boot support, if we're
+            // adding a new EFI disk there can't be any old state anyway
+            data["_efitype"] = QemuConfigEfidisk0Efitype::Mb4.to_string().into();
+
+            property_string_from_parts::<QemuConfigEfidisk0>(&mut data, "efidisk0", true)?;
             Ok(data)
         })
 }
