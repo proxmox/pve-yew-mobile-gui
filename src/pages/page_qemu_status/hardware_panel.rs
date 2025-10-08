@@ -125,6 +125,7 @@ impl PveQemuHardwarePanel {
         property: EditableProperty,
         icon: Fa,
         trailing: impl IntoOptionalInlineHtml,
+        interactive: bool,
     ) -> ListTile {
         let on_revert = Callback::from({
             let property = property.clone();
@@ -132,16 +133,19 @@ impl PveQemuHardwarePanel {
                 .callback(move |_: Event| Msg::Revert(property.clone()))
         });
 
-        let list_tile = PendingPropertyList::render_icon_list_tile(
+        let mut list_tile = PendingPropertyList::render_icon_list_tile(
             current, pending, &property, icon, trailing, on_revert,
         );
 
-        list_tile
-            .interactive(true)
-            .on_activate(ctx.link().callback({
+        if interactive {
+            list_tile.set_interactive(true);
+            list_tile.set_on_activate(ctx.link().callback({
                 let property = property.clone();
                 move |_| Msg::EditProperty(property.clone())
-            }))
+            }));
+        }
+
+        list_tile
     }
 
     fn processor_list_tile(
@@ -186,6 +190,7 @@ impl PveQemuHardwarePanel {
             self.sockets_cores_property.clone(),
             Fa::new("cpu"),
             menu_button,
+            true,
         );
 
         tile
@@ -246,6 +251,7 @@ impl PveQemuHardwarePanel {
             network_property,
             Fa::new("exchange"),
             menu_button,
+            true,
         );
 
         tile
@@ -370,7 +376,8 @@ impl PveQemuHardwarePanel {
             .icon_class("fa fa-ellipsis-v fa-lg")
             .menu(menu)
             .into();
-        let mut tile = self.property_tile(ctx, &record, &pending, property, icon, menu_button);
+        let mut tile =
+            self.property_tile(ctx, &record, &pending, property, icon, menu_button, true);
         tile.set_key(name.to_string());
         tile
     }
@@ -410,7 +417,8 @@ impl PveQemuHardwarePanel {
 
         let icon = Fa::new("hdd-o");
         let property = qemu_unused_disk_property(&name, Some(props.node.clone()));
-        let mut tile = self.property_tile(ctx, &record, &pending, property, icon, menu_button);
+        let mut tile =
+            self.property_tile(ctx, &record, &pending, property, icon, menu_button, true);
         tile.set_key(name.to_string());
         tile
     }
@@ -423,31 +431,58 @@ impl PveQemuHardwarePanel {
         let props = ctx.props();
         let mut list: Vec<ListTile> = Vec::new();
 
-        let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon| {
+        let push_property_tile = |list: &mut Vec<_>, property: EditableProperty, icon, editable| {
             let name = match property.get_name() {
                 Some(name) => name.to_string(),
                 None::<_> => return,
             };
 
             if property.required || keys.contains(&name) {
-                let mut tile = self.property_tile(ctx, &record, &pending, property, icon, ());
+                let mut tile =
+                    self.property_tile(ctx, &record, &pending, property, icon, (), editable);
                 tile.set_key(name);
                 list.push(tile);
             }
         };
 
-        push_property_tile(&mut list, self.memory_property.clone(), Fa::new("memory"));
+        push_property_tile(
+            &mut list,
+            self.memory_property.clone(),
+            Fa::new("memory"),
+            true,
+        );
         list.push(self.processor_list_tile(ctx, &record, &pending));
-        push_property_tile(&mut list, self.bios_property.clone(), Fa::new("microchip"));
-        push_property_tile(&mut list, self.display_property.clone(), Fa::new("desktop"));
-        push_property_tile(&mut list, self.machine_property.clone(), Fa::new("cogs"));
-        push_property_tile(&mut list, self.scsihw_property.clone(), Fa::new("database"));
+        push_property_tile(
+            &mut list,
+            self.bios_property.clone(),
+            Fa::new("microchip"),
+            true,
+        );
+        push_property_tile(
+            &mut list,
+            self.display_property.clone(),
+            Fa::new("desktop"),
+            true,
+        );
+        push_property_tile(
+            &mut list,
+            self.machine_property.clone(),
+            Fa::new("cogs"),
+            true,
+        );
+        push_property_tile(
+            &mut list,
+            self.scsihw_property.clone(),
+            Fa::new("database"),
+            true,
+        );
 
         // fixme: this should be removable - add menu with delete
         push_property_tile(
             &mut list,
             self.vmstate_property.clone(),
             Fa::new("download"),
+            true,
         );
 
         for n in 0..QemuConfigIdeArray::MAX {
@@ -530,7 +565,7 @@ impl PveQemuHardwarePanel {
 
         if keys.contains("efidisk0") {
             let property = qemu_efidisk_property(Some("efidisk0".into()), Some(props.node.clone()));
-            push_property_tile(&mut list, property, Fa::new("hdd-o"));
+            push_property_tile(&mut list, property, Fa::new("hdd-o"), false);
         }
 
         List::new(list.len() as u64, move |pos| list[pos as usize].clone())
