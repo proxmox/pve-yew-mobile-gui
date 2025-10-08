@@ -257,6 +257,68 @@ impl PveQemuHardwarePanel {
         tile
     }
 
+    fn resize_disk_dialog(&self, ctx: &Context<Self>, name: &str) -> Html {
+        let props = ctx.props();
+
+        let load_url = props.editor_url();
+        let submit_url = props.resize_disk_url();
+        let title = tr!("Resize Disk");
+
+        EditDialog::new(title.clone())
+            .edit(false)
+            .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+            .loader(typed_load::<QemuConfig>(load_url.clone()))
+            .submit_text(title.clone())
+            .submit_hook({
+                let disk = name.to_string();
+                move |state: PropertyEditorState| {
+                    let mut data = state.form_ctx.get_submit_data(); // get digest
+                    let incr = match state
+                        .form_ctx
+                        .read()
+                        .get_last_valid_value("_size_increment_")
+                    {
+                        Some(Value::Number(n)) => n.as_f64().unwrap_or(0.0),
+                        _ => bail!("invalid size increase - internal error"),
+                    };
+                    data["disk"] = disk.clone().into();
+                    data["size"] = format!("+{incr}G").into();
+                    Ok(data)
+                }
+            })
+            .on_submit({
+                let on_start_command = props.on_start_command.clone();
+                move |v: Value| {
+                    let submit_url = submit_url.clone();
+                    let on_start_command = on_start_command.clone();
+                    async move {
+                        let result: Result<String, Error> = http_put(&submit_url, Some(v)).await;
+                        if let Some(on_start_command) = &on_start_command {
+                            on_start_command.emit(result);
+                        }
+                        Ok(())
+                    }
+                }
+            })
+            .renderer(|_| {
+                Column::new()
+                    .class(pwt::css::FlexFit)
+                    .gap(2)
+                    .with_child(label_field(
+                        tr!("Size Increment") + " (" + &tr!("GiB") + ")",
+                        Number::<f64>::new()
+                            .name("_size_increment_")
+                            .default(0.0)
+                            .min(0.0)
+                            .max(128.0 * 1024.0)
+                            .submit(false),
+                        true,
+                    ))
+                    .into()
+            })
+            .into()
+    }
+
     fn disk_list_tile(
         &self,
         ctx: &Context<Self>,
@@ -282,64 +344,8 @@ impl PveQemuHardwarePanel {
         let mut menu = Menu::new();
         if media == PveQmIdeMedia::Disk {
             menu.add_item({
-                let load_url = props.editor_url();
-                let submit_url = props.resize_disk_url();
-                let title = tr!("Resize Disk");
-                let dialog: Html = EditDialog::new(title.clone())
-                    .edit(false)
-                    .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
-                    .loader(typed_load::<QemuConfig>(load_url.clone()))
-                    .submit_text(title.clone())
-                    .submit_hook({
-                        let disk = name.to_string();
-                        move |state: PropertyEditorState| {
-                            let mut data = state.form_ctx.get_submit_data(); // get digest
-                            let incr = match state
-                                .form_ctx
-                                .read()
-                                .get_last_valid_value("_size_increment_")
-                            {
-                                Some(Value::Number(n)) => n.as_f64().unwrap_or(0.0),
-                                _ => bail!("invalid size increase - internal error"),
-                            };
-                            data["disk"] = disk.clone().into();
-                            data["size"] = format!("+{incr}G").into();
-                            Ok(data)
-                        }
-                    })
-                    .on_submit({
-                        let on_start_command = props.on_start_command.clone();
-                        move |v: Value| {
-                            let submit_url = submit_url.clone();
-                            let on_start_command = on_start_command.clone();
-                            async move {
-                                let result: Result<String, Error> =
-                                    http_put(&submit_url, Some(v)).await;
-                                if let Some(on_start_command) = &on_start_command {
-                                    on_start_command.emit(result);
-                                }
-                                Ok(())
-                            }
-                        }
-                    })
-                    .renderer(|_| {
-                        Column::new()
-                            .class(pwt::css::FlexFit)
-                            .gap(2)
-                            .with_child(label_field(
-                                tr!("Size Increment") + " (" + &tr!("GiB") + ")",
-                                Number::<f64>::new()
-                                    .name("_size_increment_")
-                                    .default(0.0)
-                                    .min(0.0)
-                                    .max(128.0 * 1024.0)
-                                    .submit(false),
-                                true,
-                            ))
-                            .into()
-                    })
-                    .into();
-                MenuItem::new(title).on_select(
+                let dialog = self.resize_disk_dialog(ctx, name);
+                MenuItem::new(tr!("Resize Disk")).on_select(
                     ctx.link()
                         .callback(move |_| Msg::Dialog(Some(dialog.clone()))),
                 )
