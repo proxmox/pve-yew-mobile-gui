@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use anyhow::{bail, Error};
 use proxmox_schema::property_string::PropertyString;
-use pwt::widget::form::{Number, RadioButton};
+use pwt::widget::form::{Checkbox, Number, RadioButton};
 use pwt::widget::{Container, Row};
 use serde_json::Value;
 
@@ -10,14 +10,15 @@ use pwt::prelude::*;
 use pwt::widget::{form::delete_empty_values, Column};
 
 use pve_api_types::{
-    PveQmIde, QemuConfigEfidisk0, QemuConfigEfidisk0Efitype, QemuConfigSata, QemuConfigScsi,
-    QemuConfigScsiArray, QemuConfigUnused, QemuConfigVirtio, StorageContent,
+    PveQmIde, QemuConfigBios, QemuConfigEfidisk0, QemuConfigEfidisk0Efitype, QemuConfigSata,
+    QemuConfigScsi, QemuConfigScsiArray, QemuConfigUnused, QemuConfigVirtio, StorageContent,
 };
 
 const MEDIA_TYPE: &'static str = "_media_type_";
 const BUS_DEVICE: &'static str = "_device_";
 const IMAGE_STORAGE: &'static str = "_storage_";
 const DISK_SIZE: &'static str = "_disk_size_";
+const PRE_ENROLLED_KEYS: &'static str = "_pre-enrolled-keys_";
 
 const FILE_PN: &'static str = "_file";
 
@@ -416,7 +417,15 @@ pub fn qemu_cdrom_property(name: Option<String>, node: Option<AttrValue>) -> Edi
 }
 
 fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
-    RenderPropertyInputPanelFn::new(move |_state: PropertyEditorState| {
+    RenderPropertyInputPanelFn::new(move |state: PropertyEditorState| {
+        let hint = |msg: String| Container::new().class("pwt-color-warning").with_child(msg);
+
+        let bios = serde_json::from_value::<Option<QemuConfigBios>>(state.record["bios"].clone());
+        let bios_hint = match bios {
+            Ok(Some(QemuConfigBios::Ovmf)) => false,
+            _ => true,
+        };
+
         Column::new()
             .class(pwt::css::FlexFit)
             .gap(2)
@@ -431,6 +440,16 @@ fn efidisk_input_panel(node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
                     .mobile(true),
                 true,
             ))
+            .with_child(label_field(
+                tr!("Pre-Enroll keys"),
+                Checkbox::new().name(PRE_ENROLLED_KEYS).submit(false),
+                true,
+            ))
+            .with_optional_child(bios_hint.then(|| {
+                hint(tr!(
+                    "Warning: The VM currently does not uses 'OVMF (UEFI)' as BIOS."
+                ))
+            }))
             .into()
     })
 }
@@ -444,6 +463,10 @@ pub fn qemu_efidisk_property(name: Option<String>, node: Option<AttrValue>) -> E
             let mut data = form_ctx.get_submit_data();
 
             let storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
+            let pre_enrolled_keys = match form_ctx.read().get_last_valid_value(PRE_ENROLLED_KEYS) {
+                Some(Value::Bool(true)) => Some(true),
+                _ => None,
+            };
             // we use 1 here, because for efi the size gets overridden from the backend
             let file = format!("{}:1", storage);
             let efidisk = PropertyString::new(QemuConfigEfidisk0 {
@@ -452,7 +475,7 @@ pub fn qemu_efidisk_property(name: Option<String>, node: Option<AttrValue>) -> E
                 efitype: Some(QemuConfigEfidisk0Efitype::Mb4),
                 file,
                 format: None,
-                pre_enrolled_keys: None,
+                pre_enrolled_keys,
                 size: None,
             });
 
