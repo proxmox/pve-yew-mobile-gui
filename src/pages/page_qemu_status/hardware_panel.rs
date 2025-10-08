@@ -94,6 +94,7 @@ pub enum Msg {
     Revert(EditableProperty),
     CommandResult(Result<(), Error>),
     DeleteDevice(String),
+    ResizeDisk(String),
 }
 
 pub struct PveQemuHardwarePanel {
@@ -344,11 +345,9 @@ impl PveQemuHardwarePanel {
         let mut menu = Menu::new();
         if media == PveQmIdeMedia::Disk {
             menu.add_item({
-                let dialog = self.resize_disk_dialog(ctx, name);
-                MenuItem::new(tr!("Resize Disk")).on_select(
-                    ctx.link()
-                        .callback(move |_| Msg::Dialog(Some(dialog.clone()))),
-                )
+                let name = name.to_string();
+                MenuItem::new(tr!("Resize Disk"))
+                    .on_select(ctx.link().callback(move |_| Msg::ResizeDisk(name.clone())))
             })
         };
 
@@ -713,6 +712,9 @@ impl Component for PveQemuHardwarePanel {
                 if self.reload_timeout.is_some() {
                     ctx.link().send_message(Msg::Load);
                 }
+            }
+            Msg::ResizeDisk(name) => {
+                self.dialog = Some(self.resize_disk_dialog(ctx, &name));
             }
             Msg::Dialog(dialog) => {
                 if dialog.is_none() && self.dialog.is_some() {
