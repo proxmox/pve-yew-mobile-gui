@@ -573,7 +573,7 @@ impl PveQemuHardwarePanel {
             push_property_tile(&mut list, property, Fa::new("hdd-o"), false);
         }
 
-        List::new(list.len() as u64, move |pos| list[pos as usize].clone())
+        List::from_tiles(list)
             .grid_template_columns("auto 1fr")
             .into()
     }
