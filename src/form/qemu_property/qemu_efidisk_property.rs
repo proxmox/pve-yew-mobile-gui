@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use pwt::widget::form::{Checkbox, Combobox};
+use pwt::widget::form::Checkbox;
 use pwt::widget::Container;
 
 use pwt::prelude::*;
@@ -13,7 +13,7 @@ use yew::virtual_dom::VComp;
 
 const IMAGE_STORAGE: &'static str = "_storage_";
 
-use crate::form::{property_string_from_parts, PveStorageSelector};
+use crate::form::{property_string_from_parts, qemu_image_format_selector, PveStorageSelector};
 
 use crate::widgets::{label_field, EditableProperty, PropertyEditorState};
 
@@ -76,13 +76,7 @@ impl Component for QemuEfidiskPanelComp {
             ))
             .with_child(label_field(
                 tr!("Format"),
-                Combobox::from_key_value_pairs([
-                    ("raw", tr!("Raw disk image") + " (raw)"),
-                    ("qcow2", tr!("QEMU image format") + " (qcow2)"),
-                    ("vmdk", tr!("VMware image format") + " (vmdk)"),
-                ])
-                .placeholder("raw")
-                .name("_format"),
+                qemu_image_format_selector().name("_format"),
                 !disable_format_selector,
             ))
             .with_child(label_field(

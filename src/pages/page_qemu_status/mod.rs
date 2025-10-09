@@ -7,6 +7,9 @@ pub use config_panel::QemuConfigPanel;
 mod dashboard_panel;
 pub use dashboard_panel::QemuDashboardPanel;
 
+mod move_disk_dialog;
+pub use move_disk_dialog::qemu_move_disk_dialog;
+
 use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};

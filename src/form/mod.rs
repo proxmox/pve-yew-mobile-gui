@@ -1,3 +1,5 @@
+use pwt::prelude::*;
+
 mod boot_device_list;
 use anyhow::{bail, Error};
 pub use boot_device_list::{BootDeviceList, PveBootDeviceList};
@@ -55,7 +57,7 @@ mod pve_storage_selector;
 pub use pve_storage_selector::PveStorageSelector;
 
 use proxmox_schema::{property_string::PropertyString, ApiType, Schema};
-use pwt::widget::form::{delete_empty_values, FormContext};
+use pwt::widget::form::{delete_empty_values, Combobox, FormContext};
 
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
@@ -64,9 +66,16 @@ use proxmox_client::ApiResponseData;
 use proxmox_schema::ObjectSchemaType;
 use proxmox_yew_comp::ApiLoadCallback;
 
-use yew::Callback;
-
 use crate::widgets::PropertyEditorState;
+
+pub fn qemu_image_format_selector() -> Combobox {
+    Combobox::from_key_value_pairs([
+        ("raw", tr!("Raw disk image") + " (raw)"),
+        ("qcow2", tr!("QEMU image format") + " (qcow2)"),
+        ("vmdk", tr!("VMware image format") + " (vmdk)"),
+    ])
+    .placeholder("raw")
+}
 
 // fixme: move to proxmox-yew-comp::form
 pub fn typed_load<T: DeserializeOwned + Serialize>(
