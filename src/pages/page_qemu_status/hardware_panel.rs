@@ -270,56 +270,22 @@ impl PveQemuHardwarePanel {
         tile
     }
 
-    fn move_disk_dialog(&self, ctx: &Context<Self>, name: &str) -> Html {
+    fn move_disk_submit(&self, ctx: &Context<Self>) -> SubmitCallback<Value> {
         let props = ctx.props();
-
-        let load_url = props.editor_url();
         let submit_url = props.move_disk_url();
+        let on_start_command = props.on_start_command.clone();
 
-        qemu_move_disk_dialog(name, Some(props.node.clone()))
-            .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
-            .loader(typed_load::<QemuConfig>(load_url.clone()))
-            .on_submit({
-                let on_start_command = props.on_start_command.clone();
-                move |v: Value| {
-                    let submit_url = submit_url.clone();
-                    let on_start_command = on_start_command.clone();
-                    async move {
-                        let result: Result<String, Error> = http_post(&submit_url, Some(v)).await;
-                        if let Some(on_start_command) = &on_start_command {
-                            on_start_command.emit(result);
-                        }
-                        Ok(())
-                    }
+        SubmitCallback::new(move |v: Value| {
+            let submit_url = submit_url.clone();
+            let on_start_command = on_start_command.clone();
+            async move {
+                let result: Result<String, Error> = http_post(&submit_url, Some(v)).await;
+                if let Some(on_start_command) = &on_start_command {
+                    on_start_command.emit(result);
                 }
-            })
-            .into()
-    }
-
-    fn reassign_disk_dialog(&self, ctx: &Context<Self>, name: &str) -> Html {
-        let props = ctx.props();
-
-        let load_url = props.editor_url();
-        let submit_url = props.move_disk_url();
-
-        qemu_reassign_disk_dialog(name, Some(props.node.clone()))
-            .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
-            .loader(typed_load::<QemuConfig>(load_url.clone()))
-            .on_submit({
-                let on_start_command = props.on_start_command.clone();
-                move |v: Value| {
-                    let submit_url = submit_url.clone();
-                    let on_start_command = on_start_command.clone();
-                    async move {
-                        let result: Result<String, Error> = http_post(&submit_url, Some(v)).await;
-                        if let Some(on_start_command) = &on_start_command {
-                            on_start_command.emit(result);
-                        }
-                        Ok(())
-                    }
-                }
-            })
-            .into()
+                Ok(())
+            }
+        })
     }
 
     fn resize_disk_dialog(&self, ctx: &Context<Self>, name: &str) -> Html {
@@ -768,10 +734,18 @@ impl Component for PveQemuHardwarePanel {
                 self.dialog = Some(self.resize_disk_dialog(ctx, &name));
             }
             Msg::ReassignDisk(name) => {
-                self.dialog = Some(self.reassign_disk_dialog(ctx, &name));
+                let dialog = qemu_reassign_disk_dialog(&name, Some(props.node.clone()))
+                    .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+                    .loader(typed_load::<QemuConfig>(props.editor_url()))
+                    .on_submit(self.move_disk_submit(ctx));
+                self.dialog = Some(dialog.into());
             }
             Msg::MoveDisk(name) => {
-                self.dialog = Some(self.move_disk_dialog(ctx, &name));
+                let dialog = qemu_move_disk_dialog(&name, Some(props.node.clone()))
+                    .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+                    .loader(typed_load::<QemuConfig>(props.editor_url()))
+                    .on_submit(self.move_disk_submit(ctx));
+                self.dialog = Some(dialog.into());
             }
             Msg::Dialog(dialog) => {
                 if dialog.is_none() && self.dialog.is_some() {
