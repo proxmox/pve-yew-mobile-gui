@@ -34,7 +34,9 @@ use crate::form::{
     qemu_scsihw_property, qemu_sockets_cores_property, qemu_tpmstate_property,
     qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
-use crate::pages::page_qemu_status::{qemu_move_disk_dialog, qemu_resize_disk_dialog};
+use crate::pages::page_qemu_status::{
+    qemu_move_disk_dialog, qemu_reassign_disk_dialog, qemu_resize_disk_dialog,
+};
 use crate::widgets::{
     pve_pending_config_array_to_objects, standard_card, EditDialog, EditableProperty,
     PendingPropertyList,
@@ -103,6 +105,7 @@ pub enum Msg {
     CommandResult(Result<(), Error>),
     DeleteDevice(String),
     ResizeDisk(String),
+    ReassignDisk(String),
     MoveDisk(String),
 }
 
@@ -293,6 +296,32 @@ impl PveQemuHardwarePanel {
             .into()
     }
 
+    fn reassign_disk_dialog(&self, ctx: &Context<Self>, name: &str) -> Html {
+        let props = ctx.props();
+
+        let load_url = props.editor_url();
+        let submit_url = props.move_disk_url();
+
+        qemu_reassign_disk_dialog(name, Some(props.node.clone()))
+            .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
+            .loader(typed_load::<QemuConfig>(load_url.clone()))
+            .on_submit({
+                let on_start_command = props.on_start_command.clone();
+                move |v: Value| {
+                    let submit_url = submit_url.clone();
+                    let on_start_command = on_start_command.clone();
+                    async move {
+                        let result: Result<String, Error> = http_post(&submit_url, Some(v)).await;
+                        if let Some(on_start_command) = &on_start_command {
+                            on_start_command.emit(result);
+                        }
+                        Ok(())
+                    }
+                }
+            })
+            .into()
+    }
+
     fn resize_disk_dialog(&self, ctx: &Context<Self>, name: &str) -> Html {
         let props = ctx.props();
 
@@ -347,6 +376,13 @@ impl PveQemuHardwarePanel {
                 let name = name.to_string();
                 MenuItem::new(tr!("Move Disk"))
                     .on_select(ctx.link().callback(move |_| Msg::MoveDisk(name.clone())))
+            });
+            menu.add_item({
+                let name = name.to_string();
+                MenuItem::new(tr!("Reassign Disk")).on_select(
+                    ctx.link()
+                        .callback(move |_| Msg::ReassignDisk(name.clone())),
+                )
             });
             menu.add_item({
                 let name = name.to_string();
@@ -730,6 +766,9 @@ impl Component for PveQemuHardwarePanel {
             }
             Msg::ResizeDisk(name) => {
                 self.dialog = Some(self.resize_disk_dialog(ctx, &name));
+            }
+            Msg::ReassignDisk(name) => {
+                self.dialog = Some(self.reassign_disk_dialog(ctx, &name));
             }
             Msg::MoveDisk(name) => {
                 self.dialog = Some(self.move_disk_dialog(ctx, &name));
