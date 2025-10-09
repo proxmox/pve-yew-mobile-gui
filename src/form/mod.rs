@@ -22,6 +22,9 @@ pub use qemu_cpu_model_selector::QemuCpuModelSelector;
 mod qemu_display_type_selector;
 pub use qemu_display_type_selector::{format_qemu_display_type, QemuDisplayTypeSelector};
 
+mod pve_guest_selector;
+pub use pve_guest_selector::PveGuestSelector;
+
 mod qemu_machine_version_selector;
 pub use qemu_machine_version_selector::QemuMachineVersionSelector;
 
