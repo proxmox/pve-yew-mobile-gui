@@ -32,8 +32,8 @@ use crate::form::{
     qemu_bios_property, qemu_cdrom_property, qemu_cpu_flags_property, qemu_disk_property,
     qemu_display_property, qemu_efidisk_property, qemu_kernel_scheduler_property,
     qemu_machine_property, qemu_memory_property, qemu_network_mtu_property, qemu_network_property,
-    qemu_scsihw_property, qemu_sockets_cores_property, qemu_unused_disk_property,
-    qemu_vmstate_property, typed_load,
+    qemu_scsihw_property, qemu_sockets_cores_property, qemu_tpmstate_property,
+    qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
 use crate::widgets::{
     label_field, pve_pending_config_array_to_objects, standard_card, EditDialog, EditableProperty,
@@ -568,10 +568,11 @@ impl PveQemuHardwarePanel {
             list.push(self.unused_disk_list_tile(ctx, &name, record, pending));
         }
 
-        if keys.contains("efidisk0") {
-            let property = qemu_efidisk_property(Some("efidisk0".into()), Some(props.node.clone()));
-            push_property_tile(&mut list, property, Fa::new("hdd-o"), false);
-        }
+        let property = qemu_efidisk_property(Some("edidisk0".into()), Some(props.node.clone()));
+        push_property_tile(&mut list, property, Fa::new("hdd-o"), false);
+
+        let property = qemu_tpmstate_property(Some("tpmstate0".into()), Some(props.node.clone()));
+        push_property_tile(&mut list, property, Fa::new("hdd-o"), false);
 
         List::from_tiles(list)
             .grid_template_columns("auto 1fr")
@@ -586,6 +587,7 @@ impl PveQemuHardwarePanel {
         let props = ctx.props();
 
         let has_efidisk = pending.get("efidisk0").is_some();
+        let has_tpmstate = pending.get("tpmstate0").is_some();
 
         let menu = Menu::new()
             .with_item({
@@ -618,6 +620,15 @@ impl PveQemuHardwarePanel {
                     .disabled(has_efidisk)
                     .on_select(ctx.link().callback({
                         let property = qemu_efidisk_property(None, Some(props.node.clone()));
+                        move |_| Msg::EditProperty(property.clone())
+                    }))
+            })
+            .with_item({
+                MenuItem::new(tr!("TPM State"))
+                    .icon_class("fa fa-hdd-o")
+                    .disabled(has_tpmstate)
+                    .on_select(ctx.link().callback({
+                        let property = qemu_tpmstate_property(None, Some(props.node.clone()));
                         move |_| Msg::EditProperty(property.clone())
                     }))
             });

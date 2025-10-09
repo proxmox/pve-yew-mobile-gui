@@ -99,7 +99,7 @@ impl Component for QemuEfidiskPanelComp {
     }
 }
 
-pub fn qemu_efidisk_property(name: Option<String>, node: Option<AttrValue>) -> EditableProperty {
+pub fn qemu_efidisk_property(name: Option<AttrValue>, node: Option<AttrValue>) -> EditableProperty {
     let title = tr!("EFI Disk");
     EditableProperty::new(name.clone(), title)
         .render_input_panel(move |state| {

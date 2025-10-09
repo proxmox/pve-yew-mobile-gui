@@ -45,6 +45,9 @@ pub use qemu_smbios1_property::qemu_smbios_property;
 mod qemu_spice_enhancement_property;
 pub use qemu_spice_enhancement_property::qemu_spice_enhancement_property;
 
+mod qemu_tpmstate_property;
+pub use qemu_tpmstate_property::qemu_tpmstate_property;
+
 mod qemu_amd_sev_property;
 pub use qemu_amd_sev_property::qemu_amd_sev_property;
 
