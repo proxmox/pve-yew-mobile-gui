@@ -1,12 +1,11 @@
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use anyhow::{bail, Error};
+use anyhow::Error;
 
 use gloo_timers::callback::Timeout;
 use proxmox_schema::property_string::PropertyString;
 use proxmox_yew_comp::{http_post, http_put, SafeConfirmDialog};
-use pwt::widget::form::Number;
 use serde_json::{json, Value};
 
 use yew::html::IntoEventCallback;
@@ -14,7 +13,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::widget::menu::{Menu, MenuButton, MenuItem};
-use pwt::widget::{Column, ConfirmDialog, Fa, List, ListTile};
+use pwt::widget::{ConfirmDialog, Fa, List, ListTile};
 use pwt::AsyncAbortGuard;
 use pwt::{prelude::*, AsyncPool};
 
@@ -35,10 +34,10 @@ use crate::form::{
     qemu_scsihw_property, qemu_sockets_cores_property, qemu_tpmstate_property,
     qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
-use crate::pages::page_qemu_status::qemu_move_disk_dialog;
+use crate::pages::page_qemu_status::{qemu_move_disk_dialog, qemu_resize_disk_dialog};
 use crate::widgets::{
-    label_field, pve_pending_config_array_to_objects, standard_card, EditDialog, EditableProperty,
-    PendingPropertyList, PropertyEditorState,
+    pve_pending_config_array_to_objects, standard_card, EditDialog, EditableProperty,
+    PendingPropertyList,
 };
 
 use pwt_macros::builder;
@@ -299,30 +298,10 @@ impl PveQemuHardwarePanel {
 
         let load_url = props.editor_url();
         let submit_url = props.resize_disk_url();
-        let title = tr!("Resize Disk");
 
-        EditDialog::new(title.clone() + " (" + name + ")")
-            .edit(false)
+        qemu_resize_disk_dialog(name, Some(props.node.clone()))
             .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
             .loader(typed_load::<QemuConfig>(load_url.clone()))
-            .submit_text(title.clone())
-            .submit_hook({
-                let disk = name.to_string();
-                move |state: PropertyEditorState| {
-                    let mut data = state.form_ctx.get_submit_data(); // get digest
-                    let incr = match state
-                        .form_ctx
-                        .read()
-                        .get_last_valid_value("_size_increment_")
-                    {
-                        Some(Value::Number(n)) => n.as_f64().unwrap_or(0.0),
-                        _ => bail!("invalid size increase - internal error"),
-                    };
-                    data["disk"] = disk.clone().into();
-                    data["size"] = format!("+{incr}G").into();
-                    Ok(data)
-                }
-            })
             .on_submit({
                 let on_start_command = props.on_start_command.clone();
                 move |v: Value| {
@@ -336,22 +315,6 @@ impl PveQemuHardwarePanel {
                         Ok(())
                     }
                 }
-            })
-            .renderer(|_| {
-                Column::new()
-                    .class(pwt::css::FlexFit)
-                    .gap(2)
-                    .with_child(label_field(
-                        tr!("Size Increment") + " (" + &tr!("GiB") + ")",
-                        Number::<f64>::new()
-                            .name("_size_increment_")
-                            .default(0.0)
-                            .min(0.0)
-                            .max(128.0 * 1024.0)
-                            .submit(false),
-                        true,
-                    ))
-                    .into()
             })
             .into()
     }
