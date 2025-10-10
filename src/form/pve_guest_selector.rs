@@ -15,9 +15,11 @@ use pwt::props::{FieldBuilder, LoadCallback, WidgetBuilder, WidgetStyleBuilder};
 use pwt::state::Store;
 use pwt::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use pwt::widget::form::{Selector, SelectorRenderArgs};
-use pwt::widget::GridPicker;
+use pwt::widget::{Fa, GridPicker, Row};
 
 use pwt_macros::{builder, widget};
+
+use crate::widgets::title_subtitle_column;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum PveGuestType {
@@ -92,9 +94,9 @@ impl PveGuestSelectorComp {
             };
             guest_list = guest_list
                 .into_iter()
-                .filter(move |item| item.ty == resource_type)
+                .filter(move |item| item.ty == resource_type && item.vmid.is_some())
                 .filter(move |item| match templates {
-                    None => true,
+                    None::<_> => true,
                     Some(false) => item.template != Some(true),
                     Some(true) => item.template == Some(true),
                 })
@@ -119,7 +121,7 @@ impl Component for PveGuestSelectorComp {
 
     fn create(ctx: &yew::Context<Self>) -> Self {
         Self {
-            store: Store::with_extract_key(|item: &ClusterResource| Key::from(item.id.as_str())),
+            store: Store::with_extract_key(|item: &ClusterResource| Key::from(item.vmid.unwrap())),
             load_callback: Self::create_load_callback(ctx),
         }
     }
@@ -184,23 +186,63 @@ impl Component for PveGuestSelectorComp {
 
 fn columns_mobile() -> Rc<Vec<DataTableHeader<ClusterResource>>> {
     Rc::new(vec![DataTableColumn::new(tr!("Id"))
-        .get_property(|entry: &ClusterResource| &entry.id)
+        .get_property(|entry: &ClusterResource| entry.vmid.as_ref().unwrap())
         .sort_order(true)
+        .render(|item: &ClusterResource| {
+            let icon = match item.ty {
+                ClusterResourceType::Qemu => "desktop",
+                ClusterResourceType::Lxc => "cube",
+                _ => "question",
+            };
+            let title = format!(
+                "{} {}",
+                item.vmid.unwrap(),
+                item.name.as_deref().unwrap_or("")
+            );
+            Row::new()
+                .class(pwt::css::AlignItems::Center)
+                .gap(2)
+                .with_child(Fa::new(icon).large_2x().class(
+                    (item.status.as_deref() == Some("running")).then(|| "pwt-color-primary"),
+                ))
+                .with_child(title_subtitle_column(title, item.node.clone()))
+                .with_flex_spacer()
+                .with_child(item.status.as_deref().unwrap_or("-"))
+                .into()
+        })
         .into()])
 }
 
 fn columns() -> Rc<Vec<DataTableHeader<ClusterResource>>> {
     Rc::new(vec![
         DataTableColumn::new(tr!("Id"))
-            .get_property(|entry: &ClusterResource| &entry.id)
+            .width("10em")
+            .get_property(|entry: &ClusterResource| entry.vmid.as_ref().unwrap())
             .sort_order(true)
             .into(),
         DataTableColumn::new(tr!("Name"))
-            .get_property(|entry: &ClusterResource| entry.name.as_deref().unwrap_or(""))
+            .flex(1)
+            .get_property(|entry: &ClusterResource| entry.name.as_deref().unwrap_or("-"))
+            .sort_order(true)
+            .into(),
+        DataTableColumn::new(tr!("Node"))
+            .get_property(|entry: &ClusterResource| entry.node.as_deref().unwrap_or("-"))
+            .sort_order(true)
+            .into(),
+        DataTableColumn::new(tr!("Status"))
+            .get_property(|entry: &ClusterResource| entry.status.as_deref().unwrap_or("-"))
             .sort_order(true)
             .into(),
         DataTableColumn::new(tr!("Type"))
-            .render(|entry: &ClusterResource| entry.ty.to_string().into())
+            .width("10em")
+            .render(|entry: &ClusterResource| {
+                match entry.ty {
+                    ClusterResourceType::Qemu => tr!("Virtual Machine"),
+                    ClusterResourceType::Lxc => tr!("LXC Container"),
+                    other => other.to_string(),
+                }
+                .into()
+            })
             .into(),
     ])
 }

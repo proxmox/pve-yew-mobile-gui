@@ -1,7 +1,7 @@
 use pwt::prelude::*;
 use pwt::widget::Column;
 
-use crate::form::{PveGuestSelector, QemuControllerSelector};
+use crate::form::{PveGuestSelector, PveGuestType, QemuControllerSelector};
 use crate::widgets::EditDialog;
 use crate::widgets::{label_field, PropertyEditorState};
 
@@ -26,7 +26,11 @@ pub fn qemu_reassign_disk_dialog(name: &str, _node: Option<AttrValue>) -> EditDi
                 .gap(2)
                 .with_child(label_field(
                     tr!("Target Guest"),
-                    PveGuestSelector::new().name("target-vmid"),
+                    PveGuestSelector::new()
+                        .name("target-vmid")
+                        .required(true)
+                        .guest_type(PveGuestType::Qemu)
+                        .mobile(true),
                     true,
                 ))
                 .with_child(label_field(
