@@ -252,7 +252,7 @@ pub fn qemu_unused_disk_property(name: &str, node: Option<AttrValue>) -> Editabl
         })
 }
 
-fn extract_used_devices(record: &Value) -> HashSet<String> {
+pub fn extract_used_devices(record: &Value) -> HashSet<String> {
     let mut list = HashSet::new();
     if let Some(map) = record.as_object() {
         for key in map.keys() {

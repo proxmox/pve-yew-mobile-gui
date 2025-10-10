@@ -1,12 +1,17 @@
+use std::collections::HashSet;
 use std::rc::Rc;
 
+use anyhow::Error;
+use proxmox_yew_comp::http_get;
+use serde_json::Value;
 use yew::virtual_dom::VComp;
 
 use pve_api_types::ClusterResource;
 
-use pwt::prelude::*;
 use pwt::widget::Column;
+use pwt::{prelude::*, AsyncAbortGuard};
 
+use crate::form::extract_used_devices;
 use crate::form::{PveGuestSelector, PveGuestType, QemuControllerSelector};
 use crate::widgets::{label_field, EditDialog, PropertyEditorState};
 
@@ -18,10 +23,13 @@ struct QemuReassignDiskPanel {
 
 enum Msg {
     Target(Option<ClusterResource>),
+    LoadResult(Result<Value, Error>),
 }
 
 struct QemuReassignDiskPanelComp {
     target: Option<ClusterResource>,
+    load_guard: Option<AsyncAbortGuard>,
+    used_devices: Option<HashSet<String>>,
 }
 
 impl Component for QemuReassignDiskPanelComp {
@@ -29,15 +37,44 @@ impl Component for QemuReassignDiskPanelComp {
     type Properties = QemuReassignDiskPanel;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self { target: None }
+        Self {
+            target: None,
+            load_guard: None,
+            used_devices: None,
+        }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::Target(target) => self.target = target,
+            Msg::Target(target) => {
+                self.target = target;
+                if let Some(ClusterResource {
+                    node: Some(node),
+                    vmid: Some(vmid),
+                    ..
+                }) = &self.target
+                {
+                    let url = super::QemuHardwarePanel::new(node.clone(), *vmid).editor_url();
+                    let link = ctx.link().clone();
+                    self.load_guard = Some(AsyncAbortGuard::spawn(async move {
+                        let result = http_get(&url, None).await;
+                        link.send_message(Msg::LoadResult(result));
+                    }));
+                }
+            }
+            Msg::LoadResult(result) => {
+                match result {
+                    Ok(data) => self.used_devices = Some(extract_used_devices(&data)),
+                    Err(err) => {
+                        log::error!("QemuReassignDiskPanel: load target config failed - {err}");
+                        self.used_devices = None;
+                    }
+                };
+            }
         }
         true
     }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         //let props = ctx.props();
         // let state = &props.state;
@@ -56,8 +93,9 @@ impl Component for QemuReassignDiskPanelComp {
             ))
             .with_child(label_field(
                 tr!("Bus/Device"),
-                QemuControllerSelector::new().name("target-disk"),
-                //.exclude_devices(used_devices),
+                QemuControllerSelector::new()
+                    .name("target-disk")
+                    .exclude_devices(self.used_devices.clone()),
                 true,
             ))
             .into()

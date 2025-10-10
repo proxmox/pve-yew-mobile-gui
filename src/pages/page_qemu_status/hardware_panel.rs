@@ -63,7 +63,7 @@ impl QemuHardwarePanel {
         })
     }
 
-    fn editor_url(&self) -> String {
+    pub(crate) fn editor_url(&self) -> String {
         format!(
             "/nodes/{}/qemu/{}/config",
             percent_encode_component(&self.node),

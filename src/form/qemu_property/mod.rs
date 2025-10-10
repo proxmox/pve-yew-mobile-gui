@@ -22,7 +22,9 @@ use crate::widgets::{EditableProperty, PropertyEditorState, RenderPropertyInputP
 use crate::QemuConfigStartup;
 
 mod qemu_disk_property;
-pub use qemu_disk_property::{qemu_cdrom_property, qemu_disk_property, qemu_unused_disk_property};
+pub use qemu_disk_property::{
+    extract_used_devices, qemu_cdrom_property, qemu_disk_property, qemu_unused_disk_property,
+};
 
 mod qemu_display_property;
 pub use qemu_display_property::qemu_display_property;
