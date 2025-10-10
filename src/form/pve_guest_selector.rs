@@ -44,6 +44,15 @@ pub struct PveGuestSelector {
     #[prop_or_default]
     pub guest_type: Option<PveGuestType>,
 
+    /// Include templates
+    ///
+    /// Some(false): do not include templates
+    /// Some(ture): olny list templates
+    /// None: include templates
+    #[builder]
+    #[prop_or(Some(false))]
+    pub templates: Option<bool>,
+
     /// If set, automatically selects the first value from the store (if no default is selected)
     #[builder]
     #[prop_or(false)]
@@ -69,6 +78,7 @@ pub struct PveGuestSelectorComp {
 impl PveGuestSelectorComp {
     async fn get_guest_list(
         guest_type: Option<PveGuestType>,
+        templates: Option<bool>,
     ) -> Result<Vec<ClusterResource>, Error> {
         let url = format!("/cluster/resources");
         let param = json!({ "type": ClusterResourceKind::Vm });
@@ -83,6 +93,11 @@ impl PveGuestSelectorComp {
             guest_list = guest_list
                 .into_iter()
                 .filter(move |item| item.ty == resource_type)
+                .filter(move |item| match templates {
+                    None => true,
+                    Some(false) => item.template != Some(true),
+                    Some(true) => item.template == Some(true),
+                })
                 .collect();
         }
 
@@ -93,7 +108,8 @@ impl PveGuestSelectorComp {
     fn create_load_callback(ctx: &yew::Context<Self>) -> LoadCallback<Vec<ClusterResource>> {
         let props = ctx.props();
         let guest_type = props.guest_type;
-        (move || Self::get_guest_list(guest_type)).into()
+        let templates = props.templates.clone();
+        (move || Self::get_guest_list(guest_type, templates)).into()
     }
 }
 
