@@ -37,6 +37,20 @@ impl QemuControllerSelector {
     pub fn new() -> Self {
         yew::props!(Self {})
     }
+
+    fn check_device_name(&self, device_name: &str) -> Result<(), Error> {
+        let (bus, _id) = parse_qemu_controller_name(device_name)?;
+        if bus == "virtio" && !self.allow_virtio {
+            // should not happen anyways...
+            bail!("virtio devices are not allowed here");
+        }
+        if let Some(exclude_devices) = &self.exclude_devices {
+            if exclude_devices.contains(device_name) {
+                bail!(tr!("device '{0}' name is already in use.", device_name));
+            }
+        }
+        Ok(())
+    }
 }
 
 pub struct QemuControllerSelectorField {
@@ -72,15 +86,7 @@ fn create_validator(props: &QemuControllerSelector, controller: &str) -> Validat
             bail!("no controller selected");
         }
         let device_name = format!("{}{}", controller, id);
-        let _ = parse_qemu_controller_name(&device_name)?;
-
-        if let Some(exclude_devices) = &props.exclude_devices {
-            if exclude_devices.contains(&device_name) {
-                bail!(tr!("device '{0}' name is already in use.", device_name));
-            }
-        }
-
-        Ok(())
+        props.check_device_name(&device_name)
     })
 }
 
@@ -93,9 +99,9 @@ impl ManagedField for QemuControllerSelectorField {
         props.clone()
     }
 
-    fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         match value {
-            Value::String(s) => parse_qemu_controller_name(s)?,
+            Value::String(s) => props.check_device_name(s)?,
             _ => {
                 // Note: We never show this error to the user. Instead, we use the number filed
                 // to show errors (see create_validator() above)
