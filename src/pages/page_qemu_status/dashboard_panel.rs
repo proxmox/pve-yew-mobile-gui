@@ -327,7 +327,20 @@ impl Component for PveQemuDashboardPanel {
                 let link = ctx.link().clone();
                 let url = get_status_url(&props.node, props.vmid, "current");
                 self.load_guard = Some(AsyncAbortGuard::spawn(async move {
-                    let result = http_get(&url, None).await;
+                    let result: Result<Value, _> = http_get(&url, None).await;
+                    let result = match result {
+                        Ok(mut data) => {
+                            // hack: The PVE api sometimes return Null for diskread/diskwrite
+                            // so we simply remove Null values...
+                            if let Value::Object(ref mut map) = &mut data {
+                                map.retain(|_k, v| v != &Value::Null);
+                            }
+                            let data = serde_json::from_value::<QemuStatus>(data)
+                                .map_err(|err| err.into());
+                            data
+                        }
+                        Err(err) => Err(err),
+                    };
                     link.send_message(Msg::LoadResult(result));
                 }));
             }
