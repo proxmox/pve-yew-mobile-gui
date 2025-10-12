@@ -96,6 +96,22 @@ impl QemuHardwarePanel {
     }
 }
 
+fn pve_pending_config_array_to_objects_typed(
+    data: Vec<QemuPendingConfigValue>,
+) -> Result<(Value, Value, HashSet<String>), Error> {
+    let (current, pending, keys) = pve_pending_config_array_to_objects(data)?;
+
+    // Note: PVE API sometime return numbers as string, and bool as 1/0
+
+    let current: QemuConfig = serde_json::from_value(current)?;
+    let current = serde_json::to_value(current)?;
+
+    let pending: QemuConfig = serde_json::from_value(pending)?;
+    let pending = serde_json::to_value(pending)?;
+
+    Ok((current, pending, keys))
+}
+
 pub enum Msg {
     Load,
     LoadResult(Result<Vec<QemuPendingConfigValue>, Error>),
@@ -783,7 +799,8 @@ impl Component for PveQemuHardwarePanel {
             Msg::LoadResult(result) => {
                 self.data = match result {
                     Ok(data) => Some(
-                        pve_pending_config_array_to_objects(data).map_err(|err| err.to_string()),
+                        pve_pending_config_array_to_objects_typed(data)
+                            .map_err(|err| err.to_string()),
                     ),
                     Err(err) => Some(Err(err.to_string())),
                 };
