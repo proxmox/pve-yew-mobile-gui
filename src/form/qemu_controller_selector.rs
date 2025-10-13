@@ -192,6 +192,7 @@ impl ManagedField for QemuControllerSelectorField {
         }
 
         Row::new()
+            .gap(1)
             .with_child(
                 Combobox::new()
                     .style("min-width", "0")
