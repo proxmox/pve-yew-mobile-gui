@@ -275,7 +275,7 @@ impl Component for PveStorageContentPanel {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         crate::widgets::render_loaded_data(&self.data, |data| {
-            if !data.is_empty() {
+            if data.is_empty() {
                 Container::new()
                     .padding(2)
                     .with_child(tr!("List is empty."))
