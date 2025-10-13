@@ -5,7 +5,7 @@ use proxmox_schema::property_string::PropertyString;
 use serde_json::Value;
 
 use pwt::prelude::*;
-use pwt::widget::form::{delete_empty_values, Number, RadioButton};
+use pwt::widget::form::{delete_empty_values, RadioButton};
 use pwt::widget::{Column, Container, Row};
 
 use pve_api_types::{
@@ -16,20 +16,18 @@ use pve_api_types::{
 const MEDIA_TYPE: &'static str = "_media_type_";
 const BUS_DEVICE: &'static str = "_device_";
 const IMAGE_STORAGE: &'static str = "_storage_";
-//const STORAGE_INFO: &'static str = "_storage_info_";
-const DISK_SIZE: &'static str = "_disk_size_";
 
 const FILE_PN: &'static str = "_file";
 
 use crate::form::pve_storage_content_selector::PveStorageContentSelector;
 use crate::form::{
     flatten_property_string, property_string_add_missing_data, property_string_from_parts,
-    QemuCacheTypeSelector, QemuControllerSelector,
+    QemuCacheTypeSelector, QemuControllerSelector, QemuDiskSizeFormatSelector,
 };
 use crate::form::{parse_qemu_controller_name, PveStorageSelector};
 
 use crate::widgets::{
-    label_field, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
+    label_field, label_widget, EditableProperty, PropertyEditorState, RenderPropertyInputPanelFn,
 };
 
 fn disk_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderPropertyInputPanelFn {
@@ -83,16 +81,9 @@ fn disk_input_panel(name: Option<String>, node: Option<AttrValue>) -> RenderProp
                 )
             }))
             .with_optional_child(is_create.then(|| {
-                label_field(
+                label_widget(
                     tr!("Disk size") + " (GiB)",
-                    Number::<f64>::new()
-                        .name(DISK_SIZE)
-                        .submit(false)
-                        .required(true)
-                        .min(0.001)
-                        .max(128.0 * 1024.0)
-                        .default(32.0),
-                    true,
+                    QemuDiskSizeFormatSelector::new().raw(false),
                 )
             }))
             /*
@@ -178,12 +169,23 @@ pub fn qemu_disk_property(name: Option<String>, node: Option<AttrValue>) -> Edit
 
                 if is_create {
                     let image_storage = form_ctx.read().get_field_text(IMAGE_STORAGE);
-                    let image_size = match form_ctx.read().get_last_valid_value(DISK_SIZE) {
+                    let image_size = match form_ctx
+                        .read()
+                        .get_last_valid_value(QemuDiskSizeFormatSelector::DISK_SIZE)
+                    {
                         Some(Value::Number(size)) => size.as_f64().unwrap(),
                         _ => bail!("got invalid disk size"),
                     };
                     let image = format!("{image_storage}:{image_size}");
                     data[FILE_PN] = image.into();
+
+                    let image_format = form_ctx
+                        .read()
+                        .get_field_text(QemuDiskSizeFormatSelector::DISK_FORMAT);
+
+                    if !image_format.is_empty() {
+                        data["_format"] = Value::String(image_format);
+                    }
                 }
 
                 let data = assemble_device_data(&state, &mut data, &device)?;

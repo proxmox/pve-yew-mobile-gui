@@ -19,6 +19,9 @@ pub use qemu_cpu_flags_list::QemuCpuFlags;
 mod qemu_cpu_model_selector;
 pub use qemu_cpu_model_selector::QemuCpuModelSelector;
 
+mod qemu_disk_size_format_selector;
+pub use qemu_disk_size_format_selector::QemuDiskSizeFormatSelector;
+
 mod qemu_display_type_selector;
 pub use qemu_display_type_selector::{format_qemu_display_type, QemuDisplayTypeSelector};
 
