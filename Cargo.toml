@@ -35,6 +35,7 @@ proxmox-serde = "1"
 pwt = "0.7.0"
 pwt-macros = "0.5"
 
+proxmox-apt-api-types = "2.0"
 pve-api-types = "8"
 proxmox-yew-comp = "0.6.0"
 

@@ -9,7 +9,8 @@ use pwt::widget::{Column, Container, Dialog, Fa, List};
 use pwt::AsyncAbortGuard;
 use pwt::{prelude::*, widget::ListTile};
 
-use proxmox_yew_comp::common_api_types::APTUpdateInfo;
+use proxmox_apt_api_types::APTUpdateInfo;
+
 use proxmox_yew_comp::layout::list_tile::title_subtitle_column;
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -44,8 +45,7 @@ impl PveNodeUpdatesPanel {
         let list: Vec<ListTile> = data
             .iter()
             .map(|s| {
-                let from = s.old_version.clone().unwrap_or(tr!("not installed"));
-                let version_info = format!("{from} -> {}", s.version);
+                let version_info = format!("{} -> {}", s.old_version, s.version);
 
                 ListTile::new()
                     .key(Key::from(s.package.clone()))
