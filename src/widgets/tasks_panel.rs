@@ -15,6 +15,7 @@ use pwt_macros::builder;
 // fixme: implement reload on scroll down
 
 use proxmox_yew_comp::http_get;
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::utils::{format_upid, render_epoch_short};
 
 use pve_api_types::ListTasksResponse;
@@ -138,7 +139,7 @@ impl Component for PveTasksPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| {
+        render_loaded_data(&self.data, |data| {
             if data.is_empty() {
                 Container::new()
                     .padding(2)

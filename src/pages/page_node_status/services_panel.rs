@@ -3,15 +3,16 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 
+use yew::virtual_dom::{VComp, VNode};
+
 use pwt::widget::{Column, Container, List};
 use pwt::AsyncAbortGuard;
 use pwt::{prelude::*, widget::ListTile};
 
+use proxmox_yew_comp::layout::list_tile::title_subtitle_column;
+use proxmox_yew_comp::layout::render_loaded_data;
+use proxmox_yew_comp::pve_api_types::ServiceStatus;
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
-use yew::virtual_dom::{VComp, VNode};
-
-use crate::api_types::ServiceStatus;
-use crate::widgets::title_subtitle_column;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct NodeServicesPanel {
@@ -133,7 +134,7 @@ impl Component for PveNodeServicesPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| {
+        render_loaded_data(&self.data, |data| {
             Column::new()
                 .class(pwt::css::FlexFit)
                 .with_child(self.view_service_summary(ctx, data))

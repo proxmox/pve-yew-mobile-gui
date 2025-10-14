@@ -3,16 +3,16 @@ use std::rc::Rc;
 use anyhow::Error;
 use gloo_timers::callback::Timeout;
 
+use yew::virtual_dom::{Key, VComp, VNode};
+
 use pwt::widget::{Column, Container, Dialog, Fa, List};
 use pwt::AsyncAbortGuard;
 use pwt::{prelude::*, widget::ListTile};
 
 use proxmox_yew_comp::common_api_types::APTUpdateInfo;
+use proxmox_yew_comp::layout::list_tile::title_subtitle_column;
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
-
-use yew::virtual_dom::{Key, VComp, VNode};
-
-use crate::widgets::title_subtitle_column;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct NodeUpdatesPanel {
@@ -111,7 +111,7 @@ impl Component for PveNodeUpdatesPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| {
+        render_loaded_data(&self.data, |data| {
             if data.is_empty() {
                 Container::new()
                     .padding(2)

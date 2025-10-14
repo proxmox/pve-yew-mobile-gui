@@ -13,7 +13,8 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::LxcConfig;
 
-use crate::widgets::icon_list_tile;
+use proxmox_yew_comp::layout::list_tile::icon_list_tile;
+use proxmox_yew_comp::layout::render_loaded_data;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct LxcResourcesPanel {
@@ -168,7 +169,7 @@ impl Component for PveLxcResourcesPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| {
+        render_loaded_data(&self.data, |data| {
             Column::new()
                 .gap(2)
                 .with_child(self.resource_info(ctx, data))

@@ -18,9 +18,10 @@ use pwt::widget::{ActionIcon, Card, Column, Fa, List, ListTile, Panel, Row, Trig
 use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::http_get;
-use pve_api_types::{ClusterResource, ClusterResourceType};
+use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage};
+use proxmox_yew_comp::layout::render_loaded_data;
 
-use crate::widgets::{icon_list_tile, list_tile_usage};
+use pve_api_types::{ClusterResource, ClusterResourceType};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageResources {}
@@ -432,9 +433,8 @@ impl Component for PvePageResources {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let content = RESOURCES.with_borrow(|r| {
-            crate::widgets::render_loaded_data(r, |data| self.create_resource_list(ctx, data))
-        });
+        let content = RESOURCES
+            .with_borrow(|r| render_loaded_data(r, |data| self.create_resource_list(ctx, data)));
 
         Column::new()
             .class("pwt-fit")

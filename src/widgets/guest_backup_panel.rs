@@ -12,11 +12,13 @@ use pwt::prelude::*;
 use pwt::widget::{Column, MiniScroll, Row};
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::layout::mobile_form::label_field;
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::{StorageContent, StorageInfo};
 
-use crate::widgets::{label_field, storage_card, StorageContentPanel};
+use crate::widgets::{storage_card, StorageContentPanel};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct GuestBackupPanel {
@@ -294,7 +296,7 @@ impl Component for PveGuestBackupPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.storage_list, |data| self.view_config(ctx, data))
+        render_loaded_data(&self.storage_list, |data| self.view_config(ctx, data))
     }
 }
 

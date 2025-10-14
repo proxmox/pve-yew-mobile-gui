@@ -19,7 +19,7 @@ use proxmox_yew_comp::{ApiLoadCallback, IntoApiLoadCallback};
 use pwt_macros::builder;
 
 use crate::widgets::{title_subtitle_column, EditDialog, EditableProperty, PropertyList};
-use crate::QemuPendingConfigValue;
+use proxmox_yew_comp::pve_api_types::QemuPendingConfigValue;
 
 #[derive(Properties, Clone, PartialEq)]
 #[builder]

@@ -6,14 +6,11 @@ use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
 
+use proxmox_yew_comp::form::typed_load;
 use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component};
+use proxmox_yew_comp::{EditableProperty, PendingPropertyList};
 
 use pve_api_types::QemuConfig;
-
-use crate::{
-    form::typed_load,
-    widgets::{EditableProperty, PendingPropertyList},
-};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct QemuConfigPanel {
@@ -39,24 +36,24 @@ impl PveQemuConfigPanel {
         let props = ctx.props();
 
         Rc::new(vec![
-            crate::form::qemu_onboot_property(),
-            crate::form::qemu_tablet_property(),
-            crate::form::qemu_acpi_property(),
-            crate::form::qemu_kvm_property(),
-            crate::form::qemu_freeze_property(),
-            crate::form::qemu_localtime_property(),
-            crate::form::qemu_protection_property(),
-            crate::form::qemu_name_property(props.vmid),
-            crate::form::qemu_ostype_property(),
-            crate::form::qemu_startup_property(),
-            crate::form::qemu_boot_property(),
-            crate::form::qemu_hotplug_property(),
-            crate::form::qemu_startdate_property(),
-            crate::form::qemu_smbios_property(),
-            crate::form::qemu_agent_property(),
-            crate::form::qemu_spice_enhancement_property(),
-            crate::form::qemu_vmstatestorage_property(&props.node),
-            crate::form::qemu_amd_sev_property(),
+            proxmox_yew_comp::form::pve::qemu_onboot_property(),
+            proxmox_yew_comp::form::pve::qemu_tablet_property(),
+            proxmox_yew_comp::form::pve::qemu_acpi_property(),
+            proxmox_yew_comp::form::pve::qemu_kvm_property(),
+            proxmox_yew_comp::form::pve::qemu_freeze_property(),
+            proxmox_yew_comp::form::pve::qemu_localtime_property(),
+            proxmox_yew_comp::form::pve::qemu_protection_property(),
+            proxmox_yew_comp::form::pve::qemu_name_property(props.vmid),
+            proxmox_yew_comp::form::pve::qemu_ostype_property(),
+            proxmox_yew_comp::form::pve::qemu_startup_property(),
+            proxmox_yew_comp::form::pve::qemu_boot_property(),
+            proxmox_yew_comp::form::pve::qemu_hotplug_property(),
+            proxmox_yew_comp::form::pve::qemu_startdate_property(),
+            proxmox_yew_comp::form::pve::qemu_smbios_property(),
+            proxmox_yew_comp::form::pve::qemu_agent_property(),
+            proxmox_yew_comp::form::pve::qemu_spice_enhancement_property(),
+            proxmox_yew_comp::form::pve::qemu_vmstatestorage_property(&props.node),
+            proxmox_yew_comp::form::pve::qemu_amd_sev_property(),
         ])
     }
 }

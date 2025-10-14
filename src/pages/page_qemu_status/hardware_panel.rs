@@ -26,21 +26,20 @@ use pve_api_types::{
     QemuConfigVirtioArray,
 };
 
-use crate::api_types::QemuPendingConfigValue;
-use crate::form::{
+use crate::pages::page_qemu_status::{
+    qemu_move_disk_dialog, qemu_reassign_disk_dialog, qemu_resize_disk_dialog,
+};
+use proxmox_yew_comp::form::pve::{
     qemu_bios_property, qemu_cdrom_property, qemu_cpu_flags_property, qemu_disk_property,
     qemu_display_property, qemu_efidisk_property, qemu_kernel_scheduler_property,
     qemu_machine_property, qemu_memory_property, qemu_network_mtu_property, qemu_network_property,
     qemu_scsihw_property, qemu_sockets_cores_property, qemu_tpmstate_property,
     qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
-use crate::pages::page_qemu_status::{
-    qemu_move_disk_dialog, qemu_reassign_disk_dialog, qemu_resize_disk_dialog,
-};
-use crate::widgets::{
-    pve_pending_config_array_to_objects, standard_card, EditDialog, EditableProperty,
-    PendingPropertyList,
-};
+use proxmox_yew_comp::pve_api_types::QemuPendingConfigValue;
+use proxmox_yew_comp::{EditDialog, EditableProperty, PendingPropertyList};
+
+use crate::widgets::standard_card;
 
 use pwt_macros::builder;
 
@@ -99,7 +98,7 @@ impl QemuHardwarePanel {
 fn pve_pending_config_array_to_objects_typed(
     data: Vec<QemuPendingConfigValue>,
 ) -> Result<(Value, Value, HashSet<String>), Error> {
-    let (current, pending, keys) = pve_pending_config_array_to_objects(data)?;
+    let (current, pending, keys) = PendingPropertyList::pve_pending_config_array_to_objects(data)?;
 
     // Note: PVE API sometime return numbers as string, and bool as 1/0
 

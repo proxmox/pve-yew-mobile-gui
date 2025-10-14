@@ -13,11 +13,11 @@ use pwt::widget::{List, ListTile};
 
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::layout::list_tile::form_list_tile;
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, http_put, percent_encoding::percent_encode_component};
 
 use pve_api_types::LxcConfig;
-
-use crate::widgets::form_list_tile;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct LxcConfigPanel {
@@ -226,7 +226,7 @@ impl Component for PveLxcConfigPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| self.view_config(ctx, data))
+        render_loaded_data(&self.data, |data| self.view_config(ctx, data))
     }
 }
 

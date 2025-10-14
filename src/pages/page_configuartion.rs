@@ -6,12 +6,12 @@ use yew_router::scope_ext::RouterScopeExt;
 use pwt::prelude::*;
 use pwt::widget::{Column, Fa, List};
 
-use crate::widgets::TopNavBar;
-
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageConfiguration {}
 
-use crate::widgets::icon_list_tile;
+use proxmox_yew_comp::layout::list_tile::icon_list_tile;
+
+use crate::widgets::TopNavBar;
 use crate::Route;
 
 impl PageConfiguration {

@@ -11,9 +11,11 @@ use pve_api_types::ClusterResource;
 use pwt::widget::Column;
 use pwt::{prelude::*, AsyncAbortGuard};
 
-use crate::form::extract_used_devices;
-use crate::form::{PveGuestSelector, PveGuestType, QemuControllerSelector};
-use crate::widgets::{label_field, EditDialog, PropertyEditorState};
+use proxmox_yew_comp::form::pve::{
+    extract_used_devices, PveGuestSelector, PveGuestType, QemuControllerSelector,
+};
+use proxmox_yew_comp::layout::mobile_form::label_field;
+use proxmox_yew_comp::{EditDialog, PropertyEditorState};
 
 #[derive(PartialEq, Properties, Clone)]
 struct QemuReassignDiskPanel {

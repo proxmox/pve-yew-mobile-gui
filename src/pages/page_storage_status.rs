@@ -10,6 +10,7 @@ use pwt::{prelude::*, AsyncAbortGuard};
 
 use crate::widgets::{storage_card, StorageContentPanel, TopNavBar};
 
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 #[derive(Clone, PartialEq, Properties)]
@@ -97,9 +98,8 @@ impl Component for PvePageStorageStatus {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let content: Html = crate::widgets::render_loaded_data(&self.status, |status| {
-            self.view_status(ctx, status)
-        });
+        let content: Html =
+            render_loaded_data(&self.status, |status| self.view_status(ctx, status));
 
         Column::new()
             .class("pwt-fit")

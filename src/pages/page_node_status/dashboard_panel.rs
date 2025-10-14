@@ -14,11 +14,13 @@ use pwt::prelude::*;
 use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage};
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component, XTermJs};
 
 use pve_api_types::NodeStatus;
 
-use crate::widgets::{icon_list_tile, list_tile_usage, TasksListButton};
+use crate::widgets::TasksListButton;
 
 //use super::NodeResourcesPanel;
 
@@ -215,7 +217,7 @@ impl Component for PveNodeDashboardPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| {
+        render_loaded_data(&self.data, |data| {
             Column::new()
                 .class(pwt::css::FlexFit)
                 .padding(2)

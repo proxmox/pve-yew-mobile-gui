@@ -14,13 +14,15 @@ use pwt::touch::MaterialAppScopeExt;
 use pwt::widget::{Column, Container, Dialog, Fa, List, ListTile, Row, Trigger};
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::layout::list_tile::icon_list_tile;
+use proxmox_yew_comp::layout::render_loaded_data;
+
 use proxmox_yew_comp::{http_delete_get, http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::StorageContent;
 
-use crate::widgets::icon_list_tile;
 use crate::widgets::VolumeActionDialog;
-use crate::StorageEntry;
+use proxmox_yew_comp::pve_api_types::StorageEntry;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct StorageContentPanel {
@@ -274,7 +276,7 @@ impl Component for PveStorageContentPanel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        crate::widgets::render_loaded_data(&self.data, |data| {
+        render_loaded_data(&self.data, |data| {
             if data.is_empty() {
                 Container::new()
                     .padding(2)

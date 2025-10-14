@@ -12,7 +12,7 @@ use pwt_macros::builder;
 
 use proxmox_yew_comp::ConfirmButton;
 
-use crate::StorageEntry;
+use proxmox_yew_comp::pve_api_types::StorageEntry;
 
 #[derive(Clone, PartialEq, Properties)]
 #[builder]

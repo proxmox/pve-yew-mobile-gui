@@ -16,6 +16,8 @@ use pwt::widget::{
 };
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage, standard_list_tile};
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::utils::lookup_task_description;
 use proxmox_yew_comp::{
     http_get, http_post, percent_encoding::percent_encode_component, ConsoleType, XTermJs,
@@ -23,7 +25,7 @@ use proxmox_yew_comp::{
 
 use pve_api_types::{IsRunning, QemuStatus};
 
-use crate::widgets::{icon_list_tile, list_tile_usage, standard_list_tile, TasksListButton};
+use crate::widgets::TasksListButton;
 
 use super::QemuHardwarePanel;
 
@@ -371,7 +373,7 @@ impl Component for PveQemuDashboardPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        crate::widgets::render_loaded_data(&self.data, |data| {
+        render_loaded_data(&self.data, |data| {
             let confirm_dialog =
                 self.confirm_vm_command
                     .as_ref()

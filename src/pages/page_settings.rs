@@ -9,7 +9,7 @@ use pwt::prelude::*;
 
 use pwt::widget::{Column, LanguageSelector, ThemeDensitySelector, ThemeNameSelector};
 
-use crate::widgets::label_widget;
+use proxmox_yew_comp::layout::mobile_form::label_widget;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageSettings {}

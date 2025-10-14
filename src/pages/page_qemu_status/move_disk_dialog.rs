@@ -6,11 +6,9 @@ use pwt::{prelude::*, widget::form::Checkbox};
 use pve_api_types::{StorageContent, StorageInfo};
 use yew::virtual_dom::VComp;
 
-use crate::widgets::EditDialog;
-use crate::{
-    form::{qemu_image_format_selector, PveStorageSelector},
-    widgets::{label_field, PropertyEditorState},
-};
+use proxmox_yew_comp::form::pve::{qemu_image_format_selector, PveStorageSelector};
+use proxmox_yew_comp::layout::mobile_form::label_field;
+use proxmox_yew_comp::{EditDialog, PropertyEditorState};
 
 #[derive(PartialEq, Properties, Clone)]
 struct QemuMoveDiskPanel {

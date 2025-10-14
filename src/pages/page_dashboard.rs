@@ -15,10 +15,12 @@ use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
 };
 
+use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage};
+use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, SubscriptionAlert};
 
 use crate::pages::ResourceFilter;
-use crate::widgets::{icon_list_tile, list_tile_usage, TopNavBar};
+use crate::widgets::TopNavBar;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageDashboard {}
@@ -89,7 +91,7 @@ impl PvePageDashboard {
                 (Some(Err(err)), _) | (_, Some(Err(err))) => Some(Err(err)),
                 (None, _) | (_, None) => None,
             };
-            crate::widgets::render_loaded_data(&data, |(node_list, resource_list)| {
+            render_loaded_data(&data, |(node_list, resource_list)| {
                 let mut cpu = 0.0;
                 let mut maxcpu = 0;
                 let mut mem = 0.0;
@@ -186,7 +188,7 @@ impl PvePageDashboard {
 
     fn create_nodes_card(&self, ctx: &Context<Self>) -> Html {
         let content: Html = CACHE.with_borrow(|cache| {
-            crate::widgets::render_loaded_data(&cache.nodes, |nodes| {
+            render_loaded_data(&cache.nodes, |nodes| {
                 let nodes: Vec<ClusterNodeIndexResponse> = nodes.clone();
                 let navigator = ctx.link().navigator().clone().unwrap();
                 List::new(nodes.len() as u64, move |pos| {
@@ -241,7 +243,7 @@ impl PvePageDashboard {
 
     fn create_guests_card(&self, ctx: &Context<Self>) -> Html {
         let content: Html = CACHE.with_borrow(|cache| {
-            crate::widgets::render_loaded_data(&cache.resources, |list| {
+            render_loaded_data(&cache.resources, |list| {
                 let mut vm_count = 0;
                 let mut vm_online_count = 0;
                 let mut ct_count = 0;

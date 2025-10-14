@@ -5,8 +5,8 @@ use pwt::prelude::*;
 use pwt::widget::form::Number;
 use pwt::widget::Column;
 
-use crate::widgets::EditDialog;
-use crate::widgets::{label_field, PropertyEditorState};
+use proxmox_yew_comp::layout::mobile_form::label_field;
+use proxmox_yew_comp::{EditDialog, PropertyEditorState};
 
 pub fn qemu_resize_disk_dialog(name: &str, _node: Option<AttrValue>) -> EditDialog {
     let title = tr!("Resize Disk");
