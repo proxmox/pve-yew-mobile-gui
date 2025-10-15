@@ -73,9 +73,9 @@ impl PveNodeServicesPanel {
         });
 
         let msg = if all_running {
-            tr!("All required services running")
+            tr!("All required services are running")
         } else {
-            tr!("One or more required services not running")
+            tr!("One or more required services is not running")
         };
 
         title_subtitle_column(msg, None::<&str>).padding(2).into()

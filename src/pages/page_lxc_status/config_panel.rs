@@ -139,7 +139,7 @@ impl PveLxcConfigPanel {
         ));
 
         list.push(form_list_tile(
-            tr!("Unpriviledged"),
+            tr!("Unprivileged"),
             data.unprivileged.unwrap_or(false).to_string(),
             None::<&str>,
         ));
