@@ -6,12 +6,12 @@ use pwt::widget::form::Number;
 use pwt::widget::Column;
 
 use proxmox_yew_comp::layout::mobile_form::label_field;
-use proxmox_yew_comp::{EditDialog, PropertyEditorState};
+use proxmox_yew_comp::{PropertyEditDialog, PropertyEditorState};
 
-pub fn qemu_resize_disk_dialog(name: &str, _node: Option<AttrValue>) -> EditDialog {
+pub fn qemu_resize_disk_dialog(name: &str, _node: Option<AttrValue>) -> PropertyEditDialog {
     let title = tr!("Resize Disk");
 
-    EditDialog::new(title.clone() + " (" + name + ")")
+    PropertyEditDialog::new(title.clone() + " (" + name + ")")
         .edit(false)
         .submit_text(title.clone())
         .submit_hook({

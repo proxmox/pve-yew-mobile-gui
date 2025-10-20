@@ -15,7 +15,7 @@ use proxmox_yew_comp::form::pve::{
     extract_used_devices, PveGuestSelector, PveGuestType, QemuControllerSelector,
 };
 use proxmox_yew_comp::layout::mobile_form::label_field;
-use proxmox_yew_comp::{EditDialog, PropertyEditorState};
+use proxmox_yew_comp::{PropertyEditDialog, PropertyEditorState};
 
 #[derive(PartialEq, Properties, Clone)]
 struct QemuReassignDiskPanel {
@@ -104,10 +104,10 @@ impl Component for QemuReassignDiskPanelComp {
     }
 }
 
-pub fn qemu_reassign_disk_dialog(name: &str, node: Option<AttrValue>) -> EditDialog {
+pub fn qemu_reassign_disk_dialog(name: &str, node: Option<AttrValue>) -> PropertyEditDialog {
     let title = tr!("Reassign Disk");
 
-    EditDialog::new(title.clone() + " (" + name + ")")
+    PropertyEditDialog::new(title.clone() + " (" + name + ")")
         .edit(false)
         .submit_text(title.clone())
         .submit_hook({

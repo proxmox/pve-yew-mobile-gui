@@ -37,7 +37,7 @@ use proxmox_yew_comp::form::pve::{
     qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
 use proxmox_yew_comp::pve_api_types::QemuPendingConfigValue;
-use proxmox_yew_comp::{EditDialog, EditableProperty, PendingPropertyList};
+use proxmox_yew_comp::{EditableProperty, PendingPropertyList, PropertyEditDialog};
 
 use crate::widgets::standard_card;
 
@@ -779,7 +779,7 @@ impl Component for PveQemuHardwarePanel {
                 } else {
                     false
                 };
-                let dialog = EditDialog::from(property.clone())
+                let dialog = PropertyEditDialog::from(property.clone())
                     .edit(is_edit)
                     .on_done(ctx.link().callback(|_| Msg::Dialog(None)))
                     .loader(typed_load::<QemuConfig>(url.clone()))
