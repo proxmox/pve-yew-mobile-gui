@@ -36,8 +36,11 @@ use proxmox_yew_comp::form::pve::{
     qemu_scsihw_property, qemu_sockets_cores_property, qemu_tpmstate_property,
     qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
+use proxmox_yew_comp::pending_property_view::{
+    pve_pending_config_array_to_objects, PendingPropertyList,
+};
 use proxmox_yew_comp::pve_api_types::QemuPendingConfigValue;
-use proxmox_yew_comp::{EditableProperty, PendingPropertyList, PropertyEditDialog};
+use proxmox_yew_comp::{EditableProperty, PropertyEditDialog};
 
 use crate::widgets::standard_card;
 
@@ -98,7 +101,7 @@ impl QemuHardwarePanel {
 fn pve_pending_config_array_to_objects_typed(
     data: Vec<QemuPendingConfigValue>,
 ) -> Result<(Value, Value, HashSet<String>), Error> {
-    let (current, pending, keys) = PendingPropertyList::pve_pending_config_array_to_objects(data)?;
+    let (current, pending, keys) = pve_pending_config_array_to_objects(data)?;
 
     // Note: PVE API sometime return numbers as string, and bool as 1/0
 

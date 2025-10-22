@@ -7,8 +7,9 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 
 use proxmox_yew_comp::form::typed_load;
+use proxmox_yew_comp::pending_property_view::PendingPropertyList;
+use proxmox_yew_comp::EditableProperty;
 use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component};
-use proxmox_yew_comp::{EditableProperty, PendingPropertyGrid, PendingPropertyList};
 
 use pve_api_types::QemuConfig;
 
