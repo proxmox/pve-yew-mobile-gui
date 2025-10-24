@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use pwt::prelude::*;
 
 use proxmox_yew_comp::form::typed_load;
-use proxmox_yew_comp::pending_property_view::PendingPropertyList;
+use proxmox_yew_comp::pending_property_view::{pending_typed_load, PendingPropertyList};
 use proxmox_yew_comp::EditableProperty;
 use proxmox_yew_comp::{http_put, percent_encoding::percent_encode_component};
 
@@ -85,7 +85,7 @@ impl Component for PveQemuConfigPanel {
         );
         PendingPropertyList::new(Rc::clone(&self.properties))
             .class(pwt::css::FlexFit)
-            .pending_loader(pending_url)
+            .pending_loader(pending_typed_load::<QemuConfig>(pending_url))
             .editor_loader(typed_load::<QemuConfig>(editor_url.clone()))
             .on_submit(move |value: Value| http_put(editor_url.clone(), Some(value)))
             .into()
