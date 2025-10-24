@@ -1,9 +1,6 @@
 mod hardware_panel;
 pub use hardware_panel::QemuHardwarePanel;
 
-mod config_panel;
-pub use config_panel::QemuConfigPanel;
-
 mod dashboard_panel;
 pub use dashboard_panel::QemuDashboardPanel;
 
@@ -29,6 +26,8 @@ use pwt::prelude::*;
 use pwt::widget::{Column, TabBar, TabBarItem};
 
 use crate::widgets::{GuestBackupPanel, TopNavBar};
+
+use proxmox_yew_comp::configuration::pve::QemuOptionsPanel;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageQemuStatus {
@@ -99,7 +98,9 @@ impl Component for PvePageQemuStatus {
             ),
             ViewState::Options => (
                 "options",
-                QemuConfigPanel::new(props.node.clone(), props.vmid).into(),
+                QemuOptionsPanel::new(props.node.clone(), props.vmid)
+                    .mobile(true)
+                    .into(),
             ),
         };
 
