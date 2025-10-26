@@ -15,6 +15,7 @@ use pve_api_types::{
     ClusterNodeIndexResponse, ClusterNodeIndexResponseStatus, ClusterResource, ClusterResourceType,
 };
 
+use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage};
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, SubscriptionAlert};
@@ -177,7 +178,7 @@ impl PvePageDashboard {
             _ => 1,
         });
 
-        crate::widgets::standard_card(
+        standard_card(
             tr!("Analytics"),
             format!("Usage across all ({node_count}) online nodes."),
             (),
@@ -224,7 +225,7 @@ impl PvePageDashboard {
             })
         });
 
-        crate::widgets::standard_card(tr!("Nodes"), (), ())
+        standard_card(tr!("Nodes"), (), ())
             .with_child(content)
             .class("pwt-interactive")
             .onclick(Callback::from({
@@ -342,7 +343,7 @@ impl PvePageDashboard {
             })
         });
 
-        crate::widgets::standard_card(tr!("Resources"), (), ())
+        standard_card(tr!("Resources"), (), ())
             .class("pwt-interactive")
             .with_child(content)
             .onclick({

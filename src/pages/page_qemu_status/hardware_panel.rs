@@ -30,6 +30,7 @@ use proxmox_yew_comp::form::pve::{
     qemu_scsihw_property, qemu_sockets_cores_property, qemu_tpmstate_property,
     qemu_unused_disk_property, qemu_vmstate_property, typed_load,
 };
+use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::pending_property_view::{
     pending_typed_load, PendingPropertyList, PendingPropertyView, PendingPropertyViewMsg,
     PendingPropertyViewState, PvePendingConfiguration, PvePendingPropertyView,
@@ -41,7 +42,6 @@ use pwt_macros::builder;
 use crate::pages::page_qemu_status::{
     qemu_move_disk_dialog, qemu_reassign_disk_dialog, qemu_resize_disk_dialog,
 };
-use crate::widgets::standard_card;
 
 #[derive(Clone, PartialEq, Properties)]
 #[builder]

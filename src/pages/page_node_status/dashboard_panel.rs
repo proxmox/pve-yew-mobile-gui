@@ -14,6 +14,7 @@ use pwt::prelude::*;
 use pwt::widget::{Button, Column, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row};
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage};
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, http_post, percent_encoding::percent_encode_component, XTermJs};
@@ -117,7 +118,7 @@ impl PveNodeDashboardPanel {
 
         let status = List::from_tiles(tiles).grid_template_columns("auto 1fr auto");
 
-        crate::widgets::standard_card(tr!("Summary"), data.pveversion.clone(), ())
+        standard_card(tr!("Summary"), data.pveversion.clone(), ())
             .with_child(status)
             .into()
     }

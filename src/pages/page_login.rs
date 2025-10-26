@@ -9,6 +9,7 @@ use pwt::widget::{Button, Column, Container, Row};
 
 use crate::widgets::TopNavBar;
 
+use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::LoginPanel;
 
 use proxmox_login::Authentication;
@@ -68,7 +69,7 @@ impl Component for PvePageLogin {
         };
 
         let content: Html = if let Some(consent_text) = consent_text {
-            let card = crate::widgets::standard_card(tr!("Consent"), (), ())
+            let card = standard_card(tr!("Consent"), (), ())
                 .class("pwt-scheme-neutral")
                 .with_child(
                     Column::new()

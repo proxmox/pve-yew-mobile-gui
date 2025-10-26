@@ -1,17 +1,5 @@
-mod hardware_panel;
-pub use hardware_panel::QemuHardwarePanel;
-
 mod dashboard_panel;
 pub use dashboard_panel::QemuDashboardPanel;
-
-mod move_disk_dialog;
-pub use move_disk_dialog::qemu_move_disk_dialog;
-
-mod reassign_disk_dialog;
-pub use reassign_disk_dialog::qemu_reassign_disk_dialog;
-
-mod resize_disk_dialog;
-pub use resize_disk_dialog::qemu_resize_disk_dialog;
 
 use std::rc::Rc;
 

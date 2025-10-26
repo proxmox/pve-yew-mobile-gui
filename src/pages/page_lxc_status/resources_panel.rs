@@ -13,6 +13,7 @@ use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
 
 use pve_api_types::LxcConfig;
 
+use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::layout::list_tile::icon_list_tile;
 use proxmox_yew_comp::layout::render_loaded_data;
 
@@ -80,7 +81,7 @@ impl PveLxcResourcesPanel {
             (),
         ));
 
-        crate::widgets::standard_card(tr!("Resources"), (), ())
+        standard_card(tr!("Resources"), (), ())
             .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }
@@ -97,7 +98,7 @@ impl PveLxcResourcesPanel {
             ));
         }
 
-        crate::widgets::standard_card(tr!("Network"), (), ())
+        standard_card(tr!("Network"), (), ())
             .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }
@@ -121,7 +122,7 @@ impl PveLxcResourcesPanel {
             (),
         ));
 
-        crate::widgets::standard_card(tr!("DNS"), (), ())
+        standard_card(tr!("DNS"), (), ())
             .with_child(List::from_tiles(list).grid_template_columns("auto 1fr auto"))
             .into()
     }

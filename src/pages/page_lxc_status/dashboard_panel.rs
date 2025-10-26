@@ -15,6 +15,7 @@ use pwt::widget::{
 };
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage, standard_list_tile};
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::utils::lookup_task_description;
@@ -183,7 +184,7 @@ impl PveLxcDashboardPanel {
 
         let status = List::from_tiles(tiles).grid_template_columns("auto 1fr auto");
 
-        crate::widgets::standard_card(tr!("Status"), (), ())
+        standard_card(tr!("Status"), (), ())
             .with_child(status)
             .into()
     }

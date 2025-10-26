@@ -16,6 +16,8 @@ use pwt::widget::{
 };
 use pwt::AsyncAbortGuard;
 
+use proxmox_yew_comp::configuration::pve::QemuHardwarePanel;
+use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage, standard_list_tile};
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::utils::lookup_task_description;
@@ -26,8 +28,6 @@ use proxmox_yew_comp::{
 use pve_api_types::{IsRunning, QemuStatus};
 
 use crate::widgets::TasksListButton;
-
-use super::QemuHardwarePanel;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct QemuDashboardPanel {
@@ -67,6 +67,7 @@ pub enum Msg {
     Load,
     LoadResult(Result<QemuStatus, Error>),
     CommandResult(Result<String, Error>),
+    StartCommand(String),
     Confirm(ConfirmableCommands),
     CloseDialog,
     VmCommand((String, Option<Value>)),
@@ -193,7 +194,7 @@ impl PveQemuDashboardPanel {
 
         let status = List::from_tiles(tiles).grid_template_columns("auto 1fr auto");
 
-        crate::widgets::standard_card(tr!("Status"), (), ())
+        standard_card(tr!("Status"), (), ())
             .with_child(status)
             .into()
     }
@@ -356,6 +357,7 @@ impl Component for PveQemuDashboardPanel {
             Msg::VmCommand((ref command_str, ref param)) => {
                 self.vm_command(ctx, command_str, param.clone())
             }
+            Msg::StartCommand(upid) => self.running_upid = Some(upid),
             Msg::CommandResult(result) => match result {
                 Ok(upid) => {
                     self.running_upid = Some(upid);
@@ -399,7 +401,8 @@ impl Component for PveQemuDashboardPanel {
                 .with_child(self.task_button(ctx))
                 .with_child(
                     QemuHardwarePanel::new(props.node.clone(), props.vmid)
-                        .on_start_command(ctx.link().callback(Msg::CommandResult)),
+                        .mobile(true)
+                        .on_start_command(ctx.link().callback(Msg::StartCommand)),
                 )
                 .with_optional_child(confirm_dialog)
                 .into()
