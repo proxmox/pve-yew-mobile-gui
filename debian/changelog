@@ -1,3 +1,19 @@
+pve-yew-mobile-gui (0.6.3) trixie; urgency=medium
+
+  * depend on proxmox-yew-com 0.6.7 and pwt 0.7.6
+  * use qemu hardware panel from proxmox-yew-comp, set to readonly mode
+  * use QemuOptionsPanel from proxmox_yew_comp
+  * depend on proxmox-apt-api-types
+  * moved pve fields/selector implementation to proxmox-yew-comp
+  * StorageContentPanel: fix logic to detect empty list
+  * update pwt-assets
+  * remove pspn() mess
+  * use pve-api-types debian package
+  * make qemu options editable
+  * fix submodules paths to work with git.proxmox.com
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 06 Nov 2025 12:37:38 +0100
+
 pve-yew-mobile-gui (0.6.2) trixie; urgency=medium
 
   * add version to theme url css files
