@@ -5,12 +5,12 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::prelude::*;
-use pwt::widget::{Button, Column, Container, Row};
+use pwt::widget::{Button, Column, Row};
 
 use crate::widgets::TopNavBar;
 
 use proxmox_yew_comp::layout::card::standard_card;
-use proxmox_yew_comp::LoginPanel;
+use proxmox_yew_comp::{LoginPanel, Markdown};
 
 use proxmox_login::Authentication;
 
@@ -75,7 +75,7 @@ impl Component for PvePageLogin {
                     Column::new()
                         .padding(2)
                         .gap(2)
-                        .with_child(Container::from_tag("p").with_child(consent_text))
+                        .with_child(Markdown::new().text(consent_text))
                         .with_child(
                             Row::new().with_flex_spacer().with_child(
                                 Button::new(tr!("OK"))
