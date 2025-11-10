@@ -10,6 +10,7 @@ use pwt::widget::{Button, Column, Row};
 use crate::widgets::TopNavBar;
 
 use proxmox_yew_comp::layout::card::standard_card;
+use proxmox_yew_comp::utils::openid_redirection_authorization;
 use proxmox_yew_comp::{LoginPanel, Markdown};
 
 use proxmox_login::Authentication;
@@ -68,7 +69,9 @@ impl Component for PvePageLogin {
             props.consent_text.as_ref().filter(|t| !t.is_empty())
         };
 
-        let content: Html = if let Some(consent_text) = consent_text {
+        let content: Html = if let Some(consent_text) = consent_text
+            && openid_redirection_authorization().is_none()
+        {
             let card = standard_card(tr!("Consent"), (), ())
                 .class("pwt-scheme-neutral")
                 .with_child(
