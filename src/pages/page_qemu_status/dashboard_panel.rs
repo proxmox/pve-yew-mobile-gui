@@ -335,7 +335,7 @@ impl Component for PveQemuDashboardPanel {
                         Ok(mut data) => {
                             // hack: The PVE api sometimes return Null for diskread/diskwrite
                             // so we simply remove Null values...
-                            if let Value::Object(ref mut map) = &mut data {
+                            if let Value::Object(map) = &mut data {
                                 map.retain(|_k, v| v != &Value::Null);
                             }
                             let data = serde_json::from_value::<QemuStatus>(data)
