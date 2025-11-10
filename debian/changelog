@@ -1,18 +1,23 @@
 pve-yew-mobile-gui (0.6.3) trixie; urgency=medium
 
-  * depend on proxmox-yew-com 0.6.7 and pwt 0.7.6
-  * use qemu hardware panel from proxmox-yew-comp, set to readonly mode
-  * use QemuOptionsPanel from proxmox_yew_comp
-  * depend on proxmox-apt-api-types
-  * moved pve fields/selector implementation to proxmox-yew-comp
+  * login_panel/realm_selector: add support for openid realm logins
+  * login_panel/realm_selector: use default realm provided by api
+  * qemu hardware panel: displays pending properties (if any).
+  * qemu option panel: make all options editable.
+  * qemu option panel: displays pending properties (if any).
   * StorageContentPanel: fix logic to detect empty list
-  * update pwt-assets
-  * remove pspn() mess
-  * use pve-api-types debian package
-  * make qemu options editable
   * fix submodules paths to work with git.proxmox.com
+  * input panel: layout fixes for row height and width
+  * catalog loader: fix behavior when no language is set
+  * catalog loader: defer first content rendering after language is loader
+  * catalog loader: set text direction after load
+  * language selector: automatically set text direction from language
+  * reset button: make default text translatable
+  * layout: update css style (use latest pwt-assets)
+  * layout: dropdown: set placeholder opacity to 50%
+  * layout: use dvh/dvw for max-{height,width}
 
- -- Proxmox Support Team <support@proxmox.com>  Thu, 06 Nov 2025 12:37:38 +0100
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 10 Nov 2025 11:28:41 +0100
 
 pve-yew-mobile-gui (0.6.2) trixie; urgency=medium
 
