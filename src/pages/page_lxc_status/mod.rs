@@ -127,7 +127,7 @@ impl Component for PvePageLxcStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("CT {}", props.vmid))
-                    .back(true),
+                    .back("/resources"),
             )
             .with_child(tab_bar)
             .with_child(content)

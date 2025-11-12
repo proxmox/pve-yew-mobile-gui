@@ -9,13 +9,13 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::widget::{Column, Container, List, ListTile, TabBar, TabBarItem};
-use pwt::{prelude::*, AsyncAbortGuard};
+use pwt::{AsyncAbortGuard, prelude::*};
 
 use pve_api_types::{IsRunning, TaskStatus};
 
+use proxmox_yew_comp::LogView;
 use proxmox_yew_comp::percent_encoding::percent_encode_component;
 use proxmox_yew_comp::utils::format_upid;
-use proxmox_yew_comp::LogView;
 
 use crate::widgets::TopNavBar;
 
@@ -31,6 +31,10 @@ pub struct PageTaskStatus {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub endtime: Option<i64>,
+
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub back: Option<AttrValue>,
 }
 
 impl PageTaskStatus {
@@ -253,7 +257,7 @@ impl Component for PvePageTaskStatus {
                 TopNavBar::new()
                     .title("Task Status")
                     .subtitle(format_upid(&props.task_id))
-                    .back(true)
+                    .back(&props.back)
                     .with_item(
                         MenuItem::new(tr!("Stop"))
                             .icon_class("fa fa-stop")

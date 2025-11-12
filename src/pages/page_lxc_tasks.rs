@@ -47,7 +47,11 @@ pub fn PvePageLxcTasks(props: &PageLxcTasks) -> Html {
             TopNavBar::new()
                 .title("Task List")
                 .subtitle(title)
-                .back(true),
+                .back(format!(
+                    "/resources/lxc/{}/{}",
+                    percent_encode_component(&props.nodename),
+                    props.vmid,
+                )),
         )
         .with_child(TasksPanel::new(base_url.clone()).on_show_task({
             let vmid = props.vmid;

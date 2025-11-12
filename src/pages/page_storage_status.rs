@@ -6,9 +6,9 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use pwt::widget::{Column, Container};
-use pwt::{prelude::*, AsyncAbortGuard};
+use pwt::{AsyncAbortGuard, prelude::*};
 
-use crate::widgets::{storage_card, StorageContentPanel, TopNavBar};
+use crate::widgets::{StorageContentPanel, TopNavBar, storage_card};
 
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::{http_get, percent_encoding::percent_encode_component};
@@ -106,7 +106,7 @@ impl Component for PvePageStorageStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("Storage {}", props.name))
-                    .back(true),
+                    .back("/resources"),
             )
             .with_child(content)
             .into()

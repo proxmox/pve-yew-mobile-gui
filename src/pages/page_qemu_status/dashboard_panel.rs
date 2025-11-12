@@ -402,7 +402,7 @@ impl Component for PveQemuDashboardPanel {
                 .with_child(
                     QemuHardwarePanel::new(props.node.clone(), props.vmid)
                         .mobile(true)
-                        .readonly(true)
+                        //.readonly(true)
                         .on_start_command(ctx.link().callback(Msg::StartCommand)),
                 )
                 .with_optional_child(confirm_dialog)

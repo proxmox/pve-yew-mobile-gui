@@ -11,8 +11,8 @@ use gloo_utils::format::JsValueSerdeExt;
 use serde::Deserialize;
 use wasm_bindgen::JsValue;
 
-use yew_router::scope_ext::RouterScopeExt;
 use yew_router::Routable;
+use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::prelude::*;
 use pwt::touch::{MaterialApp, SnackBar, SnackBarContextExt};
@@ -20,8 +20,8 @@ use pwt::touch::{MaterialApp, SnackBar, SnackBarContextExt};
 use proxmox_login::Authentication;
 
 use proxmox_yew_comp::{
-    authentication_from_cookie, available_language_list, http_set_auth,
-    percent_encoding::percent_encode_component, register_auth_observer, AuthObserver,
+    AuthObserver, authentication_from_cookie, available_language_list, http_set_auth,
+    percent_encoding::percent_encode_component, register_auth_observer,
 };
 
 pub fn show_failed_command_error<T: Component>(
@@ -144,6 +144,11 @@ fn switch_route(route: Route) -> Vec<Html> {
                 upid,
             )
             .endtime(endtime)
+            .back(format!(
+                "/resources/qemu/{}/{}/tasks",
+                percent_encode_component(&nodename),
+                vmid
+            ))
             .into(),
         ),
         Route::Lxc { nodename, vmid } => (
@@ -172,6 +177,11 @@ fn switch_route(route: Route) -> Vec<Html> {
                 upid,
             )
             .endtime(endtime)
+            .back(format!(
+                "/resources/lxc/{}/{}/tasks",
+                percent_encode_component(&nodename),
+                vmid
+            ))
             .into(),
         ),
 
@@ -198,6 +208,10 @@ fn switch_route(route: Route) -> Vec<Html> {
                 upid,
             )
             .endtime(endtime)
+            .back(format!(
+                "/resources/node/{}/tasks",
+                percent_encode_component(&nodename)
+            ))
             .into(),
         ),
         Route::Storage { nodename, name } => (
@@ -323,10 +337,12 @@ impl Component for PveMobileApp {
             if auth {
                 switch(path)
             } else {
-                return vec![PageLogin::new()
-                    .consent_text(consent_text.clone())
-                    .on_login(link.callback(Msg::Login))
-                    .into()];
+                return vec![
+                    PageLogin::new()
+                        .consent_text(consent_text.clone())
+                        .on_login(link.callback(Msg::Login))
+                        .into(),
+                ];
             }
         };
 

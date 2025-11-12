@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use pwt::AsyncAbortGuard;
 use pwt::prelude::*;
 use pwt::props::StorageLocation;
 use pwt::state::PersistentState;
 use pwt::widget::{Column, TabBar, TabBarItem};
-use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::http_get;
 
@@ -156,7 +156,7 @@ impl Component for PvePageNodeStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("Node {}", props.node))
-                    .back(true),
+                    .back("/resources"),
             )
             .with_child(tab_bar)
             .with_child(content)

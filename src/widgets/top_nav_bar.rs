@@ -4,6 +4,7 @@ use std::rc::Rc;
 use pwt::prelude::*;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::AnyRoute;
 use yew_router::scope_ext::RouterScopeExt;
 
 use pwt::impl_class_prop_builder;
@@ -25,8 +26,8 @@ pub struct TopNavBar {
     pub subtitle: Option<AttrValue>,
 
     #[prop_or_default]
-    #[builder]
-    pub back: bool,
+    #[builder(IntoPropValue, into_prop_value)]
+    pub back: Option<AttrValue>,
 
     #[prop_or_default]
     pub class: Classes,
@@ -135,23 +136,15 @@ impl Component for PveTopNavBar {
             )*/
             ;
 
-        let back_or_logo = if props.back {
+        let back_or_logo = if let Some(back) = &props.back {
+            let back = back.to_owned();
             ActionIcon::new("fa fa-chevron-left")
                 .class("pwt-font-size-headline-small")
                 .class("pwt-scheme-neutral")
                 .on_activate({
-                    let window = gloo_utils::window();
-                    let length = match window.history() {
-                        Ok(history) => history.length().unwrap_or(0),
-                        Err(_) => 0,
-                    };
                     let navigator = ctx.link().navigator().clone().unwrap();
                     move |_| {
-                        if length > 1 {
-                            navigator.back();
-                        } else {
-                            navigator.replace(&crate::Route::Dashboard);
-                        }
+                        navigator.push(&AnyRoute::new(back.to_string()));
                     }
                 })
                 .into()

@@ -41,7 +41,10 @@ pub fn PvePageNodeTasks(props: &PageNodeTasks) -> Html {
             TopNavBar::new()
                 .title("Task List")
                 .subtitle(title)
-                .back(true),
+                .back(format!(
+                    "/resources/node/{}",
+                    percent_encode_component(&props.nodename)
+                )),
         )
         .with_child(TasksPanel::new(base_url.clone()).on_show_task({
             let nodename = props.nodename.to_string();

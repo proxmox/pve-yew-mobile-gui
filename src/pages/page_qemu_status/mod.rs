@@ -128,7 +128,7 @@ impl Component for PvePageQemuStatus {
             .with_child(
                 TopNavBar::new()
                     .title(format!("VM {}", props.vmid))
-                    .back(true),
+                    .back("/resources"),
             )
             .with_child(tab_bar)
             .with_child(content)
