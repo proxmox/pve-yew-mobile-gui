@@ -11,11 +11,11 @@ use proxmox_human_byte::HumanByte;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
+use pwt::AsyncAbortGuard;
 use pwt::prelude::*;
 use pwt::touch::SideDialog;
 use pwt::widget::form::{Checkbox, Field};
 use pwt::widget::{ActionIcon, Card, Column, Fa, List, ListTile, Panel, Row, Trigger};
-use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::http_get;
 use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage};
@@ -230,8 +230,9 @@ impl PvePageResources {
                     ClusterResourceType::Storage => Some(self.create_storage_list_item(ctx, item)),
                     ClusterResourceType::Node => Some(self.create_node_list_item(ctx, item)),
                     ClusterResourceType::Pool
-                    | ClusterResourceType::Openvz
-                    | ClusterResourceType::Sdn => {
+                    | ClusterResourceType::Network
+                    | ClusterResourceType::Sdn
+                    | ClusterResourceType::Openvz => {
                         /* ignore for now  */
                         None
                     }
@@ -343,6 +344,7 @@ fn type_ordering(ty: ClusterResourceType) -> usize {
         ClusterResourceType::Node => 4,
         ClusterResourceType::Pool => 5,
         ClusterResourceType::Sdn => 6,
+        ClusterResourceType::Network => 7,
     }
 }
 
