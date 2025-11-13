@@ -129,6 +129,13 @@ impl PvePageTaskStatus {
                         (IsRunning::Stopped, None) => {
                             format!("{} ({})", tr!("stopped"), tr!("unknown"))
                         }
+                        (IsRunning::UnknownEnumValue(value), msg) => {
+                            format!(
+                                "{} ({})",
+                                tr!("unknown status '{0}'", value),
+                                msg.as_ref().unwrap_or(&tr!("unknown"))
+                            )
+                        }
                     },
                 ));
 

@@ -232,7 +232,8 @@ impl PvePageResources {
                     ClusterResourceType::Pool
                     | ClusterResourceType::Network
                     | ClusterResourceType::Sdn
-                    | ClusterResourceType::Openvz => {
+                    | ClusterResourceType::Openvz
+                    | ClusterResourceType::UnknownEnumValue(_) => {
                         /* ignore for now  */
                         None
                     }
@@ -345,6 +346,7 @@ fn type_ordering(ty: ClusterResourceType) -> usize {
         ClusterResourceType::Pool => 5,
         ClusterResourceType::Sdn => 6,
         ClusterResourceType::Network => 7,
+        ClusterResourceType::UnknownEnumValue(_) => 1000,
     }
 }
 
