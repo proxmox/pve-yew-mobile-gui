@@ -4,17 +4,17 @@ use anyhow::Error;
 use gloo_timers::callback::Timeout;
 use proxmox_human_byte::HumanByte;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
+use pwt::AsyncAbortGuard;
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
     Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row,
 };
-use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::configuration::pve::QemuHardwarePanel;
 use proxmox_yew_comp::layout::card::standard_card;
@@ -22,7 +22,7 @@ use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage, stand
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::utils::lookup_task_description;
 use proxmox_yew_comp::{
-    http_get, http_post, percent_encoding::percent_encode_component, ConsoleType, XTermJs,
+    ConsoleType, XTermJs, http_get, http_post, percent_encoding::percent_encode_component,
 };
 
 use pve_api_types::{IsRunning, QemuStatus};
@@ -402,7 +402,7 @@ impl Component for PveQemuDashboardPanel {
                 .with_child(
                     QemuHardwarePanel::new(props.node.clone(), props.vmid)
                         .mobile(true)
-                        //.readonly(true)
+                        .readonly(true)
                         .on_start_command(ctx.link().callback(Msg::StartCommand)),
                 )
                 .with_optional_child(confirm_dialog)
