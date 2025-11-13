@@ -5,8 +5,8 @@ use gloo_timers::callback::Timeout;
 
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use pwt::widget::{Column, Container, Dialog, Fa, List};
 use pwt::AsyncAbortGuard;
+use pwt::widget::{Column, Container, Dialog, Fa, List};
 use pwt::{prelude::*, widget::ListTile};
 
 use proxmox_apt_api_types::APTUpdateInfo;
@@ -45,7 +45,11 @@ impl PveNodeUpdatesPanel {
         let list: Vec<ListTile> = data
             .iter()
             .map(|s| {
-                let version_info = format!("{} -> {}", s.old_version, s.version);
+                let version_info = if let Some(old_version) = &s.old_version {
+                    format!("{} -> {}", old_version, s.version)
+                } else {
+                    format!("new: {}", s.version)
+                };
 
                 ListTile::new()
                     .key(Key::from(s.package.clone()))
