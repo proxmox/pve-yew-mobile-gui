@@ -1,21 +1,37 @@
 pve-yew-mobile-gui (0.6.3) trixie; urgency=medium
 
-  * login_panel/realm_selector: add support for openid realm logins
-  * login_panel/realm_selector: use default realm provided by api
-  * qemu hardware panel: displays pending properties (if any).
-  * qemu option panel: make all options editable.
-  * qemu option panel: displays pending properties (if any).
-  * StorageContentPanel: fix logic to detect empty list
-  * fix submodules paths to work with git.proxmox.com
-  * input panel: layout fixes for row height and width
-  * catalog loader: fix behavior when no language is set
-  * catalog loader: defer first content rendering after language is loader
-  * catalog loader: set text direction after load
-  * language selector: automatically set text direction from language
+  * add support for logging in using OpenID Connect (OIDC) based realms.
+
+  * login: pre-select the default realm configured in the authentication realm
+    settings on the Proxmox VE node or cluster.
+
+  * qemu: hardware panel: display any pending changes.
+
+  * qemu: option panel: make all available options editable and show any
+    pending changes.
+
+  * storage: fix reversed logic for detect empty content list.
+
+  * improve row height and width layout for all input panels.
+
+  * translation: fix endless loop waiting on catalog load when no language is
+    set, in which case no catalog will be loaded.
+
+  * translations: always set the correct language text direction after the
+    catalog was loaded.
+
   * reset button: make default text translatable
-  * layout: update css style (use latest pwt-assets)
-  * layout: dropdown: set placeholder opacity to 50%
-  * layout: use dvh/dvw for max-{height,width}
+
+  * dropdown fields: reduce the opacity of the placeholder text, which is
+    shown when no value is selected, to 50% visibility.
+
+  * infinite progress bar: use purely transforms for the animation, reducing
+    stutters or even hanging completely when the main code is blocking for a
+    prolonged time (e.g., to process a huge API response).
+
+  * layout: use dynamic viewport height/width units for sizing something to
+    the full screen, as on mobile the non-dynamic viewport might not be fully
+    visible.
 
  -- Proxmox Support Team <support@proxmox.com>  Mon, 10 Nov 2025 11:28:41 +0100
 
