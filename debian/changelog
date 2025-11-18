@@ -1,3 +1,17 @@
+pve-yew-mobile-gui (0.6.4) trixie; urgency=medium
+
+  * page login: skip consent banner when OpenID Connect authorization is
+    present, as that is the last step in the OIDC authentication flow, which
+    means the user has already viewed the banner when loading the UI before
+    having been redirected to the OIDC provider.
+
+  * qemu hardware panel: switch back to read-only mode for now.
+
+  * handle fallback enum values when parsing the API response for better
+    forward compatibility with new features in the Proxmox VE backend.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 18 Nov 2025 18:51:07 +0100
+
 pve-yew-mobile-gui (0.6.3) trixie; urgency=medium
 
   * add support for logging in using OpenID Connect (OIDC) based realms.
