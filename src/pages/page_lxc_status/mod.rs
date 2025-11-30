@@ -15,11 +15,7 @@ use crate::widgets::{GuestBackupPanel, TopNavBar};
 mod dashboard_panel;
 pub use dashboard_panel::LxcDashboardPanel;
 
-mod resources_panel;
-pub use resources_panel::LxcResourcesPanel;
-
-mod config_panel;
-pub use config_panel::LxcConfigPanel;
+use proxmox_yew_comp::configuration::pve::LxcOptionsPanel;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageLxcStatus {
@@ -90,7 +86,10 @@ impl Component for PvePageLxcStatus {
             ),
             ViewState::Options => (
                 "options",
-                LxcConfigPanel::new(props.node.clone(), props.vmid).into(),
+                LxcOptionsPanel::new(props.node.clone(), props.vmid)
+                    .mobile(true)
+                    .readonly(true)
+                    .into(),
             ),
         };
 

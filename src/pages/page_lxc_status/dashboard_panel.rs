@@ -8,26 +8,26 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew_router::scope_ext::RouterScopeExt;
 
+use pwt::AsyncAbortGuard;
 use pwt::prelude::*;
 use pwt::widget::menu::{Menu, MenuItem, SplitButton};
 use pwt::widget::{
     Button, Column, ConfirmDialog, Fa, List, ListTile, MiniScroll, MiniScrollMode, Row,
 };
-use pwt::AsyncAbortGuard;
 
 use proxmox_yew_comp::layout::card::standard_card;
 use proxmox_yew_comp::layout::list_tile::{icon_list_tile, list_tile_usage, standard_list_tile};
 use proxmox_yew_comp::layout::render_loaded_data;
 use proxmox_yew_comp::utils::lookup_task_description;
 use proxmox_yew_comp::{
-    http_get, http_post, percent_encoding::percent_encode_component, ConsoleType, XTermJs,
+    ConsoleType, XTermJs, http_get, http_post, percent_encoding::percent_encode_component,
 };
 
 use pve_api_types::{IsRunning, LxcStatus};
 
 use crate::widgets::TasksListButton;
 
-use super::LxcResourcesPanel;
+use proxmox_yew_comp::configuration::pve::{LxcDnsPanel, LxcNetworkPanel, LxcResourcesPanel};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct LxcDashboardPanel {
@@ -64,6 +64,7 @@ pub enum Msg {
     Load,
     LoadResult(Result<LxcStatus, Error>),
     CommandResult(Result<String, Error>),
+    StartCommand(String),
     LxcCommand(String),
     Confirm(ConfirmableCommands),
     CloseDialog,
@@ -299,6 +300,7 @@ impl Component for PveLxcDashboardPanel {
                     link.send_message(Msg::Load);
                 }));
             }
+            Msg::StartCommand(upid) => self.running_upid = Some(upid),
             Msg::CommandResult(result) => match result {
                 Ok(upid) => {
                     self.running_upid = Some(upid);
@@ -339,7 +341,26 @@ impl Component for PveLxcDashboardPanel {
                 .with_child(self.view_status(ctx, data))
                 .with_child(self.view_actions(ctx, data))
                 .with_child(self.task_button(ctx))
-                .with_child(LxcResourcesPanel::new(props.node.clone(), props.vmid))
+                .with_child(
+                    LxcResourcesPanel::new(props.node.clone(), props.vmid)
+                        .mobile(true)
+                        .readonly(true)
+                        .on_start_command(ctx.link().callback(Msg::StartCommand)),
+                )
+                .with_child(
+                    standard_card(tr!("Network"), (), ()).with_child(
+                        LxcNetworkPanel::new(props.node.clone(), props.vmid)
+                            .readonly(true)
+                            .mobile(true),
+                    ),
+                )
+                .with_child(
+                    standard_card(tr!("DNS"), (), ()).with_child(
+                        LxcDnsPanel::new(props.node.clone(), props.vmid)
+                            .readonly(true)
+                            .mobile(true),
+                    ),
+                )
                 .with_optional_child(confirm_dialog)
                 .into()
         })
